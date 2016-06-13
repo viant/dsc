@@ -1,0 +1,6 @@
+[
+  { "id":"<ds:seq [\"interests\"]>", "name":"Abc", "category":"Alphabet"},
+  { "id":"<ds:seq [\"interests\"]>", "name":"Bcd", "category":"EFG"},
+  { "id":"<ds:seq [\"interests\"]>", "name":"Cde", "category":"FGH"},
+  { "id":"<ds:seq [\"interests\"]>", "name":"Klm", "category":"Ubf", "groupname":"<ds:nil>"}
+]

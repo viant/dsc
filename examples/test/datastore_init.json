@@ -1,0 +1,24 @@
+{
+  "DatastoreConfigs": [
+    {
+      "Datastore": "mytestdb",
+      "AdminDbName": "mysql",
+      "ClearDatastore": true,
+      "ConfigUrl": "test://test/config/store.json",
+      "Descriptors": [
+        {
+          "Table": "interests",
+          "Autoincrement": true,
+          "PkColumns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "Datastore": "mysql",
+      "ConfigUrl": "test://test/config/admin.json"
+    }
+  ]
+}
+

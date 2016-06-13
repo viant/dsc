@@ -1,0 +1,11 @@
+{
+  "DriverName": "mysql",
+  "UserName": "root",
+  "Password": "dev",
+  "Descriptor": "[user]:[password]@[url]",
+  "Parameters": {
+    "user": "root",
+    "password": "dev",
+    "url": "tcp(127.0.0.1:3306)/mysql?parseTime=true"
+  }
+}

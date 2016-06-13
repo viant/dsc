@@ -1,0 +1,4 @@
+{ "id": 1, "name": "Rob", "visitedCities": [{"visits": 3,"city": "Warsaw"},  {"visits": 4,"city": "Berlin"}],"mostLikedCity": {"visits": 4, "city": "Berlin"},"achievements": ["abc1","cde"], "LastVisitTime": "2016-03-01 03:10:00"}
+{ "id": 2, "name": "Vodi", "visitedCities": [{"visits": 2,"city": "Cracow"},  {"visits": 1,"city": "London"}],"achievements": ["abc2","cde"]}
+{ "id": 3, "name": "Dodi", "visitedCities": [{"visits": 1,"city": "Paris"},  {"visits": 3,"city": "Berlin"}], "achievements": ["abc3","cde"]}
+{ "id": 4, "name": "Bogi", "visitedCities": [{"visits": 6,"city": "Paris"},  {"visits": 2,"city": "London"}],"mostLikedCity": {"visits": 6, "city": "Paris"},"achievements": ["abc4","cde"]}
