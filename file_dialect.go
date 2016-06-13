@@ -1,26 +1,25 @@
 package dsc
 
 import (
-	"github.com/viant/toolbox"
-	"os"
 	"io/ioutil"
+	"os"
 	"path"
+
+	"github.com/viant/toolbox"
 )
 
 type fileDialect struct {
 	defaultDialect
 }
 
-
 //DropTable drops a table in datastore managed by passed in manager.
-func (d fileDialect) DropTable(manager Manager, datastore string, table string) (error) {
+func (d fileDialect) DropTable(manager Manager, datastore string, table string) error {
 	file, err := toolbox.FileFromURL(getTableURL(manager, table))
 	if err != nil {
 		return err
 	}
 	return os.Remove(file)
 }
-
 
 //GetTables return tables names for passed in datastore managed by passed in manager.
 func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, error) {
@@ -34,7 +33,7 @@ func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, err
 		return nil, err
 	}
 	var result = make([]string, 0)
-	for _, file  :=range files {
+	for _, file := range files {
 		if path.Ext(file.Name()) == ext {
 			result = append(result, file.Name())
 		}

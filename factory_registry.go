@@ -24,7 +24,7 @@ var managerFactories = make(map[string]ManagerFactory)
 
 func init() {
 	var managerFactory ManagerFactory = &sqlManagerFactory{}
-	sqlDrivers := []string{"mysql", "ora","pg", "mssql"}
+	sqlDrivers := []string{"mysql", "ora", "pg", "mssql"}
 	for _, driver := range sqlDrivers {
 		RegisterManagerFactory(driver, managerFactory)
 	}
@@ -33,14 +33,13 @@ func init() {
 
 //RegisterManagerFactory registers manager factory for passed in driver.
 func RegisterManagerFactory(driver string, factory ManagerFactory) {
-	managerFactories[driver]= factory
+	managerFactories[driver] = factory
 }
 
 //GetManagerFactory returns a manager factory for passed in driver, or error.
 func GetManagerFactory(driver string) (ManagerFactory, error) {
-	if result,ok := managerFactories[driver]; ok {
+	if result, ok := managerFactories[driver]; ok {
 		return result, nil
 	}
 	return nil, fmt.Errorf("Failed to lookup manager factory for '%v' ", driver)
 }
-

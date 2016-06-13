@@ -19,13 +19,13 @@
 package dsc
 
 import (
-	"fmt"
-	"github.com/viant/toolbox"
 	"encoding/json"
+	"fmt"
+
+	"github.com/viant/toolbox"
 )
 
-type managerFactoryProxy struct {}
-
+type managerFactoryProxy struct{}
 
 //Create creates a new manager for the passed in config.
 func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
@@ -39,10 +39,9 @@ func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
 	return factory.Create(config)
 }
 
-
 //CreateFromURL create a new manager from URL, url resource should be a JSON Config
 func (f managerFactoryProxy) CreateFromURL(url string) (Manager, error) {
-	reader, _, err :=toolbox.OpenReaderFromURL(url)
+	reader, _, err := toolbox.OpenReaderFromURL(url)
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +55,8 @@ func (f managerFactoryProxy) CreateFromURL(url string) (Manager, error) {
 	return f.Create(config)
 }
 
-
 //NewManagerFactory create a new manager factory.
 func NewManagerFactory() ManagerFactory {
 	var manager ManagerFactory = &managerFactoryProxy{}
 	return manager
 }
-
-

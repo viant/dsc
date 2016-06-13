@@ -2,10 +2,11 @@ package dsc_test
 
 import (
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
-	"time"
-	"github.com/stretchr/testify/assert"
 )
 
 type MostLikedCity struct {
@@ -14,7 +15,7 @@ type MostLikedCity struct {
 	Souvenirs []string
 }
 
-type  Traveler struct {
+type Traveler struct {
 	Id            int
 	Name          string
 	LastVisitTime time.Time
@@ -26,9 +27,8 @@ type  Traveler struct {
 	}
 }
 
-
 func TestInsert(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:" + dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 	dialect := dsc.GetDatastoreDialectable("ndjson")
@@ -37,22 +37,21 @@ func TestInsert(t *testing.T) {
 	err = dialect.DropTable(manager, datastore, "travelers2")
 	assert.Nil(t, err)
 
-
 	travelers := make([]Traveler, 2)
 	travelers[0] = Traveler{
-		Id:10,
-		Name:"Cook",
-		LastVisitTime:time.Now(),
+		Id:            10,
+		Name:          "Cook",
+		LastVisitTime: time.Now(),
 		Achievements:  []string{"abc", "jhi"},
-		MostLikedCity:  MostLikedCity{City:"Cracow", Visits:4},
+		MostLikedCity: MostLikedCity{City: "Cracow", Visits: 4},
 	}
 
 	travelers[1] = Traveler{
-		Id:20,
-		Name:"Robin",
-		LastVisitTime:time.Now(),
+		Id:            20,
+		Name:          "Robin",
+		LastVisitTime: time.Now(),
 		Achievements:  []string{"w", "a"},
-		MostLikedCity:  MostLikedCity{"Moscow", 3, []string{"s3", "sN"}},
+		MostLikedCity: MostLikedCity{"Moscow", 3, []string{"s3", "sN"}},
 	}
 
 	inserted, updated, err := manager.PersistAll(&travelers, "travelers2", nil)
@@ -60,7 +59,7 @@ func TestInsert(t *testing.T) {
 	assert.Equal(t, 2, inserted)
 	assert.Equal(t, 0, updated)
 
-	travelers[1].Achievements =  []string{"z", "g"}
+	travelers[1].Achievements = []string{"z", "g"}
 	inserted, updated, err = manager.PersistSingle(&travelers[1], "travelers2", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, inserted)
@@ -70,13 +69,11 @@ func TestInsert(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, success)
 
-
 }
 
-
 func TestRead(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:" + dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
-	manager, err:= dsc.NewManagerFactory().Create(config)
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 
 	{
@@ -97,7 +94,6 @@ func TestRead(t *testing.T) {
 		}
 	}
 
-
 	{
 		var travelers = make([]Traveler, 0)
 		err = manager.ReadAll(&travelers, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1", nil, nil)
@@ -116,9 +112,6 @@ func TestRead(t *testing.T) {
 		}
 	}
 
-
-
-
 	{
 		traveler := Traveler{}
 		success, err := manager.ReadSingle(&traveler, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1 WHERE id = ?", []interface{}{1}, nil)
@@ -134,5 +127,3 @@ func TestRead(t *testing.T) {
 	}
 
 }
-
-

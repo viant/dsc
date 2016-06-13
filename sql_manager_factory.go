@@ -27,13 +27,12 @@ func (mf *sqlManagerFactory) Create(config *Config) (Manager, error) {
 	sqlManager := &sqlManager{}
 	var self Manager = sqlManager
 	super := NewAbstractManager(config, connectionProvider, self)
-	sqlManager.AbstractManager= super
+	sqlManager.AbstractManager = super
 	return self, nil
 }
 
-
 func (mf sqlManagerFactory) CreateFromURL(url string) (Manager, error) {
-	reader, _, err :=toolbox.OpenReaderFromURL(url)
+	reader, _, err := toolbox.OpenReaderFromURL(url)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ import "github.com/viant/toolbox"
 
 //FileScanner represents a file scanner to transfer record to destinations.
 type FileScanner struct {
-	columns []string
+	columns   []string
 	converter toolbox.Converter
 	Values    map[string]interface{}
 }
@@ -36,7 +36,7 @@ func (s *FileScanner) Columns() ([]string, error) {
 func (s *FileScanner) Scan(destinations ...interface{}) error {
 	var columns, _ = s.Columns()
 	for i, dest := range destinations {
-		if value, found := s.Values[columns[i]];found {
+		if value, found := s.Values[columns[i]]; found {
 			err := s.converter.AssignConverted(dest, value)
 			if err != nil {
 				return err
@@ -50,8 +50,7 @@ func (s *FileScanner) Scan(destinations ...interface{}) error {
 func NewFileScanner(config *Config, columns []string) *FileScanner {
 	converter := toolbox.NewColumnConverter(config.GetDateLayout())
 	return &FileScanner{
-		converter:*converter,
-		columns:columns,
+		converter: *converter,
+		columns:   columns,
 	}
 }
-

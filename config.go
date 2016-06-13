@@ -20,25 +20,24 @@
 package dsc
 
 import (
-"github.com/viant/toolbox"
-"strings"
-)
+	"strings"
 
+	"github.com/viant/toolbox"
+)
 
 //Config represent datastore config.
 type Config struct {
-	DriverName  string
-	PoolSize    int
-	MaxPoolSize int
-	Descriptor  string
+	DriverName        string
+	PoolSize          int
+	MaxPoolSize       int
+	Descriptor        string
 	EncodedParameters string
-	Parameters  map[string]string
+	Parameters        map[string]string
 }
-
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
-	if result, ok := c.Parameters[name];ok {
+	if result, ok := c.Parameters[name]; ok {
 		return result
 	}
 	panic("Missing value in descriptor " + name)
@@ -56,31 +55,30 @@ func (c *Config) GetDateLayout() string {
 
 //Has returns true if parameter with passed in name is present, otherwise it returns false.
 func (c *Config) Has(name string) bool {
-	if _, ok := c.Parameters[name];ok {
+	if _, ok := c.Parameters[name]; ok {
 		return true
 	}
 	return false
 }
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
-func (c *Config) Init()  {
+func (c *Config) Init() {
 	if len(c.EncodedParameters) > 0 && len(c.Parameters) == 0 {
 		c.Parameters = toolbox.MakeStringMap(c.EncodedParameters, ":", ",")
 	}
 	descriptor := c.Descriptor
-	for key:=range c.Parameters {
-		macro :="[" + key +"]"
+	for key := range c.Parameters {
+		macro := "[" + key + "]"
 		descriptor = strings.Replace(descriptor, macro, c.Parameters[key], 1)
 	}
 	c.Descriptor = descriptor
 }
 
-
 //NewConfig creates new Config, it takes the following parameters
 // descriptor - optional datastore connection string with macros that will be looked epxanded from for instance [user]:[password]@[url]
 // encodedParameters should be in the following format:   <key1>:<value1>, ...,<keyN>:<valueN>
 func NewConfig(driverName string, descriptor string, encodedParameters string) *Config {
-	result :=&Config{DriverName:driverName, PoolSize:1, MaxPoolSize:2, Descriptor:descriptor, EncodedParameters:encodedParameters, Parameters:make(map[string]string)}
+	result := &Config{DriverName: driverName, PoolSize: 1, MaxPoolSize: 2, Descriptor: descriptor, EncodedParameters: encodedParameters, Parameters: make(map[string]string)}
 	result.Init()
 	return result
 }

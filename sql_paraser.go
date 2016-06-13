@@ -19,13 +19,12 @@
 package dsc
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+
 	"github.com/viant/toolbox"
-	"errors"
 )
-
-
 
 //SQLColumn represents a sql column
 type SQLColumn struct {
@@ -44,7 +43,6 @@ type SQLCriterion struct {
 	LogicalOperator string
 }
 
-
 //BaseStatement represents a base query and dml statement
 type BaseStatement struct {
 	SQL      string
@@ -52,7 +50,6 @@ type BaseStatement struct {
 	Columns  []SQLColumn
 	Criteria []SQLCriterion
 }
-
 
 //ColumnNames returns a column names.
 func (bs BaseStatement) ColumnNames() []string {
@@ -66,7 +63,7 @@ func (bs BaseStatement) ColumnNames() []string {
 func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interface{}, error) {
 	textOperand := toolbox.AsString(source)
 	if textOperand == "?" {
-		if ! parameters.HasNext() {
+		if !parameters.HasNext() {
 			return nil, errors.New("Unable to bind value - not enough parameters")
 		}
 		var values = make([]interface{}, 1)
@@ -74,18 +71,18 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 		return values[0], nil
 	}
 	if strings.HasPrefix(textOperand, "'") {
-		return textOperand[1:len(textOperand) - 1], nil
+		return textOperand[1 : len(textOperand)-1], nil
 	}
 
-	if ! toolbox.CanConvertToString(source) {
-		value, _:=toolbox.DiscoverValueAndKind(textOperand)
+	if !toolbox.CanConvertToString(source) {
+		value, _ := toolbox.DiscoverValueAndKind(textOperand)
 		return value, nil
 	}
 	return source, nil
 }
 
 //CriteriaValues returns criteria values  extracted from binding parameters, starting from parametersOffset,
-func (bs BaseStatement)  CriteriaValues(parameters toolbox.Iterator) ([]interface{}, error) {
+func (bs BaseStatement) CriteriaValues(parameters toolbox.Iterator) ([]interface{}, error) {
 	var values = make([]interface{}, 0)
 	for _, criterion := range bs.Criteria {
 		var criterionValues = criterion.RightOperands
@@ -103,13 +100,11 @@ func (bs BaseStatement)  CriteriaValues(parameters toolbox.Iterator) ([]interfac
 	return values, nil
 }
 
-
 //QueryStatement represents SQL query statement.
 type QueryStatement struct {
 	BaseStatement
 	AllField bool
 }
-
 
 //DmlStatement represents dml statement.
 type DmlStatement struct {
@@ -118,9 +113,8 @@ type DmlStatement struct {
 	Values []interface{}
 }
 
-
-//ColumnValues returns values of columns extracted from binding parameters 
-func (ds DmlStatement)  ColumnValues(parameters toolbox.Iterator) ([]interface{}, error) {
+//ColumnValues returns values of columns extracted from binding parameters
+func (ds DmlStatement) ColumnValues(parameters toolbox.Iterator) ([]interface{}, error) {
 	var values = make([]interface{}, 0)
 	for i := range ds.Columns {
 		value, err := bindValueIfNeeded(ds.Values[i], parameters)
@@ -181,68 +175,67 @@ const (
 )
 
 var sqlMatchers = map[int]toolbox.Matcher{
-	eof:toolbox.EOFMatcher{},
-	whitespaces:toolbox.CharactersMatcher{" \n\t"},
-	id:toolbox.LiteralMatcher{},
-	asterisk:toolbox.CharactersMatcher{"*"},
-	coma:toolbox.CharactersMatcher{","},
-	operator:toolbox.KeywordsMatcher{
-		Keywords:[]string{"=", ">=", "<=", "<>", "!="},
-		CaseSensitive:false,
+	eof:         toolbox.EOFMatcher{},
+	whitespaces: toolbox.CharactersMatcher{" \n\t"},
+	id:          toolbox.LiteralMatcher{},
+	asterisk:    toolbox.CharactersMatcher{"*"},
+	coma:        toolbox.CharactersMatcher{","},
+	operator: toolbox.KeywordsMatcher{
+		Keywords:      []string{"=", ">=", "<=", "<>", "!="},
+		CaseSensitive: false,
 	},
-	notKeyword:toolbox.KeywordsMatcher{
-		Keywords:[]string{"NOT"},
-		CaseSensitive:false,
+	notKeyword: toolbox.KeywordsMatcher{
+		Keywords:      []string{"NOT"},
+		CaseSensitive: false,
 	},
-	likeOperatorKeyword:toolbox.KeywordsMatcher{
-		Keywords:[]string{"LIKE"},
-		CaseSensitive:false,
+	likeOperatorKeyword: toolbox.KeywordsMatcher{
+		Keywords:      []string{"LIKE"},
+		CaseSensitive: false,
 	},
-	isOperatorKeyword:toolbox.KeywordsMatcher{
-		Keywords:[]string{"IS"},
-		CaseSensitive:false,
+	isOperatorKeyword: toolbox.KeywordsMatcher{
+		Keywords:      []string{"IS"},
+		CaseSensitive: false,
 	},
-	betweenOperatorKeyword:toolbox.KeywordsMatcher{
-		Keywords:[]string{"BETWEEN"},
-		CaseSensitive:false,
+	betweenOperatorKeyword: toolbox.KeywordsMatcher{
+		Keywords:      []string{"BETWEEN"},
+		CaseSensitive: false,
 	},
-	betweenAndKeyword:toolbox.KeywordsMatcher{
-		Keywords:[]string{"AND"},
-		CaseSensitive:false,
+	betweenAndKeyword: toolbox.KeywordsMatcher{
+		Keywords:      []string{"AND"},
+		CaseSensitive: false,
 	},
-	nullKeyword:toolbox.KeywordsMatcher{
-		Keywords:[]string{"NULL"},
-		CaseSensitive:false,
+	nullKeyword: toolbox.KeywordsMatcher{
+		Keywords:      []string{"NULL"},
+		CaseSensitive: false,
 	},
-	equalOperator:toolbox.KeywordsMatcher{Keywords:[]string{"="}, CaseSensitive:false, },
-	inOperatorKeyword:toolbox.KeywordMatcher{Keyword:"IN", CaseSensitive:false},
-	logicalOperator:toolbox.KeywordsMatcher{
-		Keywords:[]string{"AND", "OR"},
-		CaseSensitive:false,
+	equalOperator:     toolbox.KeywordsMatcher{Keywords: []string{"="}, CaseSensitive: false},
+	inOperatorKeyword: toolbox.KeywordMatcher{Keyword: "IN", CaseSensitive: false},
+	logicalOperator: toolbox.KeywordsMatcher{
+		Keywords:      []string{"AND", "OR"},
+		CaseSensitive: false,
 	},
-	sqlValue:valueMatcher{optionallyEnclosingChar:"'", terminatorChars:",\t\n) "},
+	sqlValue: valueMatcher{optionallyEnclosingChar: "'", terminatorChars: ",\t\n) "},
 	sqlValues: valuesMatcher{
-		valuesGroupingBeginChar:"(",
-		valuesGroupingEndChar     :")",
-		valueSeparator:",",
-		valueOptionallyEnclosedWithChar:"'",
-		valueTerminatorCharacters:", \n\t)",
+		valuesGroupingBeginChar:         "(",
+		valuesGroupingEndChar:           ")",
+		valueSeparator:                  ",",
+		valueOptionallyEnclosedWithChar: "'",
+		valueTerminatorCharacters:       ", \n\t)",
 	},
-	groupingBegin:toolbox.CharactersMatcher{"("},
-	groupingEnd:toolbox.CharactersMatcher{")"},
-	selectKeyword:toolbox.KeywordMatcher{Keyword:"SELECT", CaseSensitive:false},
-	fromKeyword:toolbox.KeywordMatcher{Keyword:"FROM", CaseSensitive:false},
-	whereKeyword:toolbox.KeywordMatcher{Keyword:"WHERE", CaseSensitive:false},
-	asKeyword:toolbox.KeywordMatcher{Keyword:"AS", CaseSensitive:false},
-	insertKeyword:toolbox.KeywordMatcher{Keyword:"INSERT", CaseSensitive:false},
-	intoKeyword:toolbox.KeywordMatcher{Keyword:"INTO", CaseSensitive:false},
-	valuesKeyword:toolbox.KeywordMatcher{Keyword:"VALUES", CaseSensitive:false},
+	groupingBegin: toolbox.CharactersMatcher{"("},
+	groupingEnd:   toolbox.CharactersMatcher{")"},
+	selectKeyword: toolbox.KeywordMatcher{Keyword: "SELECT", CaseSensitive: false},
+	fromKeyword:   toolbox.KeywordMatcher{Keyword: "FROM", CaseSensitive: false},
+	whereKeyword:  toolbox.KeywordMatcher{Keyword: "WHERE", CaseSensitive: false},
+	asKeyword:     toolbox.KeywordMatcher{Keyword: "AS", CaseSensitive: false},
+	insertKeyword: toolbox.KeywordMatcher{Keyword: "INSERT", CaseSensitive: false},
+	intoKeyword:   toolbox.KeywordMatcher{Keyword: "INTO", CaseSensitive: false},
+	valuesKeyword: toolbox.KeywordMatcher{Keyword: "VALUES", CaseSensitive: false},
 
-	updateKeyword:toolbox.KeywordMatcher{Keyword:"UPDATE", CaseSensitive:false},
-	setKeyword:toolbox.KeywordMatcher{Keyword:"SET", CaseSensitive:false},
+	updateKeyword: toolbox.KeywordMatcher{Keyword: "UPDATE", CaseSensitive: false},
+	setKeyword:    toolbox.KeywordMatcher{Keyword: "SET", CaseSensitive: false},
 
-	deleteKeyword:toolbox.KeywordMatcher{Keyword:"DELETE", CaseSensitive:false},
-
+	deleteKeyword: toolbox.KeywordMatcher{Keyword: "DELETE", CaseSensitive: false},
 }
 
 type baseParser struct{}
@@ -307,7 +300,7 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 		return "", nil, err
 	}
 	value := token.Matched
-	values, err := bp.readValues(value[1:len(value) - 1])
+	values, err := bp.readValues(value[1 : len(value)-1])
 	if err != nil {
 		return "", nil, err
 	}
@@ -326,7 +319,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 		}
 
 		index := len(statement.Criteria)
-		statement.Criteria = append(statement.Criteria, SQLCriterion{LeftOperand:token.Matched})
+		statement.Criteria = append(statement.Criteria, SQLCriterion{LeftOperand: token.Matched})
 
 		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", inOperatorKeyword, likeOperatorKeyword, notKeyword, isOperatorKeyword, operator, eof)
 		if err != nil {
@@ -397,14 +390,13 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 	return nil
 }
 
-
 //QueryParser represents a simple SQL query parser.
 type QueryParser struct{ baseParser }
 
-func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *QueryStatement, token *toolbox.Token) (error) {
+func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *QueryStatement, token *toolbox.Token) error {
 	var err error
 	query.Columns = make([]SQLColumn, 0)
-	column := SQLColumn{Name:token.Matched}
+	column := SQLColumn{Name: token.Matched}
 	query.Columns = append(query.Columns, column)
 	for {
 		token = tokenizer.Nexts(whitespaces, coma)
@@ -417,7 +409,7 @@ func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *Que
 			if err != nil {
 				return err
 			}
-			column = SQLColumn{Name:token.Matched}
+			column = SQLColumn{Name: token.Matched}
 			query.Columns = append(query.Columns, column)
 			break
 		case whitespaces:
@@ -439,12 +431,11 @@ func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *Que
 	}
 }
 
-
 //Parse parses SQL query to build QueryStatement
 func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	tokenizer := toolbox.NewTokenizer(query, illegal, eof, sqlMatchers)
-	baseStatement := BaseStatement{SQL:query}
-	result := &QueryStatement{BaseStatement:baseStatement}
+	baseStatement := BaseStatement{SQL: query}
+	result := &QueryStatement{BaseStatement: baseStatement}
 	var token *toolbox.Token
 
 	_, err := qp.expectOptionalWhitespaceFollowedBy(tokenizer, "SELECT", selectKeyword)
@@ -490,18 +481,15 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	return result, nil
 }
 
-
 //NewQueryParser represents basic SQL query parser.
 func NewQueryParser() *QueryParser {
 	return &QueryParser{}
 }
 
-
-
 //DmlParser represents dml parser.
 type DmlParser struct{ baseParser }
 
-func (dp *DmlParser) readInsertColumns(tokenizer *toolbox.Tokenizer, statement *DmlStatement) (error) {
+func (dp *DmlParser) readInsertColumns(tokenizer *toolbox.Tokenizer, statement *DmlStatement) error {
 	token, err := dp.expectOptionalWhitespaceFollowedBy(tokenizer, "(", groupingBegin)
 	if err != nil {
 		return err
@@ -512,7 +500,7 @@ func (dp *DmlParser) readInsertColumns(tokenizer *toolbox.Tokenizer, statement *
 		if err != nil {
 			return err
 		}
-		field := SQLColumn{Name:token.Matched}
+		field := SQLColumn{Name: token.Matched}
 		statement.Columns = append(statement.Columns, field)
 		token, err = dp.expectOptionalWhitespaceFollowedBy(tokenizer, "','", coma, groupingEnd)
 		if err != nil {
@@ -525,7 +513,7 @@ func (dp *DmlParser) readInsertColumns(tokenizer *toolbox.Tokenizer, statement *
 	return nil
 }
 
-func (dp *DmlParser) readInsertValues(tokenizer *toolbox.Tokenizer, statement *DmlStatement) (error) {
+func (dp *DmlParser) readInsertValues(tokenizer *toolbox.Tokenizer, statement *DmlStatement) error {
 	token, err := dp.expectOptionalWhitespaceFollowedBy(tokenizer, "(", groupingBegin)
 	if err != nil {
 		return err
@@ -583,7 +571,7 @@ func (dp *DmlParser) readColumnAndValues(tokenizer *toolbox.Tokenizer, statement
 		if err != nil {
 			return nil, err
 		}
-		column := SQLColumn{Name:token.Matched}
+		column := SQLColumn{Name: token.Matched}
 		statement.Columns = append(statement.Columns, column)
 		_, err = dp.expectWhitespaceFollowedBy(tokenizer, "=", equalOperator)
 		if err != nil {
@@ -645,12 +633,10 @@ func (dp *DmlParser) parseDelete(tokenizer *toolbox.Tokenizer, statement *DmlSta
 	return nil
 }
 
-
-
 //Parse parses input to create DmlStatement.
 func (dp *DmlParser) Parse(input string) (*DmlStatement, error) {
-	baseStatement := BaseStatement{SQL:input}
-	result := &DmlStatement{BaseStatement:baseStatement}
+	baseStatement := BaseStatement{SQL: input}
+	result := &DmlStatement{BaseStatement: baseStatement}
 	tokenizer := toolbox.NewTokenizer(input, illegal, eof, sqlMatchers)
 	token, err := dp.expectOptionalWhitespaceFollowedBy(tokenizer, "INSERT INTO | UPDATE | DELETE", insertKeyword, updateKeyword, deleteKeyword)
 	if err != nil {
@@ -671,7 +657,6 @@ func (dp *DmlParser) Parse(input string) (*DmlStatement, error) {
 	return result, nil
 }
 
-
 //NewDmlParser creates a new NewDmlParser
 func NewDmlParser() *DmlParser {
 	return &DmlParser{}
@@ -688,6 +673,5 @@ func (e illegalTokenParsingError) Error() string {
 }
 
 func newIllegalTokenParsingError(index int, expected string) error {
-	return &illegalTokenParsingError{Index:index, Expected:expected, error:fmt.Sprintf("Illegal token at %v, expected %v", index, expected)}
+	return &illegalTokenParsingError{Index: index, Expected: expected, error: fmt.Sprintf("Illegal token at %v, expected %v", index, expected)}
 }
-

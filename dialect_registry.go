@@ -21,12 +21,10 @@ package dsc
 var dialect = NewDefaultDialect()
 var datastoreDialectableRegistry = make(map[string]DatastoreDialect)
 
-
 //RegisterDatastoreDialectable register DatastoreDialect for a driver.
 func RegisterDatastoreDialectable(driver string, dialectable DatastoreDialect) {
 	datastoreDialectableRegistry[driver] = dialectable
 }
-
 
 //GetDatastoreDialectable returns DatastoreDialect for passed in driver.
 func GetDatastoreDialectable(driver string) DatastoreDialect {

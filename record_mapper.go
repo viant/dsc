@@ -19,9 +19,10 @@
 package dsc
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
-	"fmt"
+
 	"github.com/viant/toolbox"
 )
 
@@ -40,10 +41,10 @@ func NewMetaRecordMapped(targetType interface{}, usePointer bool) RecordMapper {
 		structType = originalType
 	}
 	return &metaRecordMapper{
-		converter:  *toolbox.NewColumnConverter(""),
-		structType: structType,
-		usePointer:usePointer,
-		columnToFieldMap:toolbox.NewFieldSettingByKey(targetType, "column")}
+		converter:        *toolbox.NewColumnConverter(""),
+		structType:       structType,
+		usePointer:       usePointer,
+		columnToFieldMap: toolbox.NewFieldSettingByKey(targetType, "column")}
 }
 
 func (rm *metaRecordMapper) getValueMappingCount(columns []string) int {
@@ -81,7 +82,7 @@ func (rm *metaRecordMapper) applyFieldMapValuesIfNeeded(fieldsValueMap map[strin
 		fieldName := valueMapping["fieldName"]
 		field := structPointer.Elem().FieldByName(fieldName)
 		unwrappedValue := reflect.ValueOf(rawValue).Elem()
-		if unwrappedValue.IsNil()  {
+		if unwrappedValue.IsNil() {
 			if field.Kind() != reflect.Ptr {
 				return fmt.Errorf("Failed to apply value map on %v, unable to set nil", fieldName)
 			}
@@ -113,11 +114,11 @@ func (rm *metaRecordMapper) applyFieldMapValuesIfNeeded(fieldsValueMap map[strin
 	return nil
 }
 
-func (rm *metaRecordMapper) scanData(scanner  Scanner) (result interface{}, err error) {
+func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err error) {
 	structType := toolbox.DiscoverTypeByKind(rm.structType, reflect.Struct)
 	structPointer := reflect.New(structType)
 	resultStruct := structPointer.Elem()
-	columns, _ := scanner.Columns();
+	columns, _ := scanner.Columns()
 	var fieldValuePointers = make([]interface{}, len(columns))
 
 	var fieldsValueMap map[string]interface{}
@@ -151,24 +152,22 @@ func (rm *metaRecordMapper) scanData(scanner  Scanner) (result interface{}, err 
 	if hasFieldValueMap {
 		err := rm.applyFieldMapValuesIfNeeded(fieldsValueMap, structPointer)
 		if err != nil {
-			return nil, err;
+			return nil, err
 		}
 	}
 
-	if (! rm.usePointer) {
+	if !rm.usePointer {
 		result = structPointer.Elem().Interface()
 		return result, err
 	}
 	return structPointer.Interface(), err
 }
 
-
-
 func (rm *metaRecordMapper) mapFromValues(vaues []interface{}) (result interface{}, err error) {
 	return nil, nil
 }
 
-func (rm *metaRecordMapper) Map(scanner  Scanner) (result interface{}, err error) {
+func (rm *metaRecordMapper) Map(scanner Scanner) (result interface{}, err error) {
 	return rm.scanData(scanner)
 }
 
@@ -182,7 +181,7 @@ func NewColumnarRecordMapper(usePointer bool, targetSlice reflect.Type) RecordMa
 	return &columnarRecordMapper{usePointer, targetSlice}
 }
 
-func (rm *columnarRecordMapper) Map(scanner  Scanner) (interface{}, error) {
+func (rm *columnarRecordMapper) Map(scanner Scanner) (interface{}, error) {
 	result, _, err := ScanRow(scanner)
 	if err != nil {
 		return nil, err
@@ -203,10 +202,10 @@ func NewRecordMapper(targetType reflect.Type) RecordMapper {
 		var mapper = NewColumnarRecordMapper(false, targetType)
 		return mapper
 	case reflect.Ptr:
-		if (targetType.Elem().Kind() == reflect.Slice) {
+		if targetType.Elem().Kind() == reflect.Slice {
 			var mapper = NewColumnarRecordMapper(true, targetType.Elem())
 			return mapper
-		} else if (targetType.Elem().Kind() == reflect.Struct) {
+		} else if targetType.Elem().Kind() == reflect.Struct {
 			var mapper = NewMetaRecordMapped(targetType, true)
 			return mapper
 		}
@@ -216,39 +215,36 @@ func NewRecordMapper(targetType reflect.Type) RecordMapper {
 	return nil
 }
 
-
 //NewRecordMapperIfNeeded create a new mapper if passed in mapper is nil. It takes target type for the record mapper.
 func NewRecordMapperIfNeeded(mapper RecordMapper, targetType reflect.Type) RecordMapper {
-	if (mapper != nil) {
+	if mapper != nil {
 		return mapper
 	}
 	return NewRecordMapper(targetType)
 }
 
-
 //ScanRow takes scanner to scans row.
-func ScanRow(scanner  Scanner) ([]interface{}, []string, error) {
-	columns, _ := scanner.Columns();
-
+func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
+	columns, _ := scanner.Columns()
 
 	count := len(columns)
 	var valuePointers = make([]interface{}, count)
 	var rowValues = make([]interface{}, count)
 
-	for i:= range rowValues {
+	for i := range rowValues {
 		valuePointers[i] = &rowValues[i]
 	}
 
 	err := scanner.Scan(valuePointers...)
 	if err != nil {
-		return  nil, nil, fmt.Errorf("Failed to scan row due to %v", err)
+		return nil, nil, fmt.Errorf("Failed to scan row due to %v", err)
 	}
 
-	for i:= range rowValues {
+	for i := range rowValues {
 		var value interface{}
 		rawValue := rowValues[i]
 		b, ok := rawValue.([]byte)
-		if (ok) {
+		if ok {
 			value = string(b)
 		} else {
 			value = rawValue

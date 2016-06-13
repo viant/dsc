@@ -19,19 +19,17 @@
 package dsc
 
 import (
-	"reflect"
 	"fmt"
-	"github.com/viant/toolbox"
+	"reflect"
 	"sync"
+
+	"github.com/viant/toolbox"
 )
-
-
 
 type commonTableDescriptorRegistry struct {
 	sync.RWMutex
 	registry map[string]*TableDescriptor
 }
-
 
 func (r *commonTableDescriptorRegistry) Has(table string) bool {
 	r.RLock()
@@ -43,7 +41,7 @@ func (r *commonTableDescriptorRegistry) Has(table string) bool {
 func (r *commonTableDescriptorRegistry) Get(table string) *TableDescriptor {
 	r.RLock()
 	defer r.RUnlock()
-	if descriptor, found := r.registry[table];found {
+	if descriptor, found := r.registry[table]; found {
 		return descriptor
 	}
 	panic("Failed to lookup table descriptor for " + table)
@@ -55,37 +53,29 @@ func (r *commonTableDescriptorRegistry) Register(descriptor *TableDescriptor) {
 	}
 	r.RLock()
 	defer r.RUnlock()
-	r.registry[descriptor.Table]	= descriptor
+	r.registry[descriptor.Table] = descriptor
 }
 
-
-func (r *commonTableDescriptorRegistry)  Tables() []string {
+func (r *commonTableDescriptorRegistry) Tables() []string {
 	r.RLock()
 	defer r.RUnlock()
-	var result =make([]string, 0)
-	for key:=range r.registry {
+	var result = make([]string, 0)
+	for key := range r.registry {
 		result = append(result, key)
 	}
 	return result
 }
 
-
-
-
 //NewTableDescriptorRegistry returns a new NewTableDescriptorRegistry
 func NewTableDescriptorRegistry() TableDescriptorRegistry {
-	var result TableDescriptorRegistry = &commonTableDescriptorRegistry{registry:make(map[string]*TableDescriptor)}
+	var result TableDescriptorRegistry = &commonTableDescriptorRegistry{registry: make(map[string]*TableDescriptor)}
 	return result
 }
-
 
 //HasSchema check if table desciptor has defined schema.
 func (d *TableDescriptor) HasSchema() bool {
 	return len(d.SchemaURL) > 0 || d.Schema != nil
 }
-
-
-
 
 //NewTableDescriptor creates a new table descriptor for passed in instance, it can use the following tags:"column", "dateLayout","dateFormat", "autoincrement", "primaryKey", "sequence", "transient"
 func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
@@ -96,9 +86,9 @@ func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
 	columnToFieldMap := toolbox.NewFieldSettingByKey(targetType, "column")
 	for key := range columnToFieldMap {
 		mapping, _ := columnToFieldMap[key]
-		column, ok := mapping["column"];
-		if ! ok {
-			column =  mapping["fieldName"];
+		column, ok := mapping["column"]
+		if !ok {
+			column = mapping["fieldName"]
 		}
 		columns = append(columns, column)
 		if _, ok := mapping["autoincrement"]; ok {
@@ -115,14 +105,13 @@ func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
 			continue
 		}
 	}
-	if (len(pkColumns) == 0) {
+	if len(pkColumns) == 0 {
 		panic(fmt.Sprintf("No primary key defined on table: %v, type: %v", table, targetType))
 	}
 	return &TableDescriptor{
-		Table:table,
-		Autoincrement:autoincrement,
-		Columns: columns,
-		PkColumns:pkColumns,
+		Table:         table,
+		Autoincrement: autoincrement,
+		Columns:       columns,
+		PkColumns:     pkColumns,
 	}
 }
-

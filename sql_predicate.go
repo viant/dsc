@@ -19,11 +19,12 @@
 package dsc
 
 import (
+	"errors"
 	"fmt"
-	"github.com/viant/toolbox"
 	"reflect"
 	"strings"
-	"errors"
+
+	"github.com/viant/toolbox"
 )
 
 var trueProvider = func(input interface{}) bool {
@@ -48,7 +49,7 @@ func (p *betweenPredicate) String() string {
 func NewBetweenPredicate(from, to interface{}) toolbox.Predicate {
 	var result toolbox.Predicate = &betweenPredicate{
 		from: toolbox.AsFloat(from),
-		to:toolbox.AsFloat(to),
+		to:   toolbox.AsFloat(to),
 	}
 	return result
 }
@@ -62,23 +63,23 @@ func (p *inPredicate) Apply(value interface{}) bool {
 }
 
 //NewInPredicate creates a new sql IN predicate
-func NewInPredicate(values ... interface{}) toolbox.Predicate {
+func NewInPredicate(values ...interface{}) toolbox.Predicate {
 	converted, kind := toolbox.DiscoverCollectionValuesAndKind(values)
 	switch kind {
 	case reflect.Int:
-		predicate := inIntPredicate{values:make(map[int]bool)}
+		predicate := inIntPredicate{values: make(map[int]bool)}
 		toolbox.SliceToMap(converted, predicate.values, func(item interface{}) int {
 			return toolbox.AsInt(item)
 		}, trueProvider)
 		return &predicate
 	case reflect.Float64:
-		predicate := inFloatPredicate{values:make(map[float64]bool)}
+		predicate := inFloatPredicate{values: make(map[float64]bool)}
 		toolbox.SliceToMap(converted, predicate.values, func(item interface{}) float64 {
 			return toolbox.AsFloat(item)
 		}, trueProvider)
 		return &predicate
 	default:
-		predicate := inStringPredicate{values:make(map[string]bool)}
+		predicate := inStringPredicate{values: make(map[string]bool)}
 		toolbox.SliceToMap(converted, predicate.values, func(item interface{}) string {
 			return toolbox.AsString(item)
 		}, trueProvider)
@@ -145,7 +146,6 @@ type stringComparablePredicate struct {
 func (p *stringComparablePredicate) Apply(value interface{}) bool {
 	leftOperand := toolbox.AsString(value)
 
-
 	switch p.operator {
 	case "=":
 		return leftOperand == p.rightOperand
@@ -189,7 +189,7 @@ func (p *likePredicate) Apply(value interface{}) bool {
 
 //NewLikePredicate create a new like predicate
 func NewLikePredicate(matching string) toolbox.Predicate {
-	return &likePredicate{matchingFragments:strings.Split(strings.ToLower(matching), "%")}
+	return &likePredicate{matchingFragments: strings.Split(strings.ToLower(matching), "%")}
 }
 
 func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interface{}, error) {
@@ -197,13 +197,12 @@ func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interfac
 		return operand, nil
 	}
 	var values = make([]interface{}, 1)
-	if ! parameters.HasNext() {
+	if !parameters.HasNext() {
 		return "", errors.New("Unable to expand ? - not more parameters")
 	}
 	parameters.Next(&values[0])
 	return values[0], nil
 }
-
 
 func getOperandValues(operands []interface{}, parameters toolbox.Iterator) ([]interface{}, error) {
 	var result = make([]interface{}, 0)
@@ -216,7 +215,6 @@ func getOperandValues(operands []interface{}, parameters toolbox.Iterator) ([]in
 	}
 	return result, nil
 }
-
 
 //NewSQLCriterionPredicate create a new predicate for passed in SQLCriterion
 func NewSQLCriterionPredicate(criterion SQLCriterion, parameters toolbox.Iterator) (toolbox.Predicate, error) {
@@ -275,13 +273,13 @@ func NewBooleanPredicate(leftOperand bool, operator string) toolbox.Predicate {
 }
 
 type sqlCriteriaPredicate struct {
-	criteria      [] SQLCriterion
-	predicates    []toolbox.Predicate
+	criteria   []SQLCriterion
+	predicates []toolbox.Predicate
 }
 
 func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 	var sourceMap, ok = source.(map[string]interface{})
-	if ! ok {
+	if !ok {
 		return false
 	}
 	result := true
@@ -293,15 +291,15 @@ func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 		predicate := p.predicates[i]
 		result = predicate.Apply(value)
 		if criterion.Inverse {
-			result = ! result
+			result = !result
 		}
 		if logicalPredicate != nil {
 			result = logicalPredicate.Apply(result)
 		}
 		if criterion.LogicalOperator != "" {
-			if strings.ToLower(criterion.LogicalOperator) == "and" && ! result {
+			if strings.ToLower(criterion.LogicalOperator) == "and" && !result {
 				//shortcut
-				break;
+				break
 			}
 			logicalPredicate = NewBooleanPredicate(result, criterion.LogicalOperator)
 		}
@@ -310,7 +308,7 @@ func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 }
 
 //NewSQLCriteriaPredicate create a new sql criteria predicate, it takes binding paramters iterator, and actual criteria.
-func NewSQLCriteriaPredicate(parameters   toolbox.Iterator, criteria ... SQLCriterion) (toolbox.Predicate, error) {
+func NewSQLCriteriaPredicate(parameters toolbox.Iterator, criteria ...SQLCriterion) (toolbox.Predicate, error) {
 	var predicates = make([]toolbox.Predicate, 0)
 	for i := 0; i < len(criteria); i++ {
 		criterion := criteria[i]
@@ -320,5 +318,5 @@ func NewSQLCriteriaPredicate(parameters   toolbox.Iterator, criteria ... SQLCrit
 		}
 		predicates = append(predicates, predicate)
 	}
-	return &sqlCriteriaPredicate{criteria:criteria, predicates:predicates}, nil
+	return &sqlCriteriaPredicate{criteria: criteria, predicates: predicates}, nil
 }

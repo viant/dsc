@@ -42,7 +42,6 @@ The following tags can be used
 
 
 
-
 Usage:
 
 	type Interest struct {
@@ -67,8 +66,9 @@ Usage:
         	panic(err.Error())
    	}
 
- */
+*/
 package dsc
+
 import "database/sql"
 
 //Scanner represents a datastrore data scanner. This abstraction provides ability to converting and assigning datastore record of data to provided destination
@@ -81,14 +81,11 @@ type Scanner interface {
 	Scan(dest ...interface{}) error
 }
 
-
-
 //RecordMapper represents a datastore record mapper, it is responsible for mapping data record into application abstraction.
 type RecordMapper interface {
 
 	//Maps data record by passing to the scanner references to the application abstraction
 	Map(scanner Scanner) (interface{}, error)
-
 }
 
 //ParametrizedSQL represents a parmetrized SQL with its binding values, in order of occurance.
@@ -97,25 +94,20 @@ type ParametrizedSQL struct {
 	Values []interface{} //binding parameter values
 }
 
-
 //DmlProvider represnet dml generator, which is responsible for providing parametrized sql, it takes operation type:
 //SqlTypeInsert = 0
 //SqlTypeUpdate = 1
 //SqlTypeDelete = 2
 // and instance to the application abstraction
 type DmlProvider interface {
-
 	Get(operationType int, instance interface{}) *ParametrizedSQL
 
 	KeySetter
 	KeyGetter
 }
 
-
 //Manager represents  datastore manager.
 type Manager interface {
-
-
 	Config() *Config
 
 	//ConnectionProvider returns connection provider
@@ -123,7 +115,7 @@ type Manager interface {
 
 	//Execute executes provided sql, with the arguments, '?' is used as placeholder for and arguments
 	Execute(sql string, parameters ...interface{}) (sql.Result, error)
-	
+
 	//ExecuteAll executes all provided sql
 	ExecuteAll(sqls []string) ([]sql.Result, error)
 
@@ -133,29 +125,26 @@ type Manager interface {
 	//ExecuteAllOnConnection executes all sql on passed in connection, this allowes to maintain transaction if supported
 	ExecuteAllOnConnection(connection Connection, sqls []string) ([]sql.Result, error)
 
-	
 	//ReadSingle fetches a single record of data, it takes pointer to the result, sql query, binding parameters, record to application instance mapper
 	ReadSingle(resultPointer interface{}, query string, parameters []interface{}, mapper RecordMapper) (success bool, err error)
 
 	//ReadSingleOnConnection fetches a single record of data on connection, it takes connection, pointer to the result, sql query, binding parameters, record to application instance mapper
 	ReadSingleOnConnection(connection Connection, resultPointer interface{}, query string, parameters []interface{}, mapper RecordMapper) (success bool, err error)
 
-
 	//ReadAll reads all records, it takes pointer to the result slice , sql query, binding parameters, record to application instance mapper
-	ReadAll(resultSlicePointer interface{}, query string, parameters []interface{}, mapper RecordMapper) (error)
+	ReadAll(resultSlicePointer interface{}, query string, parameters []interface{}, mapper RecordMapper) error
 
 	//ReadAllOnConnection reads all records, it takes connection, pointer to the result slice , sql query, binding parameters, record to application instance mapper
-	ReadAllOnConnection(connection Connection, resultSlicePointer interface{}, query string, parameters []interface{}, mapper RecordMapper) (error)
+	ReadAllOnConnection(connection Connection, resultSlicePointer interface{}, query string, parameters []interface{}, mapper RecordMapper) error
 
 	//ReadAllWithHandler reads data for passed in query and parameters, for each row reading handler will be called, to continue reading next row it needs to return true
-	ReadAllWithHandler(query string, parameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) (error)
+	ReadAllWithHandler(query string, parameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) error
 
 	//ReadAllOnWithHandlerOnConnection reads data for passed in query and parameters, on connection,  for each row reading handler will be called, to continue reading next row, it needs to return true
-	ReadAllOnWithHandlerOnConnection(connection Connection, query string, parameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) (error)
+	ReadAllOnWithHandlerOnConnection(connection Connection, query string, parameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) error
 
 	//ReadAllOnWithHandlerOnConnection persists all passed in data to the table, it uses dml provider to generate DML for each row.
 	PersistAll(slicePointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error)
-
 
 	//PersistAllOnConnection persists all passed in data on connection to the table, it uses dml provider to generate DML for each row.
 	PersistAllOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error)
@@ -167,7 +156,7 @@ type Manager interface {
 	PersistSingleOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error)
 
 	//connection persists all all row of data to passed in table, it uses key setter to optionally set back autoincrement value, and func to generate parametrized sql for the row.
-	PersistData(connection Connection, data [] interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error)
+	PersistData(connection Connection, data []interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error)
 
 	//DeleteAll deletes all record for passed in slice pointer from table, it uses key provider to take id/key for the record.
 	DeleteAll(slicePointer interface{}, table string, keyProvider KeyGetter) (deleted int, err error)
@@ -182,32 +171,29 @@ type Manager interface {
 	DeleteSingleOnConnection(connection Connection, resultPointer interface{}, table string, keyProvider KeyGetter) (success bool, err error)
 
 	//ClassifyDataAsInsertableOrUpdatable classifies records are inserable and what are updatable.
-	ClassifyDataAsInsertableOrUpdatable(connection Connection, slicePointer interface{}, table string, provider DmlProvider) (insertables, updatables[]interface{}, err error)
+	ClassifyDataAsInsertableOrUpdatable(connection Connection, slicePointer interface{}, table string, provider DmlProvider) (insertables, updatables []interface{}, err error)
 
 	//TableDescriptorRegistry returns Table Descriptor Registry
 	TableDescriptorRegistry() TableDescriptorRegistry
 }
 
-
-
 //DatastoreDialect represents datastore dialects.
 type DatastoreDialect interface {
-
-	GetDatastores(manager Manager) ([] string, error)
+	GetDatastores(manager Manager) ([]string, error)
 
 	GetTables(manager Manager, datastore string) ([]string, error)
 
-	DropTable(manager Manager, datastore string, table string) (error)
+	DropTable(manager Manager, datastore string, table string) error
 
-	CreateTable(manager Manager, datastore string, table string, options string) (error)
+	CreateTable(manager Manager, datastore string, table string, options string) error
 
 	CanCreateDatastore(manager Manager) bool
 
-	CreateDatastore(manager Manager, datastore string) (error)
+	CreateDatastore(manager Manager, datastore string) error
 
 	CanDropDatastore(manager Manager) bool
 
-	DropDatastore(manager Manager, datastore string) (error)
+	DropDatastore(manager Manager, datastore string) error
 
 	GetCurrentDatastore(manager Manager) (string, error)
 
@@ -215,43 +201,35 @@ type DatastoreDialect interface {
 
 	//Flag if data store can persist batch
 	CanPersistBatch() bool
-
 }
-
 
 //TransactionManager represents a transaction manager.
 type TransactionManager interface {
+	Begin() error
 
-	Begin() (error)
+	Commit() error
 
-	Commit() (error)
-
-	Rollback() (error)
+	Rollback() error
 }
 
 //Connection  represents a datastore  connection
 type Connection interface {
-
 	Config() *Config
 
 	ConnectionPool() chan Connection
 
 	//Close closes connection or it returns it back to the pool
-	Close() (error)
+	Close() error
 
-	CloseNow() (error) //closes connecition, it does not return it back to the pool
+	CloseNow() error //closes connecition, it does not return it back to the pool
 
 	Unwrap(target interface{}) interface{}
 
 	TransactionManager
 }
 
-
-
-
 //ConnectionProvider represents a datastore connection provider.
 type ConnectionProvider interface {
-
 	Get() (Connection, error)
 
 	Config() *Config
@@ -262,8 +240,7 @@ type ConnectionProvider interface {
 
 	NewConnection() (Connection, error)
 
-	Close() (error)
-
+	Close() error
 }
 
 //ManagerFactory represents a manager factory.
@@ -274,13 +251,10 @@ type ManagerFactory interface {
 
 	//Creates manager from url, can url needs to point to Config JSON.
 	CreateFromURL(url string) (Manager, error)
-
 }
-
 
 //ManagerRegistry represents  a manager registry.
 type ManagerRegistry interface {
-
 	Get(name string) Manager
 
 	Register(name string, manager Manager)
@@ -289,18 +263,15 @@ type ManagerRegistry interface {
 //KeySetter represents id/key mutator.
 type KeySetter interface {
 
-	
 	//SetKey sets autoincrement/sql value to the application domain instance.
 	SetKey(instance interface{}, seq int64)
-
 }
 
 //KeyGetter represents id/key accessor.
 type KeyGetter interface {
 
 	//Key returns key/id for the the application domain instance.
-	Key(instance interface{}) [] interface{}
-
+	Key(instance interface{}) []interface{}
 }
 
 //TableDescriptor represents a table details.

@@ -19,17 +19,16 @@
 package dsc
 
 import (
-	"strings"
 	"fmt"
+	"strings"
+
 	"github.com/viant/toolbox"
 )
-
 
 var querySQLTemplate = "SELECT %v FROM %v WHERE %v"
 var insertSQLTemplate = "INSERT INTO %v(%v) VALUES(%v)"
 var updateSQLTemplate = "UPDATE %v SET %v WHERE %v"
 var deleteSQLTemplate = "DELETE FROM %v WHERE %v"
-
 
 //DmlBuilder represents a insert,update,delete statement builder.
 type DmlBuilder struct {
@@ -41,7 +40,7 @@ type DmlBuilder struct {
 	DeleteSQL       string
 }
 
-func (b *DmlBuilder) readValues(columns [] string, valueProvider func(column string) interface{}) [] interface{} {
+func (b *DmlBuilder) readValues(columns []string, valueProvider func(column string) interface{}) []interface{} {
 	var result = make([]interface{}, len(columns))
 	for i, column := range columns {
 		result[i] = valueProvider(column)
@@ -49,7 +48,7 @@ func (b *DmlBuilder) readValues(columns [] string, valueProvider func(column str
 	return result
 }
 
-func (b *DmlBuilder) readInsertValues(valueProvider func(column string) interface{}) [] interface{} {
+func (b *DmlBuilder) readInsertValues(valueProvider func(column string) interface{}) []interface{} {
 	var columns []string
 	if b.TableDescriptor.Autoincrement {
 		columns = *b.NonPkColumns
@@ -64,18 +63,18 @@ func (b *DmlBuilder) GetParametrizedSQL(sqlType int, valueProvider func(column s
 	switch sqlType {
 	case SQLTypeInsert:
 		return &ParametrizedSQL{
-			SQL:b.InsertSQL,
-			Values:b.readInsertValues(valueProvider),
+			SQL:    b.InsertSQL,
+			Values: b.readInsertValues(valueProvider),
 		}
 
 	case SQLTypeUpdate:
 		return &ParametrizedSQL{
-			SQL: b.UpdateSQL,
+			SQL:    b.UpdateSQL,
 			Values: b.readValues(*b.Columns, valueProvider),
 		}
 	case SQLTypeDelete:
 		return &ParametrizedSQL{
-			SQL: b.DeleteSQL,
+			SQL:    b.DeleteSQL,
 			Values: b.readValues(b.TableDescriptor.PkColumns, valueProvider),
 		}
 	}
@@ -85,7 +84,7 @@ func (b *DmlBuilder) GetParametrizedSQL(sqlType int, valueProvider func(column s
 func buildAssignValueSQL(columns []string, separator string) string {
 	result := ""
 	for _, column := range columns {
-		if (len(result) > 0) {
+		if len(result) > 0 {
 			result = result + separator
 		}
 		result = result + " " + column + " = ?"
@@ -94,14 +93,14 @@ func buildAssignValueSQL(columns []string, separator string) string {
 }
 
 func buildInsertSQL(descriptor *TableDescriptor, columns []string, nonPkColumns []string) string {
-	var insertColumns [] string
-	if (descriptor.Autoincrement) {
+	var insertColumns []string
+	if descriptor.Autoincrement {
 		insertColumns = nonPkColumns
 	} else {
 		insertColumns = columns
 	}
 	insertValues := strings.Repeat("?,", len(insertColumns))
-	insertValues = insertValues[0:len(insertValues) - 1] //removes last coma
+	insertValues = insertValues[0 : len(insertValues)-1] //removes last coma
 	return fmt.Sprintf(insertSQLTemplate, descriptor.Table, strings.Join(insertColumns, ","), insertValues)
 }
 
@@ -120,7 +119,7 @@ func NewDmlBuilder(descriptor *TableDescriptor) *DmlBuilder {
 	toolbox.SliceToMap(descriptor.PkColumns, pkMap, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
 	var nonPkColumns = make([]string, 0)
 	for _, column := range descriptor.Columns {
-		if _, ok := pkMap[column]; ! ok {
+		if _, ok := pkMap[column]; !ok {
 			nonPkColumns = append(nonPkColumns, column)
 		}
 	}
@@ -129,11 +128,11 @@ func NewDmlBuilder(descriptor *TableDescriptor) *DmlBuilder {
 	columns = append(columns, nonPkColumns...)
 	columns = append(columns, descriptor.PkColumns...)
 	return &DmlBuilder{
-		TableDescriptor:descriptor,
-		NonPkColumns: &nonPkColumns,
-		Columns: &columns,
-		InsertSQL: buildInsertSQL(descriptor, columns, nonPkColumns),
-		UpdateSQL: buildUpdateSQL(descriptor, nonPkColumns),
-		DeleteSQL: buildDeleteSQL(descriptor),
+		TableDescriptor: descriptor,
+		NonPkColumns:    &nonPkColumns,
+		Columns:         &columns,
+		InsertSQL:       buildInsertSQL(descriptor, columns, nonPkColumns),
+		UpdateSQL:       buildUpdateSQL(descriptor, nonPkColumns),
+		DeleteSQL:       buildDeleteSQL(descriptor),
 	}
 }

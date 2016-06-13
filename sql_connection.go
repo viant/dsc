@@ -30,21 +30,21 @@ type sqlConnection struct {
 	tx *sql.Tx
 }
 
-func (c *sqlConnection) CloseNow() (error) {
+func (c *sqlConnection) CloseNow() error {
 	db, err := asSQLDb(c.db)
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 	return db.Close()
 }
 
-func (c *sqlConnection) Begin() (error) {
+func (c *sqlConnection) Begin() error {
 	db, err := asSQLDb(c.db)
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 	tx, err := db.Begin()
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 
@@ -61,22 +61,22 @@ func (c *sqlConnection) Unwrap(target interface{}) interface{} {
 	panic(fmt.Sprintf("Unsupported target type %v", target))
 }
 
-func (c *sqlConnection) Commit() (error) {
-	if (c.tx == nil) {
+func (c *sqlConnection) Commit() error {
+	if c.tx == nil {
 		return fmt.Errorf("No active transaction")
 	}
 	err := c.tx.Commit()
 	c.tx = nil
-	return err;
+	return err
 }
 
-func (c *sqlConnection) Rollback() (error) {
-	if (c.tx == nil) {
+func (c *sqlConnection) Rollback() error {
+	if c.tx == nil {
 		return fmt.Errorf("No active transaction")
 	}
 	err := c.tx.Rollback()
 	c.tx = nil
-	return err;
+	return err
 }
 
 type sqlConnectionProvider struct {
@@ -86,16 +86,15 @@ type sqlConnectionProvider struct {
 func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	config := c.Provider.Config()
 	db, err := sql.Open(config.DriverName, config.Descriptor)
-	if (err != nil) {
+	if err != nil {
 		return nil, fmt.Errorf("Failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
 	}
-	var sqlConnection = &sqlConnection{db:db}
+	var sqlConnection = &sqlConnection{db: db}
 	var connection Connection = sqlConnection
 	var super = NewAbstractConnection(config, c.Provider.ConnectionPool(), connection)
 	sqlConnection.AbstractConnection = super
 	return connection, nil
 }
-
 
 func (c *sqlConnectionProvider) Get() (Connection, error) {
 	result, err := c.AbstractConnectionProvider.Get()
@@ -103,7 +102,7 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 		return nil, err
 	}
 	db, err := asSQLDb(result.Unwrap(sqlDbPointer))
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	//set to min to not have lingered connection
@@ -113,12 +112,11 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 		return result, nil
 	}
 	result, err = c.NewConnection()
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
-
 
 func newSQLConnectionProvider(config *Config) ConnectionProvider {
 	if config.MaxPoolSize == 0 {
@@ -130,4 +128,3 @@ func newSQLConnectionProvider(config *Config) ConnectionProvider {
 	sqlConnectionProvider.AbstractConnectionProvider = super
 	return connectionProvider
 }
-

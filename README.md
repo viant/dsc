@@ -1,6 +1,7 @@
 # Datastore Connectivity (dsc)
 
-Datastore Connectivity library for Go.
+[![Datastore Connectivity library for Go.](https://goreportcard.com/badge/github.com/viant/dsc)](https://goreportcard.com/report/github.com/viant/dsc)
+
 
 This library is compatible with Go 1.5+
 

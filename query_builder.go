@@ -19,15 +19,13 @@
 package dsc
 
 import (
-	"strings"
 	"fmt"
+	"strings"
+
 	"github.com/viant/toolbox"
 )
 
-
 var queryAllSQLTemplate = "SELECT %v FROM %v"
-
-
 
 //QueryBuilder represetns a query builder. It builds simple select sql.
 type QueryBuilder struct {
@@ -40,8 +38,8 @@ func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
 	table := qb.TableDescriptor.Table
 	return &ParametrizedSQL{
-		SQL:fmt.Sprintf(queryAllSQLTemplate, columnsLiteral, table),
-		Values:make([]interface{}, 0),
+		SQL:    fmt.Sprintf(queryAllSQLTemplate, columnsLiteral, table),
+		Values: make([]interface{}, 0),
 	}
 
 }
@@ -54,15 +52,15 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 	var criteria = ""
 	var multiValuePk = false
 	for _, pkValues := range pkRowValues {
-		if (len(pkValues) > 1) {
+		if len(pkValues) > 1 {
 			multiValuePk = true
 		}
 
 		var rowCriteria = strings.Repeat("?,", len(pkValues))
-		rowCriteria = rowCriteria[0:len(rowCriteria) - 1]
+		rowCriteria = rowCriteria[0 : len(rowCriteria)-1]
 
 		sqlArguments = append(sqlArguments, pkValues...)
-		if (len(criteria) > 0) {
+		if len(criteria) > 0 {
 			criteria = criteria + ","
 		}
 		if multiValuePk {
@@ -78,8 +76,8 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 	}
 	table := qb.TableDescriptor.Table
 	return &ParametrizedSQL{
-		SQL:fmt.Sprintf(querySQLTemplate, columnsLiteral, table, whereCriteria),
-		Values:sqlArguments,
+		SQL:    fmt.Sprintf(querySQLTemplate, columnsLiteral, table, whereCriteria),
+		Values: sqlArguments,
 	}
 
 }
@@ -96,6 +94,6 @@ func (qb *QueryBuilder) BuildBatchedQueryOnPk(columns []string, pkRowValues [][]
 
 //NewQueryBuilder create anew QueryBuilder, it takes table descriptor and optional query hit to include it in the queries
 func NewQueryBuilder(descriptor *TableDescriptor, queryHint string) QueryBuilder {
-	queryBuilder := QueryBuilder{TableDescriptor:descriptor, QueryHint:queryHint}
+	queryBuilder := QueryBuilder{TableDescriptor: descriptor, QueryHint: queryHint}
 	return queryBuilder
 }

@@ -19,20 +19,20 @@
 package dsc
 
 import (
+	"bufio"
+	"bytes"
 	"database/sql"
 	"fmt"
-	"bufio"
-	"strings"
-	"github.com/viant/toolbox"
-	"path"
 	"os"
-	"sync"
-	"bytes"
+	"path"
 	"reflect"
+	"strings"
+	"sync"
+
+	"github.com/viant/toolbox"
 )
 
 var defaultPermission os.FileMode = 0644
-
 
 //FileManager represents a line delimiter, JSON file manager.
 // Current implementation is brute/force full file scan on each operation.
@@ -58,38 +58,35 @@ func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
 
 	switch sourceValue.Kind() {
 
+	case reflect.Slice:
+		if sourceValue.Len() == 0 {
+			return nil
+		}
 
-		case reflect.Slice:
-			if sourceValue.Len() == 0 {
-				return nil
-			}
+	case reflect.Map:
+		if sourceValue.Len() == 0 {
+			return nil
+		}
 
-		case reflect.Map:
-			if sourceValue.Len() == 0 {
-				return nil
-			}
+	case reflect.Struct:
+		var values = make(map[string]interface{})
+		fieldsMappingByField := toolbox.NewFieldSettingByKey(source, "fieldName")
 
-		case reflect.Struct:
-			var values = make(map[string]interface{})
-			fieldsMappingByField := toolbox.NewFieldSettingByKey(source, "fieldName")
-
-			toolbox.ProcessStruct(source,
-				func(filed reflect.StructField, value interface{}) {
-					mapping := fieldsMappingByField[filed.Name]
-					column, found:=mapping["column"]
-					if ! found {
-						column = filed.Name
-					}
-					values[column] = m.convertIfNeeded(value)
-				})
-			return values
+		toolbox.ProcessStruct(source,
+			func(filed reflect.StructField, value interface{}) {
+				mapping := fieldsMappingByField[filed.Name]
+				column, found := mapping["column"]
+				if !found {
+					column = filed.Name
+				}
+				values[column] = m.convertIfNeeded(value)
+			})
+		return values
 	}
 	return source
 }
 
-
-
-func  getTableURL(manager Manager, table string) string {
+func getTableURL(manager Manager, table string) string {
 	tableFile := table + "." + path.Join(manager.Config().Get("ext"))
 	return path.Join(manager.Config().Get("url"), tableFile)
 }
@@ -104,7 +101,6 @@ func (m *FileManager) encodeRecord(record map[string]interface{}) (string, error
 	result = strings.Replace(result, "\n", "", len(result)) + "\n"
 	return result, nil
 }
-
 
 func (m *FileManager) getRecord(statement *DmlStatement, parameters toolbox.Iterator) (map[string]interface{}, error) {
 	record, err := statement.ColumnValueMap(parameters)
@@ -124,7 +120,7 @@ func (m *FileManager) getRecord(statement *DmlStatement, parameters toolbox.Iter
 }
 
 func (m *FileManager) insertRecord(meteFileTable *meteFileTable, tableURL string, statement *DmlStatement, parameters toolbox.Iterator) error {
-	if ! meteFileTable.exists() {
+	if !meteFileTable.exists() {
 		err := meteFileTable.create()
 		if err != nil {
 			return fmt.Errorf("Failed to open table %v due to %v", tableURL, err)
@@ -135,7 +131,7 @@ func (m *FileManager) insertRecord(meteFileTable *meteFileTable, tableURL string
 		return fmt.Errorf("Failed to open table %v due to %v", tableURL, err)
 	}
 	defer file.Close()
-	record, err  := m.getRecord(statement, parameters)
+	record, err := m.getRecord(statement, parameters)
 	if err != nil {
 		return err
 	}
@@ -150,11 +146,9 @@ func (m *FileManager) insertRecord(meteFileTable *meteFileTable, tableURL string
 	return nil
 }
 
-
-
-func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator,  onMatchedHandler func(record map[string]interface{}) (bool, error)) (int, error) {
-	var count = 0;
-	tempFile, err := toolbox.OpenURL(tableURL + ".swp", os.O_CREATE|os.O_WRONLY, defaultPermission)
+func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator, onMatchedHandler func(record map[string]interface{}) (bool, error)) (int, error) {
+	var count = 0
+	tempFile, err := toolbox.OpenURL(tableURL+".swp", os.O_CREATE|os.O_WRONLY, defaultPermission)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to write to table %v due to %v", tempFile.Name(), err)
 	}
@@ -162,18 +156,18 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 	if len(statement.Criteria) > 0 {
 		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
 		if err != nil {
-			return 0, fmt.Errorf("Failed to read data from %v due to %v",statement.SQL, err)
+			return 0, fmt.Errorf("Failed to read data from %v due to %v", statement.SQL, err)
 		}
 	}
 	err = m.fetchRecords(statement.Table, predicate, func(record map[string]interface{}, matched bool) (bool, error) {
 
 		if matched {
 			count++
-			processRecord, err := onMatchedHandler(record);
+			processRecord, err := onMatchedHandler(record)
 			if err != nil {
 				return false, err
 			}
-			if ! processRecord {
+			if !processRecord {
 				return true, nil //continue process next rows
 			}
 		}
@@ -205,8 +199,6 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 	return count, nil
 
 }
-
-
 
 func (m *FileManager) updateRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator) (int, error) {
 	updatedRecord, err := m.getRecord(statement, parameters)
@@ -241,7 +233,7 @@ func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sql
 	defer metaFileTable.Unlock()
 	var count = 0
 	parameters := toolbox.NewSliceIterator(sqlParameters)
-	switch (statement.Type) {
+	switch statement.Type {
 	case "INSERT":
 		err = m.insertRecord(metaFileTable, tableURL, statement, parameters)
 		if err == nil {
@@ -261,7 +253,7 @@ func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sql
 func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
 	tableURL := getTableURL(m, table)
 	metaFileTable := staticMetaFileTableRegistry.get(tableURL, table)
-	if ! metaFileTable.exists() {
+	if !metaFileTable.exists() {
 		return nil
 	}
 	reader, _, err := toolbox.OpenReaderFromURL(tableURL)
@@ -286,16 +278,16 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 		if err != nil {
 			return fmt.Errorf("Failed to fetch records due to %v", err)
 		}
-		if ! toContinue {
+		if !toContinue {
 			return nil
 		}
 	}
 	return nil
 }
 
-func (m *FileManager) readWithPredicate(connection Connection, statement *QueryStatement, sqlParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error), predicate toolbox.Predicate) (error) {
+func (m *FileManager) readWithPredicate(connection Connection, statement *QueryStatement, sqlParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error), predicate toolbox.Predicate) error {
 	err := m.fetchRecords(statement.Table, predicate, func(record map[string]interface{}, matched bool) (bool, error) {
-		if ! matched {
+		if !matched {
 			return true, nil
 		}
 		var columns = make([]string, 0)
@@ -313,7 +305,7 @@ func (m *FileManager) readWithPredicate(connection Connection, statement *QueryS
 		if err != nil {
 			return false, fmt.Errorf("Failed to read data on statement %v, due to\n\t%v", statement.SQL, err)
 		}
-		if ! toContinue {
+		if !toContinue {
 			return false, nil
 		}
 		return true, nil
@@ -336,28 +328,25 @@ func (m *FileManager) ReadAllOnWithHandlerOnConnection(connection Connection, qu
 		parameters := toolbox.NewSliceIterator(sqlParameters)
 		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
 		if err != nil {
-			return fmt.Errorf("Failed to read data from %v due to %v",query, err)
+			return fmt.Errorf("Failed to read data from %v due to %v", query, err)
 		}
 	}
 	return m.readWithPredicate(connection, statement, sqlParameters, readingHandler, predicate)
 }
 
-
 //NewFileManager creates a new file manager.
 func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbox.DecoderFactory) *FileManager {
 	return &FileManager{
-		encoderFactory :encoderFactory,
-		decoderFactory :decoderFactory,
+		encoderFactory: encoderFactory,
+		decoderFactory: decoderFactory,
 	}
 }
-
 
 type meteFileTable struct {
 	sync.RWMutex
 	table string
 	url   string
 }
-
 
 func (m *meteFileTable) exists() bool {
 	filePath, err := toolbox.FileFromURL(m.url)
@@ -371,8 +360,7 @@ func (m *meteFileTable) exists() bool {
 	return true
 }
 
-
-func (m *meteFileTable) create() error{
+func (m *meteFileTable) create() error {
 	filePath, err := toolbox.OpenURL(m.url, os.O_CREATE, defaultPermission)
 	if err != nil {
 		return err
@@ -389,18 +377,18 @@ type metaFileTableRegistry struct {
 func (r *metaFileTableRegistry) get(url string, table string) *meteFileTable {
 	r.Lock()
 	defer r.Unlock()
-	result, found := r.registry[url];
+	result, found := r.registry[url]
 
 	if found {
 		return result
 	}
-	result = &meteFileTable{url:url, table:table}
+	result = &meteFileTable{url: url, table: table}
 	r.registry[url] = result
 	return result
 }
 
 func newMetaFileTableRegistry() *metaFileTableRegistry {
-	return &metaFileTableRegistry{registry:make(map[string]*meteFileTable)}
+	return &metaFileTableRegistry{registry: make(map[string]*meteFileTable)}
 }
 
 var staticMetaFileTableRegistry = newMetaFileTableRegistry()
