@@ -88,7 +88,7 @@ type RecordMapper interface {
 	Map(scanner Scanner) (interface{}, error)
 }
 
-//ParametrizedSQL represents a parmetrized SQL with its binding values, in order of occurance.
+//ParametrizedSQL represents a parmetrized SQL with its binding values, in order of occurrence.
 type ParametrizedSQL struct {
 	SQL    string        //Sql
 	Values []interface{} //binding parameter values

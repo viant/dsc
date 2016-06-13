@@ -307,7 +307,7 @@ func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 	return result
 }
 
-//NewSQLCriteriaPredicate create a new sql criteria predicate, it takes binding paramters iterator, and actual criteria.
+//NewSQLCriteriaPredicate create a new sql criteria predicate, it takes binding parameters iterator, and actual criteria.
 func NewSQLCriteriaPredicate(parameters toolbox.Iterator, criteria ...SQLCriterion) (toolbox.Predicate, error) {
 	var predicates = make([]toolbox.Predicate, 0)
 	for i := 0; i < len(criteria); i++ {
