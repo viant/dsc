@@ -1,7 +1,7 @@
 # Datastore Connectivity (dsc)
 
 [![Datastore Connectivity library for Go.](https://goreportcard.com/badge/github.com/viant/dsc)](https://goreportcard.com/report/github.com/viant/dsc)
-
+[![GoDoc](https://godoc.org/github.com/viant/dsc?status.svg)](https://godoc.org/github.com/viant/dsc)
 
 This library is compatible with Go 1.5+
 
@@ -153,6 +153,11 @@ To run all the test cases with race detection:
 ## Examples
 
 A simple CRUD applications is provided in the [`examples`](examples) directory.
+
+
+## GoCover
+
+[![GoCover](https://gocover.io/github.com/viant/dsc)](https://gocover.io/github.com/viant/dsc)
 
 
 <a name="License"></a>
