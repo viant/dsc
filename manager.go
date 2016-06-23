@@ -233,6 +233,8 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	if err != nil {
 		return 0, 0, err
 	}
+
+
 	var insertableMapping map[int]int
 	if descriptor.Autoincrement { //we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
 		insertableMapping = make(map[int]int)
@@ -269,6 +271,7 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	if updateErr != nil {
 		return 0, 0, updateErr
 	}
+
 
 	return inserted, updated, nil
 }
@@ -318,6 +321,7 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 			reflect.Indirect(structPointerValue).Set(reflect.ValueOf(item))
 			keySetter.SetKey(structPointerValue.Interface(), seq)
 			data[i] = structPointerValue.Elem().Interface()
+
 		}
 	}
 	return processed, nil

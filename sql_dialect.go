@@ -133,13 +133,35 @@ func (d sqlLiteDialect) GetCurrentDatastore(manager Manager) (string, error) {
 
 }
 
+//GetDatastores returns name of datastores, takes  manager as parameter
+func (d sqlLiteDialect) GetDatastores(manager Manager) ([]string, error) {
+	var rows = make([]nameRecord, 0)
+	err := manager.ReadAll(&rows, "SELECT name FROM sqlite_master", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	var result = make([]string, len(rows))
+	for _, row := range rows {
+		result = append(result, row.Name)
+	}
+	return result, nil
+}
+
+
 func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]int64, 0)
-	success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT currval(%v)", name), nil, nil)
+	success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT seq FROM SQLITE_SEQUENCE WHERE name = '%v'", name), nil, nil)
 	if err != nil || !success {
 		return 0, err
 	}
-	return result[0], nil
+
+	return result[0] + 1, nil
+}
+
+
+//CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
+func (d sqlLiteDialect) CreateDatastore(manager Manager, datastore string) error {
+	return nil
 }
 
 
