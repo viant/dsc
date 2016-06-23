@@ -21,12 +21,12 @@
 package examples
 
 import (
-	"net/http"
-	"log"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/viant/toolbox"
 )
-
 
 var version = "/v1/"
 var interestURI = version + "interest/"
@@ -41,37 +41,36 @@ func StartServer(configFile string, port string) {
 
 	interestRouter := toolbox.NewServiceRouter(
 		toolbox.ServiceRouting{
-			HTTPMethod:"GET",
-			URI:interestURI + "{id}",
-			Handler:service.GetByID,
-			Parameters:[]string{"id"},
+			HTTPMethod: "GET",
+			URI:        interestURI + "{id}",
+			Handler:    service.GetByID,
+			Parameters: []string{"id"},
 		},
 		toolbox.ServiceRouting{
-			HTTPMethod:"GET",
-			URI:interestURI + "{ids}",
-			Handler:service.GetByIDs,
-			Parameters:[]string{"ids"},
+			HTTPMethod: "GET",
+			URI:        interestURI + "{ids}",
+			Handler:    service.GetByIDs,
+			Parameters: []string{"ids"},
 		},
 		toolbox.ServiceRouting{
-			HTTPMethod:"POST",
-			URI:interestURI,
-			Handler:service.Persist,
-			Parameters:[]string{"interests"},
+			HTTPMethod: "POST",
+			URI:        interestURI,
+			Handler:    service.Persist,
+			Parameters: []string{"interests"},
 		},
 		toolbox.ServiceRouting{
-			HTTPMethod:"DELETE",
-			URI:interestURI + "{id}",
-			Handler:service.DeleteByID,
-			Parameters:[]string{"id"},
+			HTTPMethod: "DELETE",
+			URI:        interestURI + "{id}",
+			Handler:    service.DeleteByID,
+			Parameters: []string{"id"},
 		},
 	)
-
 
 	http.HandleFunc(interestURI, func(response http.ResponseWriter, request *http.Request) {
 
 		errorHandler := func(message string) {
 			response.WriteHeader(http.StatusInternalServerError)
-			err := interestRouter.WriteResponse(toolbox.NewJSONEncoderFactory(), &Response{Status:"error", Message:message}, request, response)
+			err := interestRouter.WriteResponse(toolbox.NewJSONEncoderFactory(), &Response{Status: "error", Message: message}, request, response)
 			if err != nil {
 				log.Fatal("Failed to write response :%v", err)
 			}
@@ -89,10 +88,5 @@ func StartServer(configFile string, port string) {
 	})
 
 	fmt.Printf("Started dsunit server on port %v\n", port)
-	log.Fatal(http.ListenAndServe(":" + port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
-
-
-
-
-

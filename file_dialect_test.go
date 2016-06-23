@@ -21,9 +21,10 @@ package dsc_test
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestFileDialect(t *testing.T) {
@@ -49,6 +50,5 @@ func TestFileDialect(t *testing.T) {
 
 	_, err = dialect.GetSequence(manager, "abc")
 	assert.NotNil(t, err, "Unsupported")
-
 
 }

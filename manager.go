@@ -62,7 +62,6 @@ func (am *AbstractManager) Execute(sql string, sqlParameters ...interface{}) (re
 	return am.Manager.ExecuteOnConnection(connection, sql, sqlParameters)
 }
 
-
 //ExecuteAll passed in SQLs. It returns sql result, or an error.
 func (am *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 	connection, err := am.Manager.ConnectionProvider().Get()
@@ -160,7 +159,6 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 			return false, fmt.Errorf("Failed to map record sql: %v due to %v", query, err)
 		}
 
-
 		if mapped != nil {
 			if elementType.Kind() == reflect.Slice {
 				slice := reflect.ValueOf(resultPointer).Elem()
@@ -236,7 +234,6 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 		return 0, 0, err
 	}
 
-
 	var insertableMapping map[int]int
 	if descriptor.Autoincrement { //we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
 		insertableMapping = make(map[int]int)
@@ -265,7 +262,6 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 		}
 	}
 
-
 	updated, updateErr := am.Manager.PersistData(connection, updatables, table, provider, func(item interface{}) *ParametrizedSQL {
 		return provider.Get(SQLTypeUpdate, item)
 	})
@@ -273,7 +269,6 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	if updateErr != nil {
 		return 0, 0, updateErr
 	}
-
 
 	return inserted, updated, nil
 }

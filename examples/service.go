@@ -21,26 +21,23 @@
 package examples
 
 import (
-	"github.com/viant/dsc"
 	"fmt"
+
+	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 )
-
-
 
 type interestServiceImpl struct {
 	manager dsc.Manager
 }
-
 
 func setErrorStatus(response *Response, err error) {
 	response.Message = err.Error()
 	response.Status = "error"
 }
 
-
-func (s *interestServiceImpl) GetByID(id  int) *GetByIDResponse {
-	response := &GetByIDResponse{Response:Response{Status:"ok"}}
+func (s *interestServiceImpl) GetByID(id int) *GetByIDResponse {
+	response := &GetByIDResponse{Response: Response{Status: "ok"}}
 	interest := &Interest{}
 	success, err := s.manager.ReadSingle(interest, "SELECT id, name, category, status FROM interests WHERE id = ?", []interface{}{id}, nil)
 	if err != nil {
@@ -54,9 +51,9 @@ func (s *interestServiceImpl) GetByID(id  int) *GetByIDResponse {
 	return response
 }
 
-func (s *interestServiceImpl) GetByIDs(ids  ...int) *GetByIDsResponse {
-	response := &GetByIDsResponse{Response:Response{Status:"ok"}}
-	var result=make([]Interest, 0)
+func (s *interestServiceImpl) GetByIDs(ids ...int) *GetByIDsResponse {
+	response := &GetByIDsResponse{Response: Response{Status: "ok"}}
+	var result = make([]Interest, 0)
 	err := s.manager.ReadAll(&result, fmt.Sprintf("SELECT id, name, category, status FROM interests WHERE id IN(%v)", toolbox.JoinAsString(ids, ",")), nil, nil)
 	if err != nil {
 		setErrorStatus(&response.Response, err)
@@ -67,8 +64,8 @@ func (s *interestServiceImpl) GetByIDs(ids  ...int) *GetByIDsResponse {
 }
 
 func (s *interestServiceImpl) Persist(interests []Interest) *PersistResponse {
-	response :=&PersistResponse{Response: Response{Status:"ok"}}
-	inserted, updated, err := s.manager.PersistAll(&interests, "interests",nil)
+	response := &PersistResponse{Response: Response{Status: "ok"}}
+	inserted, updated, err := s.manager.PersistAll(&interests, "interests", nil)
 	if err != nil {
 		setErrorStatus(&response.Response, err)
 		return response
@@ -79,9 +76,9 @@ func (s *interestServiceImpl) Persist(interests []Interest) *PersistResponse {
 
 }
 
-func (s *interestServiceImpl)  DeleteByID(id int) *Response {
-	response :=&Response{Status:"ok"}
-	_, err := s.manager.DeleteSingle(&Interest{ID:id}, "interests", nil)
+func (s *interestServiceImpl) DeleteByID(id int) *Response {
+	response := &Response{Status: "ok"}
+	_, err := s.manager.DeleteSingle(&Interest{ID: id}, "interests", nil)
 	if err != nil {
 		setErrorStatus(response, err)
 		return response
@@ -95,6 +92,6 @@ func NewInterestService(configURL string) (InterestService, error) {
 	if err != nil {
 		return nil, err
 	}
-	var result InterestService = &interestServiceImpl{manager:manager}
+	var result InterestService = &interestServiceImpl{manager: manager}
 	return result, nil
 }

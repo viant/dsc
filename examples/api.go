@@ -24,22 +24,21 @@ package examples
 type InterestService interface {
 
 	//GetById returns interest by id
-	GetByID(id  int) *GetByIDResponse
+	GetByID(id int) *GetByIDResponse
 
 	//GetByIds returns interests by passed in ids
-	GetByIDs(id  ...int) *GetByIDsResponse
+	GetByIDs(id ...int) *GetByIDsResponse
 
 	//Persist persists passed in interests
 	Persist(interests []Interest) *PersistResponse
 
 	//DeleteById deletes interestes by id.
 	DeleteByID(id int) *Response
-
 }
 
 //Response represents a response.
 type Response struct {
-	Status string
+	Status  string
 	Message string
 }
 
@@ -60,4 +59,3 @@ type PersistResponse struct {
 	Response
 	Result []Interest
 }
-

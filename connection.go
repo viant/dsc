@@ -30,7 +30,6 @@ type AbstractConnection struct {
 	Connection
 	config         *Config
 	connectionPool chan Connection
-
 }
 
 //Config returns a datastore config
@@ -56,7 +55,6 @@ func (ac *AbstractConnection) Close() error {
 	return nil
 }
 
-
 //NewAbstractConnection create a new abstract connection
 func NewAbstractConnection(config *Config, connectionPool chan Connection, connection Connection) AbstractConnection {
 	return AbstractConnection{config: config, connectionPool: connectionPool, Connection: connection}
@@ -67,7 +65,6 @@ type AbstractConnectionProvider struct {
 	ConnectionProvider
 	config         *Config
 	connectionPool chan Connection
-
 }
 
 //Config returns a datastore config,
@@ -102,8 +99,6 @@ func (cp *AbstractConnectionProvider) SpawnConnectionIfNeeded() {
 
 	}
 }
-
-
 
 //Close closes a datastore connection or returns it to the pool (Config.PoolSize and Config.MaxPoolSize).
 func (cp *AbstractConnectionProvider) Close() error {

@@ -109,13 +109,13 @@ func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
 
 		columns = append(columns, column)
 		if _, ok := mapping["primaryKey"]; ok {
-			if ! toolbox.HasSliceAnyElements(pkColumns, column) {
+			if !toolbox.HasSliceAnyElements(pkColumns, column) {
 				pkColumns = append(pkColumns, column)
 			}
 			continue
 		}
 		if key == "id" {
-			if ! toolbox.HasSliceAnyElements(pkColumns, column) {
+			if !toolbox.HasSliceAnyElements(pkColumns, column) {
 				pkColumns = append(pkColumns, column)
 			}
 			continue

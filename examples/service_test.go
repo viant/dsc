@@ -21,13 +21,14 @@
 package examples_test
 
 import (
-	"github.com/viant/dsunit"
 	"testing"
-	_ "github.com/go-sql-driver/mysql"
-	_  "github.com/viant/dsc"
-	"github.com/stretchr/testify/assert"
-	"github.com/viant/dsc/examples"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/stretchr/testify/assert"
+	_ "github.com/viant/dsc"
+	"github.com/viant/dsc/examples"
+	"github.com/viant/dsunit"
 )
 
 func init() {
@@ -36,7 +37,6 @@ func init() {
 	}()
 	time.Sleep(2 * time.Second)
 }
-
 
 func getServices() ([]examples.InterestService, error) {
 	local, err := examples.NewInterestService(dsunit.ExpandTestProtocolIfNeeded("test://test/config/store.json"))
@@ -55,15 +55,13 @@ func TestRead(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 
-
 	dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Read")
-	services, err  := getServices()
+	services, err := getServices()
 	if err != nil {
 		t.Errorf("Failed to get services %v", err)
 	}
 
-
-	for _, service := range  services {
+	for _, service := range services {
 		{
 			response := service.GetByID(1)
 			assert.Equal(t, "ok", response.Status, response.Message)
@@ -85,23 +83,18 @@ func TestRead(t *testing.T) {
 	}
 }
 
-
 func TestPersist(t *testing.T) {
 	if dsunit.SkipTestIfNeeded(t) {
 		return
 	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 
-
-
-
-	services, err  := getServices()
+	services, err := getServices()
 	if err != nil {
 		t.Errorf("Failed to get services %v", err)
 	}
 
-
-	for _, service := range  services {
+	for _, service := range services {
 		{
 			falseValue := false
 			dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
@@ -112,33 +105,31 @@ func TestPersist(t *testing.T) {
 			interest := response.Result
 			interest.Category = "Alphabet"
 
-
 			var interests = make([]examples.Interest, 0)
 			interests = append(interests, *interest)
-			interests = append(interests, examples.Interest{Name:"Klm", Category:"Ubf", Status:&falseValue, GroupName:"AAAA"} )
+			interests = append(interests, examples.Interest{Name: "Klm", Category: "Ubf", Status: &falseValue, GroupName: "AAAA"})
 			persistResponse := service.Persist(interests)
 			assert.NotNil(t, persistResponse)
 			assert.Equal(t, "ok", persistResponse.Status, persistResponse.Message)
 
 			assert.NotNil(t, persistResponse.Result)
 			assert.Equal(t, 2, len(persistResponse.Result))
-			dsunit.ExpectDatasetFor(t, "mytestdb",  dsunit.FullTableDatasetCheckPolicy, "test://test/", "Persist")
+			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test://test/", "Persist")
 		}
 	}
 
 }
-
 
 func TestDelete(t *testing.T) {
 	if dsunit.SkipTestIfNeeded(t) {
 		return
 	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	services, err  := getServices()
+	services, err := getServices()
 	if err != nil {
 		t.Errorf("Failed to get services %v", err)
 	}
-	for _, service := range  services {
+	for _, service := range services {
 		{
 			dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 			dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Delete")
@@ -147,7 +138,7 @@ func TestDelete(t *testing.T) {
 			assert.NotNil(t, deleteResponse)
 			assert.Equal(t, "ok", deleteResponse.Status, deleteResponse.Message)
 
-			dsunit.ExpectDatasetFor(t, "mytestdb",  dsunit.FullTableDatasetCheckPolicy, "test://test/", "Delete")
+			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test://test/", "Delete")
 		}
 	}
 }

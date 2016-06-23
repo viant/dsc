@@ -119,8 +119,6 @@ func (d mySQLDialect) GetSequence(manager Manager, name string) (int64, error) {
 	return result[0], nil
 }
 
-
-
 type sqlLiteDialect struct {
 	sqlDatastoreDialect
 }
@@ -149,7 +147,6 @@ func (d sqlLiteDialect) GetDatastores(manager Manager) ([]string, error) {
 	return result, nil
 }
 
-
 func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]int64, 0)
 	success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT seq FROM SQLITE_SEQUENCE WHERE name = '%v'", name), nil, nil)
@@ -160,14 +157,10 @@ func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error)
 	return result[0] + 1, nil
 }
 
-
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
 func (d sqlLiteDialect) CreateDatastore(manager Manager, datastore string) error {
 	return nil
 }
-
-
-
 
 type pgDialect struct {
 	sqlDatastoreDialect
@@ -191,7 +184,6 @@ func (d pgDialect) GetSequence(manager Manager, name string) (int64, error) {
 	}
 	return result[0], nil
 }
-
 
 type oraDialect struct {
 	sqlDatastoreDialect
