@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Datastore dialect registry
 package dsc
 
 var dialect = NewDefaultDialect()

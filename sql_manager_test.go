@@ -106,7 +106,7 @@ func TestExecuteWithError(t *testing.T) {
 	assert.NotNil(t, err)
 
 	var users = make([]User, 1)
-	manager.ReadAll(&users, "SELECT id, username FROM a  id = ?", []interface{}{1}, nil)
+	err = manager.ReadAll(&users, "SELECT id, username FROM a  id = ?", []interface{}{1}, nil)
 	assert.NotNil(t, err)
 
 	users[0] = User{}

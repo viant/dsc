@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Predicate
 package dsc
 
 import (

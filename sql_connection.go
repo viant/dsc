@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - SQL connection
 package dsc
 
 import (

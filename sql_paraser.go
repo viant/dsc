@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - SQL parser
 package dsc
 
 import (

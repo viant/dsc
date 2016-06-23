@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Table descriptor
 package dsc
 
 import (

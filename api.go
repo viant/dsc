@@ -16,9 +16,11 @@
  *  the License.
  *
  */
+
+// Package dsc - datastore connectivity library
 /*
 
-This library provies capabilities to connection to SQL and noSQL datastores, providing sql layer on top of it.
+This library provides capabilities to connection to SQL and noSQL datastores, providing sql layer on top of it.
 
 For native database/sql it is just a ("database/sql") proxy, and for noSQL it supports simple SQL that is being translated to
 put/get,scan,batch native NoSQL operations.

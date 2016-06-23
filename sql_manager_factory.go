@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - SQL manager factory
 package dsc
 
 import "github.com/viant/toolbox"

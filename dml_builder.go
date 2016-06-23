@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Dml builder
 package dsc
 
 import (

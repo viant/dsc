@@ -17,6 +17,7 @@
  *
  */
 
+// Package dsc - Datastore config
 package dsc
 
 import (

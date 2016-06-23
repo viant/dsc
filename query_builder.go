@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Query builder
 package dsc
 
 import (

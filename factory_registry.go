@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Datastore manager factory registry
 package dsc
 
 import "fmt"

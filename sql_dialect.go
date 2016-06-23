@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - SQL dialects
 package dsc
 
 import "fmt"

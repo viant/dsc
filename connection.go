@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Datastore connection
 package dsc
 
 import (

@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - File Manager
 package dsc
 
 import (

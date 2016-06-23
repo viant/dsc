@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Datastore Manager Registry
 package dsc
 
 import (

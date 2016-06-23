@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Abstract Datastore Manager
 package dsc
 
 import (

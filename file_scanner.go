@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - File Record Scanner
 package dsc
 
 import "github.com/viant/toolbox"

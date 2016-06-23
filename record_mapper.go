@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsc - Tag based record mapper
 package dsc
 
 import (
