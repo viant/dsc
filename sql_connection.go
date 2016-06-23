@@ -84,14 +84,14 @@ type sqlConnectionProvider struct {
 }
 
 func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
-	config := c.Provider.Config()
+	config := c.ConnectionProvider.Config()
 	db, err := sql.Open(config.DriverName, config.Descriptor)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
 	}
 	var sqlConnection = &sqlConnection{db: db}
 	var connection Connection = sqlConnection
-	var super = NewAbstractConnection(config, c.Provider.ConnectionPool(), connection)
+	var super = NewAbstractConnection(config, c.ConnectionProvider.ConnectionPool(), connection)
 	sqlConnection.AbstractConnection = super
 	return connection, nil
 }

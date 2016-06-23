@@ -117,6 +117,34 @@ func (d mySQLDialect) GetSequence(manager Manager, name string) (int64, error) {
 	return result[0], nil
 }
 
+
+
+type sqlLiteDialect struct {
+	sqlDatastoreDialect
+}
+
+func (d sqlLiteDialect) GetCurrentDatastore(manager Manager) (string, error) {
+	var result = make([]nameRecord, 0)
+	success, err := manager.ReadSingle(&result, "SELECT current_schema() AS name", nil, nil)
+	if err != nil || !success {
+		return "", err
+	}
+	return result[0].Name, nil
+
+}
+
+func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error) {
+	var result = make([]int64, 0)
+	success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT currval(%v)", name), nil, nil)
+	if err != nil || !success {
+		return 0, err
+	}
+	return result[0], nil
+}
+
+
+
+
 type pgDialect struct {
 	sqlDatastoreDialect
 }
@@ -139,6 +167,7 @@ func (d pgDialect) GetSequence(manager Manager, name string) (int64, error) {
 	}
 	return result[0], nil
 }
+
 
 type oraDialect struct {
 	sqlDatastoreDialect

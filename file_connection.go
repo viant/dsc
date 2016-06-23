@@ -36,7 +36,7 @@ func (cp *fileConnectionProvider) NewConnection() (Connection, error) {
 	ext := config.Get("ext")
 	var fileConnection = &fileConnection{URL: url, ext: ext}
 	var connection = fileConnection
-	var super = NewAbstractConnection(config, cp.Provider.ConnectionPool(), connection)
+	var super = NewAbstractConnection(config, cp.ConnectionProvider.ConnectionPool(), connection)
 	fileConnection.AbstractConnection = super
 	return connection, nil
 }

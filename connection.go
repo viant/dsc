@@ -25,9 +25,10 @@ import (
 
 //AbstractConnection represents an abstract connection
 type AbstractConnection struct {
+	Connection
 	config         *Config
 	connectionPool chan Connection
-	connection     Connection
+
 }
 
 //Config returns a datastore config
@@ -42,53 +43,29 @@ func (ac *AbstractConnection) ConnectionPool() chan Connection {
 
 //Close closes connection if pool if full or send it back to the pool
 func (ac *AbstractConnection) Close() error {
-	channel := ac.connection.ConnectionPool()
+	channel := ac.Connection.ConnectionPool()
 	config := ac.config
-	if len(ac.connection.ConnectionPool()) < config.MaxPoolSize {
-		var connection = ac.connection
+	if len(ac.Connection.ConnectionPool()) < config.MaxPoolSize {
+		var connection = ac.Connection
 		channel <- connection
 	} else {
-		return ac.connection.CloseNow()
+		return ac.Connection.CloseNow()
 	}
 	return nil
 }
 
-//CloseNow abstract method - panic
-func (ac *AbstractConnection) CloseNow() error {
-	panic("CloseNow is abstract method please provide implementation in the sub class")
-}
-
-//Unwrap abstract method - panic
-func (ac *AbstractConnection) Unwrap(target interface{}) interface{} {
-	panic("Unwrap is abstract method please provide implementation in the sub class")
-}
-
-//Begin abstract method - panic
-func (ac *AbstractConnection) Begin() error {
-	panic("Begin is abstract method please provide implementation in the sub class")
-}
-
-//Commit abstract method - panic
-func (ac *AbstractConnection) Commit() error {
-	panic("Commit is abstract method please provide implementation in the sub class")
-
-}
-
-//Rollback abstract method - panic
-func (ac *AbstractConnection) Rollback() error {
-	panic("Rollback is abstract method please provide implementation in the sub class")
-}
 
 //NewAbstractConnection create a new abstract connection
-func NewAbstractConnection(config *Config, connectionPool chan Connection, self Connection) AbstractConnection {
-	return AbstractConnection{config: config, connectionPool: connectionPool, connection: self}
+func NewAbstractConnection(config *Config, connectionPool chan Connection, connection Connection) AbstractConnection {
+	return AbstractConnection{config: config, connectionPool: connectionPool, Connection: connection}
 }
 
 //AbstractConnectionProvider represents an abstract/superclass ConnectionProvider
 type AbstractConnectionProvider struct {
+	ConnectionProvider
 	config         *Config
 	connectionPool chan Connection
-	Provider       ConnectionProvider
+
 }
 
 //Config returns a datastore config,
@@ -103,13 +80,13 @@ func (cp *AbstractConnectionProvider) ConnectionPool() chan Connection {
 
 //SpawnConnectionIfNeeded creates a new connection if connection pool has not reached size controlled by Config.PoolSize
 func (cp *AbstractConnectionProvider) SpawnConnectionIfNeeded() {
-	config := cp.Provider.Config()
+	config := cp.ConnectionProvider.Config()
 	if config.PoolSize == 0 {
 		config.PoolSize = 1
 	}
-	connectionPool := cp.Provider.ConnectionPool()
+	connectionPool := cp.ConnectionProvider.ConnectionPool()
 	for i := len(connectionPool); i < config.PoolSize; i++ {
-		connection, err := cp.Provider.NewConnection()
+		connection, err := cp.ConnectionProvider.NewConnection()
 		if err != nil {
 			log.Printf("Failed to create connection %v\n", err)
 			break
@@ -124,10 +101,7 @@ func (cp *AbstractConnectionProvider) SpawnConnectionIfNeeded() {
 	}
 }
 
-//NewConnection creates a new connection or error.
-func (cp *AbstractConnectionProvider) NewConnection() (Connection, error) {
-	panic("This is abstract method please provide implementation in the sub class")
-}
+
 
 //Close closes a datastore connection or returns it to the pool (Config.PoolSize and Config.MaxPoolSize).
 func (cp *AbstractConnectionProvider) Close() error {
@@ -147,8 +121,8 @@ func (cp *AbstractConnectionProvider) Close() error {
 
 //Get returns a new datastore connection or error.
 func (cp *AbstractConnectionProvider) Get() (Connection, error) {
-	cp.Provider.SpawnConnectionIfNeeded()
-	connectionPool := cp.Provider.ConnectionPool()
+	cp.ConnectionProvider.SpawnConnectionIfNeeded()
+	connectionPool := cp.ConnectionProvider.ConnectionPool()
 
 	var result Connection
 	select {
@@ -160,7 +134,7 @@ func (cp *AbstractConnectionProvider) Get() (Connection, error) {
 	}
 	if result == nil {
 		var err error
-		result, err = cp.Provider.NewConnection()
+		result, err = cp.ConnectionProvider.NewConnection()
 		if err != nil {
 			return nil, err
 		}
@@ -169,6 +143,6 @@ func (cp *AbstractConnectionProvider) Get() (Connection, error) {
 }
 
 //NewAbstractConnectionProvider create a new AbstractConnectionProvider
-func NewAbstractConnectionProvider(config *Config, connectionPool chan Connection, self ConnectionProvider) AbstractConnectionProvider {
-	return AbstractConnectionProvider{config: config, connectionPool: connectionPool, Provider: self}
+func NewAbstractConnectionProvider(config *Config, connectionPool chan Connection, connectionProvider ConnectionProvider) AbstractConnectionProvider {
+	return AbstractConnectionProvider{config: config, connectionPool: connectionPool, ConnectionProvider: connectionProvider}
 }

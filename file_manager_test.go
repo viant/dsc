@@ -27,7 +27,21 @@ type Traveler struct {
 	}
 }
 
+
 func TestInsert(t *testing.T) {
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:" + dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	manager, err := dsc.NewManagerFactory().Create(config)
+	assert.Nil(t, err)
+	for i := 0; i< 10; i++ {
+		connection, err := manager.ConnectionProvider().Get()
+		assert.Nil(t, err)
+		defer connection.Close()
+		assert.NotNil(t, connection)
+	}
+
+}
+
+func TestPersist(t *testing.T) {
 	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
@@ -121,6 +135,29 @@ func TestRead(t *testing.T) {
 
 	{
 		traveler := Traveler{}
+		success, err := manager.ReadSingle(&traveler, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1 WHERE id IN(?)", []interface{}{1}, nil)
+		assert.Nil(t, err)
+		assert.True(t, success)
+	}
+
+	{
+		travelers := make([][]interface{}, 0)
+		err := manager.ReadAll(&travelers, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1 WHERE id IN(?)", []interface{}{1}, nil)
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(travelers))
+		assert.EqualValues(t, 1, travelers[0][0])
+		assert.EqualValues(t, "Rob", travelers[0][1])
+	}
+
+	{
+		traveler := make([]interface{}, 0)
+		success, err := manager.ReadSingle(&traveler, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1 WHERE id IN(?)", []interface{}{1}, nil)
+		assert.Nil(t, err)
+		assert.True(t, success)
+	}
+
+	{
+		traveler := make([]interface{}, 0)
 		success, err := manager.ReadSingle(&traveler, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1 WHERE id IN(?)", []interface{}{1}, nil)
 		assert.Nil(t, err)
 		assert.True(t, success)

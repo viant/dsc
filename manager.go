@@ -33,7 +33,7 @@ var batchSize = 200
 //AbstractManager represent general abstraction for datastore implementation.
 // Note that ExecuteOnConnection,  ReadAllOnWithHandlerOnConnection may need to be implemented for particular datastore.
 type AbstractManager struct {
-	Manager                 Manager
+	Manager
 	config                  *Config
 	connectionProvider      ConnectionProvider
 	tableDescriptorRegistry TableDescriptorRegistry
@@ -60,10 +60,6 @@ func (am *AbstractManager) Execute(sql string, sqlParameters ...interface{}) (re
 	return am.Manager.ExecuteOnConnection(connection, sql, sqlParameters)
 }
 
-//ExecuteOnConnection abstract method.
-func (am *AbstractManager) ExecuteOnConnection(connection Connection, sql string, args []interface{}) (sql.Result, error) {
-	panic("This is abstract method please provide implementation in the sub class")
-}
 
 //ExecuteAll passed in SQLs. It returns sql result, or an error.
 func (am *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
@@ -98,11 +94,6 @@ func (am *AbstractManager) ReadAllWithHandler(query string, queryParameters []in
 	return am.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, readingHandler)
 }
 
-//ReadAllOnWithHandlerOnConnection abstract metthod - implement in the specialized struct
-func (am *AbstractManager) ReadAllOnWithHandlerOnConnection(connection Connection, query string, queryParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) error {
-	panic("This is abstract method please provide implementation in the sub class")
-}
-
 //ReadAll executes query with parameters and fetches all table rows. The row is mapped to result slice pointer with record mapper.
 func (am AbstractManager) ReadAll(resultSlicePointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) error {
 	connection, err := am.Manager.ConnectionProvider().Get()
@@ -118,7 +109,9 @@ func (am AbstractManager) ReadAll(resultSlicePointer interface{}, query string, 
 func (am *AbstractManager) ReadAllOnConnection(connection Connection, resultSlicePointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) error {
 	toolbox.AssertPointerKind(resultSlicePointer, reflect.Slice, "resultSlicePointer")
 	slice := reflect.ValueOf(resultSlicePointer).Elem()
-	mapper = NewRecordMapperIfNeeded(mapper, reflect.TypeOf(resultSlicePointer).Elem().Elem())
+	if mapper == nil {
+		mapper = NewRecordMapperIfNeeded(mapper, reflect.TypeOf(resultSlicePointer).Elem().Elem())
+	}
 	err := am.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, func(scannalbe Scanner) (toContinue bool, err error) {
 		mapped, providerError := mapper.Map(scannalbe)
 		if providerError != nil {
@@ -152,17 +145,28 @@ func (am *AbstractManager) ReadSingle(resultPointer interface{}, query string, q
 //ReadSingleOnConnection executes query with parameters on passed in connection and reads single table row. The row is mapped to result pointer with record mapper.
 func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultPointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) (success bool, err error) {
 	toolbox.AssertKind(resultPointer, reflect.Ptr, "resultStruct")
-	mapper = NewRecordMapperIfNeeded(mapper, reflect.TypeOf(resultPointer).Elem())
+	if mapper == nil {
+		mapper = NewRecordMapperIfNeeded(mapper, reflect.TypeOf(resultPointer).Elem())
+	}
+
 	var mapped interface{}
+	var elementType = reflect.TypeOf(resultPointer).Elem()
+
 	err = am.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, func(scanner Scanner) (toContinue bool, err error) {
 		mapped, err = mapper.Map(scanner)
 		if err != nil {
 			return false, fmt.Errorf("Failed to map record sql: %v due to %v", query, err)
 		}
+
+
 		if mapped != nil {
-			if reflect.TypeOf(resultPointer).Elem().Kind() == reflect.Slice {
+			if elementType.Kind() == reflect.Slice {
 				slice := reflect.ValueOf(resultPointer).Elem()
 				toolbox.ProcessSlice(mapped, func(item interface{}) bool {
+					if item == nil {
+						slice.Set(reflect.Append(slice, reflect.Zero(elementType)))
+						return true
+					}
 					slice.Set(reflect.Append(slice, reflect.ValueOf(item)))
 					return true
 				})
@@ -246,6 +250,9 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	inserted, insertErr := am.Manager.PersistData(connection, insertables, table, provider, func(item interface{}) *ParametrizedSQL {
 		return provider.Get(SQLTypeInsert, item)
 	})
+	if insertErr != nil {
+		return 0, 0, insertErr
+	}
 
 	if descriptor.Autoincrement {
 		for k, v := range insertableMapping {
@@ -254,9 +261,6 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 		}
 	}
 
-	if insertErr != nil {
-		return 0, 0, insertErr
-	}
 
 	updated, updateErr := am.Manager.PersistData(connection, updatables, table, provider, func(item interface{}) *ParametrizedSQL {
 		return provider.Get(SQLTypeUpdate, item)
@@ -413,7 +417,7 @@ func (am *AbstractManager) DeleteAll(dataPointer interface{}, table string, keyP
 			return 0, fmt.Errorf("Failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
 		}
 	}
-	return deleted, nil
+	return deleted, err
 }
 
 //DeleteAllOnConnection deletes all rows on connection from table, key provider is used to extract primary keys. It returns number of deleted rows or error.
@@ -479,7 +483,7 @@ func (am *AbstractManager) DeleteSingle(dataPointer interface{}, table string, k
 			return false, fmt.Errorf("Failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
 		}
 	}
-	return suceess, nil
+	return suceess, err
 }
 
 func convertToTypesSlice(dataPointer interface{}) interface{} {

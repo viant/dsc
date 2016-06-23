@@ -84,24 +84,38 @@ func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
 	var pkColumns = make([]string, 0)
 	var columns = make([]string, 0)
 	columnToFieldMap := toolbox.NewFieldSettingByKey(targetType, "column")
+
 	for key := range columnToFieldMap {
 		mapping, _ := columnToFieldMap[key]
 		column, ok := mapping["column"]
 		if !ok {
 			column = mapping["fieldName"]
 		}
-		columns = append(columns, column)
 		if _, ok := mapping["autoincrement"]; ok {
 			pkColumns = append(pkColumns, column)
 			autoincrement = true
 			continue
 		}
+	}
+
+	for key := range columnToFieldMap {
+		mapping, _ := columnToFieldMap[key]
+		column, ok := mapping["column"]
+		if !ok {
+			column = mapping["fieldName"]
+		}
+
+		columns = append(columns, column)
 		if _, ok := mapping["primaryKey"]; ok {
-			pkColumns = append(pkColumns, column)
+			if ! toolbox.HasSliceAnyElements(pkColumns, column) {
+				pkColumns = append(pkColumns, column)
+			}
 			continue
 		}
 		if key == "id" {
-			pkColumns = append(pkColumns, column)
+			if ! toolbox.HasSliceAnyElements(pkColumns, column) {
+				pkColumns = append(pkColumns, column)
+			}
 			continue
 		}
 	}
