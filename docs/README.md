@@ -83,6 +83,7 @@ In this scenario if column tag is not defined the filed name will be used.
 |dateFormat | SimpleDateFormat date format format style |
 |dateLayout | Golang date layout |
 |transient | Ignores filed in datastore operations |
+|valueMap | value mapping after fetching record, and before persisting data|
 
 
 ```go
