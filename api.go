@@ -35,16 +35,23 @@ Datastore Manager provides default record mapper and dml/key provider for a stru
 
 The following tags can be used
 
-|Tag name | Description |
-|---|---|
-|column | Column name of table in datastore |
-|primaryKey| Flag indicating if column is part of primary key|
-|autoincrement| Flag indicating if column uses autoincrement |
-|sequence| Sequence name  (not implemented yey) |
-|dateFormat | SimpleDateFormat date format format style |
-|dateLayout | Golang date layout |
-|transient | Ignores filed in datastore operations |
-|valueMap | value mapping after fetching record, and before persisting data|
+1 column - name of datastore field/column
+
+2 autoincrement - boolean flag to use autoincrement, in this case on insert the value can be automatically set back on application model class
+
+3 primaryKey - boolean flag primary key
+
+4 dateLayout - date layout check string to time.Time conversion
+
+4 dateFormat - date format check java simple date format
+
+5 sequence - name of sequence used to generate next id
+
+6 transient - boolean flag to not map a field with record data
+
+7 valueMap - value maping that will be applied after fetching a record and before writing it to datastore.
+    For instance valueMap:"yes:true,no:false" would map yes to true, no to false
+
 
 
 Usage:
