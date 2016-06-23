@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package examples -
 package examples
 
 //Interest represents an generic interest.

@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package examples -
 package examples_test
 
 import (
