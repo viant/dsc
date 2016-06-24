@@ -47,7 +47,7 @@ type Traveler struct {
 }
 
 func TestInsert(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 	for i := 0; i < 10; i++ {
@@ -60,7 +60,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestPersist(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 	dialect := dsc.GetDatastoreDialectable("ndjson")
@@ -104,7 +104,7 @@ func TestPersist(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 

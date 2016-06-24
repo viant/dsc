@@ -29,11 +29,11 @@ import (
 func TestCreateFromURL(t *testing.T) {
 	factory := dsc.NewManagerFactory()
 	{
-		_, err := factory.CreateFromURL(dsunit.ExpandTestProtocolIfNeeded("test:///test/file_config3.json"))
+		_, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/file_config3.json"))
 		assert.NotNil(t, err)
 	}
 	{
-		manager, err := factory.CreateFromURL(dsunit.ExpandTestProtocolIfNeeded("test:///test/file_config.json"))
+		manager, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/file_config.json"))
 		assert.Nil(t, err)
 		assert.NotNil(t, manager)
 	}

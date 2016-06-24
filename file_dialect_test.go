@@ -28,7 +28,7 @@ import (
 )
 
 func TestFileDialect(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 	dialect := dsc.GetDatastoreDialectable("ndjson")
@@ -37,7 +37,7 @@ func TestFileDialect(t *testing.T) {
 	assert.Equal(t, 4, len(tables))
 
 	name, err := dialect.GetCurrentDatastore(manager)
-	assert.Equal(t, dsunit.ExpandTestProtocolIfNeeded("test:///test/"), name)
+	assert.Equal(t, dsunit.ExpandTestProtocolAsUrlIfNeeded("test:///test/"), name)
 	assert.False(t, dialect.CanCreateDatastore(manager))
 	assert.False(t, dialect.CanDropDatastore(manager))
 	assert.False(t, dialect.CanPersistBatch())
