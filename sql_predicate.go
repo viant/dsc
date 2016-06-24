@@ -183,7 +183,7 @@ func (p *likePredicate) Apply(value interface{}) bool {
 			return false
 		}
 		if matchingIndex < len(textValue) {
-			textValue = textValue[matchingIndex:len(textValue)]
+			textValue = textValue[matchingIndex:]
 		}
 	}
 	return true

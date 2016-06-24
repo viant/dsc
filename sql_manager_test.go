@@ -18,14 +18,14 @@
  */
 package dsc_test
 
-
 import (
+	"fmt"
 	"testing"
+	"time"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
-	"time"
-	"fmt"
 )
 
 func GetManager(t *testing.T) dsc.Manager {
@@ -38,7 +38,6 @@ func GetManager(t *testing.T) dsc.Manager {
 		"INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments', '2010-05-28T15:36:56.200')",
 	}
 	assert.Nil(t, err)
-
 
 	for _, sql := range sqls {
 		_, err := manager.Execute(sql)
@@ -80,10 +79,9 @@ func (this *UserRecordMapper) Map(scanner dsc.Scanner) (interface{}, error) {
 	return &user, nil
 }
 
-
 func TestConnection(t *testing.T) {
 	manager := GetManager(t)
-	for i := 0;i<10;i++ {
+	for i := 0; i < 10; i++ {
 		connection, err := manager.ConnectionProvider().Get()
 		assert.Nil(t, err)
 		defer connection.Close()
@@ -92,7 +90,6 @@ func TestConnection(t *testing.T) {
 	manager.ConnectionProvider().Close()
 }
 
-
 func TestExecuteWithError(t *testing.T) {
 	manager := GetManager(t)
 	_, err := manager.Execute("SEL ", 1)
@@ -100,7 +97,7 @@ func TestExecuteWithError(t *testing.T) {
 
 	_, err = manager.ExecuteAll([]string{"SEL "})
 	assert.NotNil(t, err)
-	user := &User{Id:1}
+	user := &User{Id: 1}
 
 	_, err = manager.ReadSingle(&user, "SELECT id, username FROM a  id = ?", []interface{}{1}, nil)
 	assert.NotNil(t, err)
@@ -122,8 +119,6 @@ func TestExecuteWithError(t *testing.T) {
 	_, err = manager.DeleteAll(&users, "asd", nil)
 	assert.NotNil(t, err)
 }
-
-
 
 func TestReadSingleWithCustomHandler(t *testing.T) {
 	manager := GetManager(t)
@@ -264,13 +259,13 @@ func NewUserDmlProvider() dsc.DmlProvider {
 func TestPersistAllWithCustomDmlProvider(t *testing.T) {
 	manager := GetManager(t)
 	users := []User{
-		User{
+		{
 			Id:       1,
 			Username: "Sir Edi",
 			Active:   false,
 			Salary:   32432.3,
 		},
-		User{
+		{
 			Username: "Bogi",
 			Active:   true,
 			Salary:   32432.3,
@@ -287,13 +282,13 @@ func TestPersistAllWithCustomDmlProvider(t *testing.T) {
 func TestPersistAllWithDefaultDmlProvider(t *testing.T) {
 	manager := GetManager(t)
 	users := []User{
-		User{
+		{
 			Id:       1,
 			Username: "Sir Edi",
 			Active:   false,
 			Salary:   32432.3,
 		},
-		User{
+		{
 			Username: "Bogi",
 			Active:   true,
 			Salary:   32432.3,
@@ -314,20 +309,18 @@ func TestPersistAllWithDefaultDmlProvider(t *testing.T) {
 	assert.Equal(t, 1, inserted)
 	assert.Equal(t, 3, user.Id, "autoicrement value should be set")
 
-
 }
-
 
 func TestPersistSingleWithDefaultDmlProvider(t *testing.T) {
 	manager := GetManager(t)
 	users := []User{
-		User{
+		{
 			Id:       1,
 			Username: "Sir Edi",
 			Active:   false,
 			Salary:   32432.3,
 		},
-		User{
+		{
 			Username: "Bogi",
 			Active:   true,
 			Salary:   32432.3,
@@ -340,7 +333,6 @@ func TestPersistSingleWithDefaultDmlProvider(t *testing.T) {
 	assert.Equal(t, 1, updated)
 	assert.Equal(t, 0, inserted)
 
-
 	inserted, updated, err = manager.PersistSingle(&users[1], "users", nil)
 	if err != nil {
 		t.Error("Failed test: " + err.Error())
@@ -352,17 +344,16 @@ func TestPersistSingleWithDefaultDmlProvider(t *testing.T) {
 
 }
 
-
 func TestDeleteAll(t *testing.T) {
 	manager := GetManager(t)
 	users := []User{
-		User{
+		{
 			Id:       1,
 			Username: "Sir Edi",
 			Active:   false,
 			Salary:   32432.3,
 		},
-		User{
+		{
 			Username: "Bogi",
 			Active:   true,
 			Salary:   32432.3,
@@ -375,18 +366,16 @@ func TestDeleteAll(t *testing.T) {
 	assert.Equal(t, 2, deleted)
 }
 
-
-
 func TestDeleteSingle(t *testing.T) {
 	manager := GetManager(t)
 	users := []User{
-		User{
+		{
 			Id:       1,
 			Username: "Sir Edi",
 			Active:   false,
 			Salary:   32432.3,
 		},
-		User{
+		{
 			Username: "Bogi",
 			Active:   true,
 			Salary:   32432.3,
