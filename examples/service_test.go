@@ -13,13 +13,13 @@ import (
 
 func init() {
 	go func() {
-		examples.StartServer(dsunit.ExpandTestProtocolAsUrlIfNeeded("test://test/config/store.json"), "8084")
+		examples.StartServer(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/store.json"), "8084")
 	}()
 	time.Sleep(2 * time.Second)
 }
 
 func getServices() ([]examples.InterestService, error) {
-	local, err := examples.NewInterestService(dsunit.ExpandTestProtocolAsUrlIfNeeded("test://test/config/store.json"))
+	local, err := examples.NewInterestService(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/store.json"))
 	if err != nil {
 		return nil, err
 	}
