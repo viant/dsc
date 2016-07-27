@@ -157,7 +157,7 @@ A simple CRUD applications is provided in the [`examples`](examples) directory.
 
 ## GoCover
 
-[![GoCover](https://gocover.io/github.com/viant/dsc)](https://gocover.io/github.com/viant/dsc)
+[![GoCover](http://gocover.io/github.com/viant/dsc)](http://gocover.io/github.com/viant/dsc)
 
 
 <a name="License"></a>
