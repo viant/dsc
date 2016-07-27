@@ -12,7 +12,7 @@ func TestFileDialect(t *testing.T) {
 	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
-	dialect := dsc.GetDatastoreDialectable("ndjson")
+	dialect := dsc.GetDatastoreDialect("ndjson")
 	tables, err := dialect.GetTables(manager, "")
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(tables))

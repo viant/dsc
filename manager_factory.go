@@ -7,6 +7,10 @@ import (
 	"github.com/viant/toolbox"
 )
 
+
+
+
+
 type managerFactoryProxy struct{}
 
 //Create creates a new manager for the passed in config.
@@ -18,6 +22,7 @@ func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
 	}
+	config.Init()
 	return factory.Create(config)
 }
 
@@ -34,8 +39,13 @@ func (f managerFactoryProxy) CreateFromURL(url string) (Manager, error) {
 		return nil, err
 	}
 	config.Init()
-	return f.Create(config)
+	factory, err := GetManagerFactory(config.DriverName)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
+	}
+	return factory.CreateFromURL(url)
 }
+
 
 //NewManagerFactory create a new manager factory.
 func NewManagerFactory() ManagerFactory {

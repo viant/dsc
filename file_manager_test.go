@@ -44,7 +44,7 @@ func TestPersist(t *testing.T) {
 	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"))
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
-	dialect := dsc.GetDatastoreDialectable("ndjson")
+	dialect := dsc.GetDatastoreDialect("ndjson")
 	datastore, err := dialect.GetCurrentDatastore(manager)
 	assert.Nil(t, err)
 	err = dialect.DropTable(manager, datastore, "travelers2")
