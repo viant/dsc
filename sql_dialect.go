@@ -7,36 +7,36 @@ import (
 	"strings"
 )
 
-const defaultTableSql = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
-const defaultSequenceSql = "SELECT auto_increment FROM information_schema.tables WHERE table_name = '%v' AND table_schema = DATABASE()"
-const defaultSchemaSql = "SELECT DATABASE() AS name"
-const defaultAllSchemaSql = "SELECT schema_name AS name FROM  information_schema.schemata"
+const defaultTableSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
+const defaultSequenceSQL = "SELECT auto_increment FROM information_schema.tables WHERE table_name = '%v' AND table_schema = DATABASE()"
+const defaultSchemaSQL = "SELECT DATABASE() AS name"
+const defaultAllSchemaSQL = "SELECT schema_name AS name FROM  information_schema.schemata"
 
-const schemaSql = "SELECT current_schema() AS name"
+const schemaSQL = "SELECT current_schema() AS name"
 
-const sqlLightTableSql = "SELECT name FROM SQLITE_MASTER WHERE type='table' AND name NOT IN('sqlite_sequence') AND LENGTH(?) > 0"
-const sqlLightSequenceSql = "SELECT COALESCE(MAX(name), 0) + 1   FROM (SELECT seq AS name FROM SQLITE_SEQUENCE WHERE name = '%v')"
-const sqlLightSchemaSql = "PRAGMA database_list"
+const sqlLightTableSQL = "SELECT name FROM SQLITE_MASTER WHERE type='table' AND name NOT IN('sqlite_sequence') AND LENGTH(?) > 0"
+const sqlLightSequenceSQL = "SELECT COALESCE(MAX(name), 0) + 1   FROM (SELECT seq AS name FROM SQLITE_SEQUENCE WHERE name = '%v')"
+const sqlLightSchemaSQL = "PRAGMA database_list"
 
-const pgSequenceSql = "SELECT currval(%v) + 1"
+const pgSequenceSQL = "SELECT currval(%v) + 1"
 
-const oraTableSql = "SELECT table_name AS name  FROM all_tables WHERE owner = ?"
-const oraSchemaSql = "SELECT sys_context( 'userenv', 'current_schema' ) AS name FROM dual"
-const oraSequenceSql = "SELECT %v.nextval AS name from dual"
-const oraAllSchemaSql = "SELECT username AS name FROM all_users"
+const oraTableSQL = "SELECT table_name AS name  FROM all_tables WHERE owner = ?"
+const oraSchemaSQL = "SELECT sys_context( 'userenv', 'current_schema' ) AS name FROM dual"
+const oraSequenceSQL = "SELECT %v.nextval AS name from dual"
+const oraAllSchemaSQL = "SELECT username AS name FROM all_users"
 
-const msSchemaSql = "SELECT SCHEMA_NAME() AS name"
-const msSequenceSql = "SELECT current_value FROM sys.sequences WHERE  name = '%v'"
+const msSchemaSQL = "SELECT SCHEMA_NAME() AS name"
+const msSequenceSQL = "SELECT current_value FROM sys.sequences WHERE  name = '%v'"
 
 type nameRecord struct {
 	Name string `column:"name"`
 }
 
 type sqlDatastoreDialect struct {
-	tablesSql            string
-	sequenceSql          string
-	schemaSql            string
-	allSchemaSql         string
+	tablesSQL            string
+	sequenceSQL          string
+	schemaSQL            string
+	allSchemaSQL         string
 	schemaResultsetIndex int
 }
 
@@ -77,7 +77,7 @@ func (d sqlDatastoreDialect) CreateTable(manager Manager, datastore string, tabl
 //GetTables return tables names for passed in datastore managed by manager.
 func (d sqlDatastoreDialect) GetTables(manager Manager, datastore string) ([]string, error) {
 	var rows = make([]nameRecord, 0)
-	err := manager.ReadAll(&rows, d.tablesSql, []interface{}{datastore}, nil)
+	err := manager.ReadAll(&rows, d.tablesSQL, []interface{}{datastore}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func normalizeName(name string) string {
 //GetDatastores returns name of datastores, takes  manager as parameter
 func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 	var rows = make([][]interface{}, 0)
-	err := manager.ReadAll(&rows, d.allSchemaSql, nil, nil)
+	err := manager.ReadAll(&rows, d.allSchemaSQL, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 //GetCurrentDatastore returns name of current schema
 func (d sqlDatastoreDialect) GetCurrentDatastore(manager Manager) (string, error) {
 	var result = make([]interface{}, 0)
-	success, err := manager.ReadSingle(&result, d.schemaSql, nil, nil)
+	success, err := manager.ReadSingle(&result, d.schemaSQL, nil, nil)
 	if err != nil || !success {
 		return "", err
 	}
@@ -126,7 +126,7 @@ func (d sqlDatastoreDialect) GetCurrentDatastore(manager Manager) (string, error
 //GetSequence returns sequence value or error for passed in manager and table/sequence
 func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]int64, 0)
-	success, err := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSql, name), []interface{}{}, nil)
+	success, err := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
 	if err != nil || !success {
 		return 0, err
 	}
@@ -138,8 +138,9 @@ func (d sqlDatastoreDialect) CanPersistBatch() bool {
 	return false
 }
 
-func NewSqlDatastoreDialect(tablesSql, sequenceSql, schemaSql, allSchemaSql string, schmeaIndex int) DatastoreDialect {
-	return &sqlDatastoreDialect{tablesSql, sequenceSql, schemaSql, allSchemaSql, schmeaIndex}
+//NewSQLDatastoreDialect creates a new default sql dialect
+func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL string, schmeaIndex int) DatastoreDialect {
+	return &sqlDatastoreDialect{tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, schmeaIndex}
 }
 
 type mySQLDialect struct {
@@ -147,7 +148,7 @@ type mySQLDialect struct {
 }
 
 func newMySQLDialect() mySQLDialect {
-	return mySQLDialect{DatastoreDialect: NewSqlDatastoreDialect(defaultTableSql, defaultSequenceSql, defaultSchemaSql, defaultAllSchemaSql, 0)}
+	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, defaultSequenceSQL, defaultSchemaSQL, defaultAllSchemaSQL, 0)}
 }
 
 type sqlLiteDialect struct {
@@ -173,8 +174,8 @@ func (d sqlLiteDialect) DropDatastore(manager Manager, datastore string) error {
 	return err
 }
 
-func newSqlLiteDialect() *sqlLiteDialect {
-	return &sqlLiteDialect{DatastoreDialect: NewSqlDatastoreDialect(sqlLightTableSql, sqlLightSequenceSql, sqlLightSchemaSql, sqlLightSchemaSql, 2)}
+func newSQLLiteDialect() *sqlLiteDialect {
+	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, 2)}
 }
 
 type pgDialect struct {
@@ -182,7 +183,7 @@ type pgDialect struct {
 }
 
 func newPgDialect() *pgDialect {
-	return &pgDialect{DatastoreDialect: NewSqlDatastoreDialect(sqlLightTableSql, pgSequenceSql, schemaSql, defaultAllSchemaSql, 0)}
+	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, pgSequenceSQL, schemaSQL, defaultAllSchemaSQL, 0)}
 }
 
 type oraDialect struct {
@@ -190,7 +191,7 @@ type oraDialect struct {
 }
 
 func newOraDialect() *oraDialect {
-	return &oraDialect{DatastoreDialect: NewSqlDatastoreDialect(oraTableSql, oraSequenceSql, oraSchemaSql, oraAllSchemaSql, 0)}
+	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, oraSequenceSQL, oraSchemaSQL, oraAllSchemaSQL, 0)}
 }
 
 type msSQLDialect struct {
@@ -198,5 +199,5 @@ type msSQLDialect struct {
 }
 
 func newMsSQLDialect() *msSQLDialect {
-	return &msSQLDialect{DatastoreDialect: NewSqlDatastoreDialect(defaultTableSql, msSequenceSql, msSchemaSql, defaultAllSchemaSql, 0)}
+	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, msSequenceSQL, msSchemaSQL, defaultAllSchemaSQL, 0)}
 }

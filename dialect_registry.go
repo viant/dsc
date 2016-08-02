@@ -21,6 +21,6 @@ func init() {
 	RegisterDatastoreDialect("pg", newPgDialect())
 	RegisterDatastoreDialect("ora", newOraDialect())
 	RegisterDatastoreDialect("mssql", newMsSQLDialect())
-	RegisterDatastoreDialect("sqlite3", newSqlLiteDialect())
+	RegisterDatastoreDialect("sqlite3", newSQLLiteDialect())
 	RegisterDatastoreDialect("ndjson", &fileDialect{})
 }

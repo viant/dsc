@@ -55,7 +55,7 @@ func (c *Config) Init() {
 // encodedParameters should be in the following format:   <key1>:<value1>, ...,<keyN>:<valueN>
 func NewConfig(driverName string, descriptor string, encodedParameters string) *Config {
 	var parameters = toolbox.MakeStringMap(encodedParameters, ":", ",")
-	result := &Config{DriverName: driverName, PoolSize: 1, MaxPoolSize: 2, Descriptor: descriptor, Parameters:parameters}
+	result := &Config{DriverName: driverName, PoolSize: 1, MaxPoolSize: 2, Descriptor: descriptor, Parameters: parameters}
 	result.Init()
 	return result
 }

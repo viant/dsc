@@ -35,10 +35,13 @@ func (ac *AbstractConnection) Close() error {
 	return nil
 }
 
+//Begin starts a transaction  - this method is an abstract method
 func (ac *AbstractConnection) Begin() error { return nil }
 
+//Commit finishes current transaction  - this method is an abstract method
 func (ac *AbstractConnection) Commit() error { return nil }
 
+//Rollback - discards transaction  - this method is an abstract method
 func (ac *AbstractConnection) Rollback() error { return nil }
 
 //NewAbstractConnection create a new abstract connection

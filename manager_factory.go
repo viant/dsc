@@ -7,10 +7,6 @@ import (
 	"github.com/viant/toolbox"
 )
 
-
-
-
-
 type managerFactoryProxy struct{}
 
 //Create creates a new manager for the passed in config.
@@ -45,7 +41,6 @@ func (f managerFactoryProxy) CreateFromURL(url string) (Manager, error) {
 	}
 	return factory.CreateFromURL(url)
 }
-
 
 //NewManagerFactory create a new manager factory.
 func NewManagerFactory() ManagerFactory {
