@@ -19,4 +19,19 @@ func TestCreateFromURL(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, manager)
 	}
+	{
+		manager, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/store.json"))
+		assert.Nil(t, err)
+		assert.NotNil(t, manager)
+	}
+
+}
+
+func TestMissingDricer(t *testing.T) {
+	factory := dsc.NewManagerFactory()
+	{
+		_, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/file_config3.json"))
+		assert.NotNil(t, err)
+	}
+
 }

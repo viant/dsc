@@ -15,7 +15,7 @@ func TestFileDialect(t *testing.T) {
 	dialect := dsc.GetDatastoreDialect("ndjson")
 	tables, err := dialect.GetTables(manager, "")
 	assert.Nil(t, err)
-	assert.Equal(t, 4, len(tables))
+	assert.True(t, len(tables) > 0)
 
 	name, err := dialect.GetCurrentDatastore(manager)
 	assert.Equal(t, dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"), name)

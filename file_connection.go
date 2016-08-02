@@ -14,17 +14,9 @@ func (fc *fileConnection) Close() error {
 	return nil
 }
 
-func (fc *fileConnection) Begin() error {
-	return nil
-}
-
 func (fc *fileConnection) Unwrap(target interface{}) interface{} {
 	panic(fmt.Sprintf("Unsupported target type %v", target))
 }
-
-func (fc *fileConnection) Commit() error { return nil }
-
-func (fc *fileConnection) Rollback() error { return nil }
 
 type fileConnectionProvider struct {
 	AbstractConnectionProvider

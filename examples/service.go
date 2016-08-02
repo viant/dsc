@@ -68,7 +68,10 @@ func (s *interestServiceImpl) DeleteByID(id int) *Response {
 
 //NewInterestService creates a new interests service
 func NewInterestService(configURL string) (InterestService, error) {
+
+
 	manager, err := dsc.NewManagerFactory().CreateFromURL(configURL)
+
 	if err != nil {
 		return nil, err
 	}

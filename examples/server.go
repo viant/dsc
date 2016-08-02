@@ -67,6 +67,6 @@ func StartServer(configFile string, port string) {
 		}
 	})
 
-	fmt.Printf("Started test server on port %v\n", port)
+	fmt.Printf("Started interest server on port %v\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

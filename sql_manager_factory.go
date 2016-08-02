@@ -20,5 +20,10 @@ func (mf sqlManagerFactory) CreateFromURL(url string) (Manager, error) {
 	}
 	defer reader.Close()
 	config := &Config{}
+	err = toolbox.NewJSONDecoderFactory().Create(reader).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+	config.Init()
 	return mf.Create(config)
 }

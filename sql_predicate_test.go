@@ -66,14 +66,54 @@ func TestNewLikePredicate(t *testing.T) {
 }
 
 func TestNewCriterionPredicate(t *testing.T) {
-	parameters := toolbox.NewSliceIterator([]string{"abc%"})
-	predicate, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "Like", RightOperand: "?"}, parameters)
-	assert.Nil(t, err)
-	{
-		assert.True(t, predicate.Apply("ABC"))
-		assert.False(t, predicate.Apply("AB"))
+	{ //Like case
+		parameters := toolbox.NewSliceIterator([]string{"abc%"})
+		predicate, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "Like", RightOperand: "?"}, parameters)
+		assert.Nil(t, err)
+		{
+			assert.True(t, predicate.Apply("ABC"))
+			assert.False(t, predicate.Apply("AB"))
 
+		}
 	}
+	{ //between case
+		parameters := toolbox.NewSliceIterator([]string{"1", "10"})
+		predicate, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "BETWEEN", RightOperands: []interface{}{"?", "?"}}, parameters)
+		assert.Nil(t, err)
+		{
+			assert.True(t, predicate.Apply(5))
+			assert.False(t, predicate.Apply(12))
+
+		}
+	}
+
+	{ //error no operator
+		parameters := toolbox.NewSliceIterator([]string{})
+		_, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "", RightOperands: []interface{}{"?"}}, parameters)
+		assert.NotNil(t, err)
+	}
+
+	{ //between error case
+		parameters := toolbox.NewSliceIterator([]string{"1"})
+		_, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "BETWEEN", RightOperands: []interface{}{"?", "?"}}, parameters)
+		assert.NotNil(t, err)
+	}
+	{ //like error case
+		parameters := toolbox.NewSliceIterator([]string{})
+		_, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "Like", RightOperand: "?"}, parameters)
+		assert.NotNil(t, err)
+	}
+	{ //in error case
+		parameters := toolbox.NewSliceIterator([]string{})
+		_, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "in", RightOperands: []interface{}{"?"}}, parameters)
+		assert.NotNil(t, err)
+	}
+	{ //default error case
+		parameters := toolbox.NewSliceIterator([]string{})
+		_, err := dsc.NewSQLCriterionPredicate(dsc.SQLCriterion{Operator: "=", RightOperand: "?"}, parameters)
+		assert.NotNil(t, err)
+	}
+
 }
 
 func TestNewCriteriaPredicate(t *testing.T) {
@@ -105,4 +145,37 @@ func TestNewCriteriaPredicate(t *testing.T) {
 			},
 		))
 	}
+}
+
+func TestNewComparablePredicate(t *testing.T) {
+
+	{
+		predicate := dsc.NewComparablePredicate("=", "abc")
+		assert.True(t, predicate.Apply("abc"))
+		assert.False(t, predicate.Apply("abdc"))
+	}
+	{
+		predicate := dsc.NewComparablePredicate("!=", "abc")
+		assert.True(t, predicate.Apply("abcc"))
+		assert.False(t, predicate.Apply("abc"))
+	}
+
+	{
+		predicate := dsc.NewComparablePredicate(">=", 3)
+		assert.True(t, predicate.Apply(10))
+		assert.False(t, predicate.Apply(1))
+	}
+
+	{
+		predicate := dsc.NewComparablePredicate("<=", 3)
+		assert.True(t, predicate.Apply(1))
+		assert.False(t, predicate.Apply(10))
+	}
+
+}
+
+func TestNewInPredicate(t *testing.T) {
+	predicate := dsc.NewInPredicate(1.2, 1.5)
+	assert.True(t, predicate.Apply("1.2"))
+	assert.False(t, predicate.Apply("1.1"))
 }

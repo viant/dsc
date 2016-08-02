@@ -17,10 +17,10 @@ func GetDatastoreDialect(driver string) DatastoreDialect {
 }
 
 func init() {
-	RegisterDatastoreDialect("mysql", &mySQLDialect{})
-	RegisterDatastoreDialect("pg", &pgDialect{})
-	RegisterDatastoreDialect("ora", &oraDialect{})
-	RegisterDatastoreDialect("mssql", &msSQLDialect{})
-	RegisterDatastoreDialect("sqlite3", &sqlLiteDialect{})
+	RegisterDatastoreDialect("mysql", newMySQLDialect())
+	RegisterDatastoreDialect("pg", newPgDialect())
+	RegisterDatastoreDialect("ora", newOraDialect())
+	RegisterDatastoreDialect("mssql", newMsSQLDialect())
+	RegisterDatastoreDialect("sqlite3", newSqlLiteDialect())
 	RegisterDatastoreDialect("ndjson", &fileDialect{})
 }

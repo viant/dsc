@@ -91,7 +91,7 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 			break
 		}
 	}
-	return rows.Close()
+	return nil
 }
 
 func (m *sqlManager) executeQuery(sqlStatement *sql.Stmt, query string, args []interface{}) (rows *sql.Rows, err error) {

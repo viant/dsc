@@ -15,7 +15,7 @@ type User1 struct {
 	Other       string    `transient:"true"`
 }
 
-func TestDataset(t *testing.T) {
+func TestTableDescriptor(t *testing.T) {
 
 	descriptor := dsc.NewTableDescriptor("users", (*User1)(nil))
 	assert.Equal(t, "users", descriptor.Table)
@@ -23,4 +23,14 @@ func TestDataset(t *testing.T) {
 	assert.Equal(t, true, descriptor.Autoincrement)
 	assert.Equal(t, 3, len(descriptor.Columns))
 
+	assert.False(t, descriptor.HasSchema())
+
+}
+func TestTableDescriptorRegistry(t *testing.T) {
+	descriptor := dsc.NewTableDescriptor("users", (*User1)(nil))
+	registry := dsc.NewTableDescriptorRegistry()
+	assert.False(t, registry.Has("users"))
+	registry.Register(descriptor)
+	assert.True(t, registry.Has("users"))
+	assert.Equal(t, []string{"users"}, registry.Tables())
 }

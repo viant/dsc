@@ -123,7 +123,8 @@ func (ds DmlStatement) ColumnValueMap(parameters toolbox.Iterator) (map[string]i
 }
 
 const (
-	eof int = iota
+	undefined int = iota
+	eof
 	illegal
 	whitespaces
 	id
@@ -242,6 +243,11 @@ func (bp *baseParser) expectOptionalWhitespaceFollowedBy(tokenizer *toolbox.Toke
 	expectedTokens = append(expectedTokens, expected...)
 
 	token := tokenizer.Nexts(expectedTokens...)
+
+	if token.Token == eof && !toolbox.HasSliceAnyElements(expectedTokens, eof) {
+		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
+	}
+
 	if token.Token == illegal {
 		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
 	}
@@ -290,20 +296,20 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 }
 
 func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *BaseStatement, token *toolbox.Token) (err error) {
-	if token == nil || token.Token != whereKeyword {
-		return nil
-	}
 	statement.Criteria = make([]SQLCriterion, 0)
 	for {
 		token, err = bp.expectWhitespaceFollowedBy(tokenizer, "value", sqlValue)
 		if err != nil {
 			return err
 		}
+		if token.Matched == "" {
+			return fmt.Errorf("Expected criteria at %v", tokenizer.Index)
+		}
 
 		index := len(statement.Criteria)
 		statement.Criteria = append(statement.Criteria, SQLCriterion{LeftOperand: token.Matched})
 
-		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", inOperatorKeyword, likeOperatorKeyword, notKeyword, isOperatorKeyword, operator, eof)
+		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", inOperatorKeyword, likeOperatorKeyword, betweenOperatorKeyword, notKeyword, isOperatorKeyword, operator, eof)
 		if err != nil {
 			return err
 		}
@@ -381,9 +387,9 @@ func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *Que
 	column := SQLColumn{Name: token.Matched}
 	query.Columns = append(query.Columns, column)
 	for {
-		token = tokenizer.Nexts(whitespaces, coma)
+		token = tokenizer.Nexts(whitespaces, coma, eof)
 		switch token.Token {
-		case illegal:
+		case illegal, eof:
 			return fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
 
 		case coma:
@@ -405,9 +411,7 @@ func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *Que
 				if err != nil {
 					return err
 				}
-				column.Alias = token.Matched
-			case id:
-				column.Alias = token.Matched
+				query.Columns[len(query.Columns)-1].Alias = token.Matched
 			}
 		}
 	}
@@ -455,6 +459,10 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	if err != nil {
 		return nil, err
 	}
+	if token.Token == eof {
+		return result, nil
+	}
+
 	err = qp.readCriteria(tokenizer, &result.BaseStatement, token)
 	if err != nil {
 		return nil, err

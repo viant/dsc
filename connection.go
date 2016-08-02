@@ -35,6 +35,12 @@ func (ac *AbstractConnection) Close() error {
 	return nil
 }
 
+func (ac *AbstractConnection) Begin() error { return nil }
+
+func (ac *AbstractConnection) Commit() error { return nil }
+
+func (ac *AbstractConnection) Rollback() error { return nil }
+
 //NewAbstractConnection create a new abstract connection
 func NewAbstractConnection(config *Config, connectionPool chan Connection, connection Connection) AbstractConnection {
 	return AbstractConnection{config: config, connectionPool: connectionPool, Connection: connection}

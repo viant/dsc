@@ -1,12 +1,12 @@
 package examples_test
 
 import (
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/viant/dsc"
 	"testing"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
-	_ "github.com/viant/dsc"
 	"github.com/viant/dsc/examples"
 	"github.com/viant/dsunit"
 )

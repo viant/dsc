@@ -87,8 +87,11 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//TODO add to control this with config parameters
 	//set to min to not have lingered connection
 	db.SetConnMaxLifetime(1 * time.Second)
+
 	err = db.Ping()
 	if err != nil {
 		return result, nil
