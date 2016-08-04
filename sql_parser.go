@@ -225,6 +225,10 @@ type baseParser struct{}
 
 func (bp *baseParser) expectWhitespaceFollowedBy(tokenizer *toolbox.Tokenizer, expectedTokensMessage string, expected ...int) (*toolbox.Token, error) {
 	token := tokenizer.Next(whitespaces)
+
+	if token.Token == eof && !toolbox.HasSliceAnyElements(expected, eof) {
+		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
+	}
 	if token.Token == illegal {
 		return nil, newIllegalTokenParsingError(tokenizer.Index, "whitespace")
 	}
@@ -232,6 +236,9 @@ func (bp *baseParser) expectWhitespaceFollowedBy(tokenizer *toolbox.Tokenizer, e
 		token = tokenizer.Nexts(expected...)
 	}
 	if token.Token == illegal {
+		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
+	}
+	if token.Token == eof && len(token.Matched) > 0 {
 		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
 	}
 	return token, nil
@@ -255,6 +262,9 @@ func (bp *baseParser) expectOptionalWhitespaceFollowedBy(tokenizer *toolbox.Toke
 		token = tokenizer.Nexts(expected...)
 	}
 	if token.Token == illegal {
+		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
+	}
+	if token.Token == eof && len(token.Matched) > 0 {
 		return nil, newIllegalTokenParsingError(tokenizer.Index, expectedTokensMessage)
 	}
 	return token, nil
@@ -556,20 +566,32 @@ func (dp *DmlParser) parseInsert(tokenizer *toolbox.Tokenizer, statement *DmlSta
 func (dp *DmlParser) readColumnAndValues(tokenizer *toolbox.Tokenizer, statement *DmlStatement) (*toolbox.Token, error) {
 	statement.Columns = make([]SQLColumn, 0)
 	statement.Values = make([]interface{}, 0)
+	hasColumn := false
 	for i := tokenizer.Index; i < len(tokenizer.Input); i++ {
 		token, err := dp.expectWhitespaceFollowedBy(tokenizer, "column", id)
 		if err != nil {
 			return nil, err
 		}
+		if token.Token == eof {
+			break
+		}
+		hasColumn = true
 		column := SQLColumn{Name: token.Matched}
 		statement.Columns = append(statement.Columns, column)
 		_, err = dp.expectWhitespaceFollowedBy(tokenizer, "=", equalOperator)
 		if err != nil {
 			return nil, err
 		}
+		if token.Token == eof {
+			return nil, newIllegalTokenParsingError(tokenizer.Index, "expected =")
+		}
+
 		token, err = dp.expectWhitespaceFollowedBy(tokenizer, "value", sqlValue)
 		if err != nil {
 			return nil, err
+		}
+		if token.Token == eof {
+			return nil, newIllegalTokenParsingError(tokenizer.Index, "expected value")
 		}
 		statement.Values = append(statement.Values, token.Matched)
 		token, err = dp.expectOptionalWhitespaceFollowedBy(tokenizer, ",| where | eof", eof, coma, whereKeyword)
@@ -580,7 +602,10 @@ func (dp *DmlParser) readColumnAndValues(tokenizer *toolbox.Tokenizer, statement
 			return token, nil
 		}
 	}
-	return nil, nil
+	if !hasColumn {
+		return nil, newIllegalTokenParsingError(tokenizer.Index, "expected column")
+	}
+	return &toolbox.Token{Token: eof}, nil
 }
 
 func (dp *DmlParser) parseUpdate(tokenizer *toolbox.Tokenizer, statement *DmlStatement) error {
@@ -593,7 +618,16 @@ func (dp *DmlParser) parseUpdate(tokenizer *toolbox.Tokenizer, statement *DmlSta
 	if err != nil {
 		return err
 	}
+
 	token, err = dp.readColumnAndValues(tokenizer, statement)
+	if err != nil {
+		return err
+	}
+
+	if token.Token == eof {
+		return nil
+	}
+
 	err = dp.readCriteria(tokenizer, &statement.BaseStatement, token)
 	if err != nil {
 		return err
@@ -616,6 +650,10 @@ func (dp *DmlParser) parseDelete(tokenizer *toolbox.Tokenizer, statement *DmlSta
 	if err != nil {
 		return err
 	}
+	if token.Token == eof {
+		return nil
+	}
+
 	err = dp.readCriteria(tokenizer, &statement.BaseStatement, token)
 	if err != nil {
 		return err

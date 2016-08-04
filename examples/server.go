@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
 	"github.com/viant/toolbox"
 )
 
@@ -52,7 +51,7 @@ func StartServer(configFile string, port string) {
 			response.WriteHeader(http.StatusInternalServerError)
 			err := interestRouter.WriteResponse(toolbox.NewJSONEncoderFactory(), &Response{Status: "error", Message: message}, request, response)
 			if err != nil {
-				log.Fatal("Failed to write response :%v", err)
+				fmt.Printf("Failed to write response :%v", err)
 			}
 		}
 		defer func() {

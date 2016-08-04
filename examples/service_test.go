@@ -29,9 +29,6 @@ func getServices() ([]examples.InterestService, error) {
 }
 
 func TestRead(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 
@@ -64,9 +61,6 @@ func TestRead(t *testing.T) {
 }
 
 func TestPersist(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 
 	services, err := getServices()
@@ -101,9 +95,6 @@ func TestPersist(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	services, err := getServices()
 	if err != nil {

@@ -1,8 +1,6 @@
 package dsc
 
-import (
-	"fmt"
-)
+import "errors"
 
 type fileConnection struct {
 	AbstractConnection
@@ -15,7 +13,7 @@ func (fc *fileConnection) Close() error {
 }
 
 func (fc *fileConnection) Unwrap(target interface{}) interface{} {
-	panic(fmt.Sprintf("Unsupported target type %v", target))
+	return errors.New("unsupported")
 }
 
 type fileConnectionProvider struct {

@@ -439,30 +439,55 @@ func TestInsertStatement(t *testing.T) {
 
 func TestUpdateStatement(t *testing.T) {
 	parser := dsc.NewDmlParser()
-	statement, err := parser.Parse("UPDATE users SET name = 'Smith', last_access_time = ? WHERE id = 2")
-	assert.Nil(t, err, "should not have errors")
-	assert.Equal(t, "UPDATE", statement.Type)
-	assert.Equal(t, "users", statement.Table)
-	assert.Equal(t, 2, len(statement.Columns))
-	assert.Equal(t, 2, len(statement.Values))
-	assert.Equal(t, "'Smith'", statement.Values[0])
-	assert.Equal(t, 1, len(statement.Criteria))
-	assert.Equal(t, "id", statement.Criteria[0].LeftOperand)
-	assert.Equal(t, "=", statement.Criteria[0].Operator)
-	assert.Equal(t, "2", statement.Criteria[0].RightOperand)
+
+	{
+		statement, err := parser.Parse("UPDATE users SET name = 'Smith', last_access_time = ?")
+		assert.Nil(t, err, "should not have errors")
+		assert.Equal(t, "UPDATE", statement.Type)
+		assert.Equal(t, "users", statement.Table)
+		assert.Equal(t, 2, len(statement.Columns))
+		assert.Equal(t, 2, len(statement.Values))
+		assert.Equal(t, "'Smith'", statement.Values[0])
+		assert.Equal(t, 0, len(statement.Criteria))
+	}
+	{
+		statement, err := parser.Parse("UPDATE users SET name = 'Smith', last_access_time = ? WHERE id = 2")
+		assert.Nil(t, err, "should not have errors")
+		assert.Equal(t, "UPDATE", statement.Type)
+		assert.Equal(t, "users", statement.Table)
+		assert.Equal(t, 2, len(statement.Columns))
+		assert.Equal(t, 2, len(statement.Values))
+		assert.Equal(t, "'Smith'", statement.Values[0])
+		assert.Equal(t, 1, len(statement.Criteria))
+		assert.Equal(t, "id", statement.Criteria[0].LeftOperand)
+		assert.Equal(t, "=", statement.Criteria[0].Operator)
+		assert.Equal(t, "2", statement.Criteria[0].RightOperand)
+	}
 
 }
 
 func TestDeleteStatement(t *testing.T) {
 	parse := dsc.NewDmlParser()
-	statement, err := parse.Parse("DELETE FROM users WHERE id = 2")
-	assert.Nil(t, err, "should not have errors")
-	assert.Equal(t, "DELETE", statement.Type)
-	assert.Equal(t, "users", statement.Table)
-	assert.Equal(t, 1, len(statement.Criteria))
-	assert.Equal(t, "id", statement.Criteria[0].LeftOperand)
-	assert.Equal(t, "=", statement.Criteria[0].Operator)
-	assert.Equal(t, "2", statement.Criteria[0].RightOperand)
+	{
+		statement, err := parse.Parse("DELETE FROM users ")
+		assert.Nil(t, err, "should not have errors")
+		assert.Equal(t, "DELETE", statement.Type)
+		assert.Equal(t, "users", statement.Table)
+		assert.Equal(t, 0, len(statement.Criteria))
+
+	}
+
+	{
+		statement, err := parse.Parse("DELETE FROM users WHERE id = 2")
+		assert.Nil(t, err, "should not have errors")
+		assert.Equal(t, "DELETE", statement.Type)
+		assert.Equal(t, "users", statement.Table)
+		assert.Equal(t, 1, len(statement.Criteria))
+		assert.Equal(t, "id", statement.Criteria[0].LeftOperand)
+		assert.Equal(t, "=", statement.Criteria[0].Operator)
+		assert.Equal(t, "2", statement.Criteria[0].RightOperand)
+
+	}
 
 }
 

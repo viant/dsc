@@ -37,7 +37,6 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 		if len(pkValues) > 1 {
 			multiValuePk = true
 		}
-
 		var rowCriteria = strings.Repeat("?,", len(pkValues))
 		rowCriteria = rowCriteria[0 : len(rowCriteria)-1]
 
