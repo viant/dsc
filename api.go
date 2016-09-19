@@ -212,7 +212,7 @@ type TableDescriptor struct {
 	PkColumns     []string
 	Columns       []string
 	Schema        []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
-	SchemaURL     string                   //url with JSON to the TableDescriptor.Schema.
+	SchemaUrl     string                   //url with JSON to the TableDescriptor.Schema.
 }
 
 //TableDescriptorRegistry represents a registry to store table descriptors by table name.
