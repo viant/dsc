@@ -19,6 +19,10 @@ type QueryBuilder struct {
 func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
 	table := qb.TableDescriptor.Table
+	if len(qb.TableDescriptor.FromQuery) > 0 {
+		table = "(" + qb.TableDescriptor.FromQuery + ")"
+	}
+
 	return &ParametrizedSQL{
 		SQL:    fmt.Sprintf(queryAllSQLTemplate, columnsLiteral, table),
 		Values: make([]interface{}, 0),
@@ -56,6 +60,9 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 		whereCriteria = "(" + pkColumns + ") IN (" + criteria + ")"
 	}
 	table := qb.TableDescriptor.Table
+	if len(qb.TableDescriptor.FromQuery) > 0 {
+		table = "(" + qb.TableDescriptor.FromQuery + ")"
+	}
 	return &ParametrizedSQL{
 		SQL:    fmt.Sprintf(querySQLTemplate, columnsLiteral, table, whereCriteria),
 		Values: sqlArguments,
