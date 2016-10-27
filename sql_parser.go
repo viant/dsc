@@ -49,7 +49,10 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 			return nil, errors.New("Unable to bind value - not enough parameters")
 		}
 		var values = make([]interface{}, 1)
-		parameters.Next(&values[0])
+		err := parameters.Next(&values[0])
+		if err != nil {
+			return nil, err
+		}
 		return values[0], nil
 	}
 	if strings.HasPrefix(textOperand, "'") {

@@ -182,7 +182,10 @@ func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interfac
 	if !parameters.HasNext() {
 		return "", errors.New("Unable to expand ? - not more parameters")
 	}
-	parameters.Next(&values[0])
+	err := parameters.Next(&values[0])
+	if err != nil {
+		return nil, err
+	}
 	return values[0], nil
 }
 
