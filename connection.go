@@ -45,8 +45,8 @@ func (ac *AbstractConnection) Commit() error { return nil }
 func (ac *AbstractConnection) Rollback() error { return nil }
 
 //NewAbstractConnection create a new abstract connection
-func NewAbstractConnection(config *Config, connectionPool chan Connection, connection Connection) AbstractConnection {
-	return AbstractConnection{config: config, connectionPool: connectionPool, Connection: connection}
+func NewAbstractConnection(config *Config, connectionPool chan Connection, connection Connection) *AbstractConnection {
+	return &AbstractConnection{config: config, connectionPool: connectionPool, Connection: connection}
 }
 
 //AbstractConnectionProvider represents an abstract/superclass ConnectionProvider
@@ -129,6 +129,6 @@ func (cp *AbstractConnectionProvider) Get() (Connection, error) {
 }
 
 //NewAbstractConnectionProvider create a new AbstractConnectionProvider
-func NewAbstractConnectionProvider(config *Config, connectionPool chan Connection, connectionProvider ConnectionProvider) AbstractConnectionProvider {
-	return AbstractConnectionProvider{config: config, connectionPool: connectionPool, ConnectionProvider: connectionProvider}
+func NewAbstractConnectionProvider(config *Config, connectionPool chan Connection, connectionProvider ConnectionProvider) *AbstractConnectionProvider {
+	return &AbstractConnectionProvider{config: config, connectionPool: connectionPool, ConnectionProvider: connectionProvider}
 }

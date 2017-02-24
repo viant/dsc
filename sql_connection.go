@@ -7,7 +7,7 @@ import (
 )
 
 type sqlConnection struct {
-	AbstractConnection
+	*AbstractConnection
 	db *sql.DB
 	tx *sql.Tx
 }
@@ -62,7 +62,7 @@ func (c *sqlConnection) Rollback() error {
 }
 
 type sqlConnectionProvider struct {
-	AbstractConnectionProvider
+	*AbstractConnectionProvider
 }
 
 func (c *sqlConnectionProvider) NewConnection() (Connection, error) {

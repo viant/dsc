@@ -3,7 +3,7 @@ package dsc
 import "errors"
 
 type fileConnection struct {
-	AbstractConnection
+	*AbstractConnection
 	URL string
 	ext string
 }
@@ -17,7 +17,7 @@ func (fc *fileConnection) Unwrap(target interface{}) interface{} {
 }
 
 type fileConnectionProvider struct {
-	AbstractConnectionProvider
+	*AbstractConnectionProvider
 }
 
 func (cp *fileConnectionProvider) NewConnection() (Connection, error) {

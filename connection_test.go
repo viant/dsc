@@ -62,7 +62,7 @@ func TestConnectionProvider(t *testing.T) {
 }
 
 type testConnection struct {
-	dsc.AbstractConnection
+	*dsc.AbstractConnection
 }
 
 func (t *testConnection) CloseNow() error {
@@ -81,7 +81,7 @@ func newTestConnection(config *dsc.Config) dsc.Connection {
 }
 
 type testConnectionProvider struct {
-	dsc.AbstractConnectionProvider
+	*dsc.AbstractConnectionProvider
 	sleep *int
 	error error
 }
