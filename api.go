@@ -213,7 +213,7 @@ type TableDescriptor struct {
 	Columns       []string
 	Schema        []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
 	SchemaUrl     string                   //url with JSON to the TableDescriptor.Schema.
-	FromQuery     string		       //If table is query base then specify FromQuery
+	FromQuery     string                   //If table is query base then specify FromQuery
 }
 
 //TableDescriptorRegistry represents a registry to store table descriptors by table name.

@@ -101,7 +101,7 @@ func (am *AbstractManager) ReadAllOnConnection(connection Connection, resultSlic
 		if mapped != nil {
 			//only add to slice i
 			mappedValue := reflect.ValueOf(mapped)
-			if  reflect.TypeOf(resultSlicePointer).Elem().Kind() == reflect.Slice && reflect.TypeOf(resultSlicePointer).Elem().Elem().Kind() != mappedValue.Kind() {
+			if reflect.TypeOf(resultSlicePointer).Elem().Kind() == reflect.Slice && reflect.TypeOf(resultSlicePointer).Elem().Elem().Kind() != mappedValue.Kind() {
 				if mappedValue.Kind() == reflect.Ptr {
 					mappedValue = mappedValue.Elem()
 				}

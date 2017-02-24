@@ -34,17 +34,7 @@ The following is a very simple example of CRUD operations with dsc
 package main
 
 import (
-	"github.com/viant/dsc"
-	_ "github.com/go-sql-driver/mysql"
 )
-
-
-type Interest struct {
-	Id int	`autoincrement:"true"`
-	Name string
-	ExpiryTimeInSecond int `column:"expiry"`
-	Category string
-}
 
 
 func main() {

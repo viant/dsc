@@ -1,6 +1,10 @@
 package dsc
 
-import "github.com/viant/toolbox"
+import (
+	"encoding/json"
+	"github.com/viant/toolbox"
+	"strings"
+)
 
 //FileScanner represents a file scanner to transfer record to destinations.
 type FileScanner struct {
@@ -15,11 +19,31 @@ func (s *FileScanner) Columns() ([]string, error) {
 }
 
 //Scan reads file record values to assign it to passed in destinations.
-func (s *FileScanner) Scan(destinations ...interface{}) error {
+func (s *FileScanner) Scan(destinations ...interface{}) (err error) {
 	var columns, _ = s.Columns()
 	for i, dest := range destinations {
 		if value, found := s.Values[columns[i]]; found {
-			err := s.converter.AssignConverted(dest, value)
+			switch val := value.(type) {
+			case json.Number:
+				var number interface{}
+				if strings.Contains(val.String(), ".") {
+
+					number, err = val.Float64()
+					if err == nil {
+						err = s.converter.AssignConverted(dest, number)
+					}
+				} else {
+					number, err = val.Int64()
+					if err == nil {
+						err = s.converter.AssignConverted(dest, number)
+					}
+				}
+				break
+
+			default:
+				err = s.converter.AssignConverted(dest, value)
+
+			}
 			if err != nil {
 				return err
 			}
