@@ -102,7 +102,6 @@ func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err e
 	resultStruct := structPointer.Elem()
 	columns, _ := scanner.Columns()
 	var fieldValuePointers = make([]interface{}, len(columns))
-
 	var fieldsValueMap map[string]interface{}
 
 	hasFieldValueMap := rm.getValueMappingCount(columns) > 0
@@ -180,7 +179,7 @@ func NewRecordMapper(targetType reflect.Type) RecordMapper {
 	case reflect.Struct:
 		var mapper = NewMetaRecordMapped(targetType, false)
 		return mapper
-	case reflect.Slice:
+	case reflect.Slice, reflect.Map:
 		var mapper = NewColumnarRecordMapper(false, targetType)
 		return mapper
 	case reflect.Ptr:
