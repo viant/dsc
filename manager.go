@@ -209,19 +209,27 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	structType := reflect.TypeOf(dataPointer).Elem().Elem()
 	provider = NewDmlProviderIfNeeded(provider, table, structType)
 	descriptor := am.RegisterDescriptorIfNeeded(table, dataPointer)
+
 	insertables, updatables, err := am.Manager.ClassifyDataAsInsertableOrUpdatable(connection, dataPointer, table, provider)
 	if err != nil {
 		return 0, 0, err
 	}
-
+	var isStructPointer = structType.Kind() == reflect.Ptr
 	var insertableMapping map[int]int
 	if descriptor.Autoincrement { //we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
 		insertableMapping = make(map[int]int)
 		toolbox.ProcessSliceWithIndex(dataPointer, func(index int, value interface{}) bool {
 			for j, insertable := range insertables {
-				if reflect.DeepEqual(insertable, value) {
-					insertableMapping[j] = index
-					break
+				if isStructPointer {
+					if insertable == value {
+						insertableMapping[j] = index
+						break
+					}
+				} else {
+					if reflect.DeepEqual(insertable, value) {
+						insertableMapping[j] = index
+						break
+					}
 				}
 			}
 			return true
