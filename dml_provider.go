@@ -41,6 +41,9 @@ func (p *metaDmlProvider) SetKey(instancePointer interface{}, seq int64) {
 func (p *metaDmlProvider) readValues(instance interface{}, columns []string) []interface{} {
 	var result = make([]interface{}, len(columns))
 	var reflectable = reflect.ValueOf(instance)
+	if reflectable.Kind() == reflect.Ptr {
+		reflectable = reflectable.Elem()
+	}
 	for i, column := range columns {
 		result[i] = p.readValue(reflectable, column)
 	}
@@ -73,8 +76,11 @@ func (p *metaDmlProvider) readValue(source reflect.Value, column string) interfa
 
 //Get returns a ParametrizedSQL for specified sqlType and target instance.
 func (p *metaDmlProvider) Get(sqlType int, instance interface{}) *ParametrizedSQL {
-	toolbox.AssertKind(instance, reflect.Struct, "instance")
 	var reflectable = reflect.ValueOf(instance)
+	if reflectable.Kind() == reflect.Ptr {
+		reflectable = reflectable.Elem()
+	}
+	//toolbox.AssertKind(instance, reflect.Struct, "instance")
 	return p.dmlBuilder.GetParametrizedSQL(sqlType, func(column string) interface{} {
 		return p.readValue(reflectable, column)
 	})
