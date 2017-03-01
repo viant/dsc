@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc/examples"
 	"github.com/viant/dsunit"
+	"fmt"
 )
 
 func init() {
@@ -79,9 +80,9 @@ func TestPersist(t *testing.T) {
 			interest := response.Result
 			interest.Category = "Alphabet"
 
-			var interests = make([]examples.Interest, 0)
-			interests = append(interests, *interest)
-			interests = append(interests, examples.Interest{Name: "Klm", Category: "Ubf", Status: &falseValue, GroupName: "AAAA"})
+			var interests = make([]*examples.Interest, 0)
+			interests = append(interests, interest)
+			interests = append(interests, &examples.Interest{Name: "Klm", Category: "Ubf", Status: &falseValue, GroupName: "AAAA"})
 			persistResponse := service.Persist(interests)
 			assert.NotNil(t, persistResponse)
 			assert.Equal(t, "ok", persistResponse.Status, persistResponse.Message)
@@ -93,6 +94,38 @@ func TestPersist(t *testing.T) {
 	}
 
 }
+
+func TestPersistAll(t *testing.T) {
+	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
+
+	services, err := getServices()
+	if err != nil {
+		t.Errorf("Failed to get services %v", err)
+	}
+
+
+	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	service := services[0];
+	var interests = make([]*examples.Interest, 0)
+	for i := 1; i <= 100000; i++ {
+		var status = true
+		interests = append(interests, &examples.Interest{
+			ID:i,
+			Name: fmt.Sprintf("Name %v", i),
+			Category:"cat",
+			Status  :&status,
+			GroupName:"abc",
+		})
+	}
+	startTime := time.Now().Unix()
+	persistResponse := service.Persist(interests)
+	assert.Equal(t, "ok", persistResponse.Status)
+	endTime := time.Now().Unix()
+	var elapsed  = endTime - startTime
+	assert.True(t, elapsed < 60)//elapsed should 100k should be under 30 sec
+}
+
+
 
 func TestDelete(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")

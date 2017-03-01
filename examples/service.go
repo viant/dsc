@@ -33,7 +33,7 @@ func (s *interestServiceImpl) GetByID(id int) *GetByIDResponse {
 
 func (s *interestServiceImpl) GetByIDs(ids ...int) *GetByIDsResponse {
 	response := &GetByIDsResponse{Response: Response{Status: "ok"}}
-	var result = make([]Interest, 0)
+	var result = make([]*Interest, 0)
 	err := s.manager.ReadAll(&result, fmt.Sprintf("SELECT id, name, category, status FROM interests WHERE id IN(%v)", toolbox.JoinAsString(ids, ",")), nil, nil)
 	if err != nil {
 		setErrorStatus(&response.Response, err)
@@ -43,7 +43,7 @@ func (s *interestServiceImpl) GetByIDs(ids ...int) *GetByIDsResponse {
 	return response
 }
 
-func (s *interestServiceImpl) Persist(interests []Interest) *PersistResponse {
+func (s *interestServiceImpl) Persist(interests []*Interest) *PersistResponse {
 	response := &PersistResponse{Response: Response{Status: "ok"}}
 	inserted, updated, err := s.manager.PersistAll(&interests, "interests", nil)
 	if err != nil {

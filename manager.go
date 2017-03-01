@@ -214,6 +214,7 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	if err != nil {
 		return 0, 0, err
 	}
+
 	var isStructPointer = structType.Kind() == reflect.Ptr
 	var insertableMapping map[int]int
 	if descriptor.Autoincrement { //we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
@@ -302,8 +303,17 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 		seq, lastInsertErr := result.LastInsertId()
 
 		if lastInsertErr == nil && seq > 0 {
-			structPointerValue := reflect.New(reflect.TypeOf(data[i]))
-			reflect.Indirect(structPointerValue).Set(reflect.ValueOf(item))
+
+			dataType := reflect.TypeOf(data[i]);
+			if dataType.Kind() == reflect.Ptr {
+				dataType = dataType.Elem()
+			}
+			structPointerValue := reflect.New(dataType)
+			itemValue := reflect.ValueOf(item)
+			if itemValue.Kind() == reflect.Ptr {
+				itemValue = itemValue.Elem()
+			}
+			reflect.Indirect(structPointerValue).Set(itemValue)
 			keySetter.SetKey(structPointerValue.Interface(), seq)
 			data[i] = structPointerValue.Elem().Interface()
 
@@ -315,6 +325,9 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {
 	var rows = make([][]interface{}, 0)
 	for _, sqlWihtArguments := range sqlsWihtArguments {
+		if len(sqlWihtArguments.Values) == 0 {
+			break;
+		}
 		err := am.Manager.ReadAllOnConnection(connection, &rows, sqlWihtArguments.SQL, sqlWihtArguments.Values, mapper)
 		if err != nil {
 			return nil, err
@@ -329,7 +342,10 @@ func (am *AbstractManager) fetchExistigData(connection Connection, table string,
 	if len(pkValues) > 0 {
 		descriptor := TableDescriptor{Table: table, PkColumns: descriptor.PkColumns}
 		sqlBuilder := NewQueryBuilder(&descriptor, "")
+
+
 		sqlWithArguments := sqlBuilder.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, batchSize)
+
 		var mapper = NewColumnarRecordMapper(false, reflect.TypeOf(rows))
 		batched, err := am.fetchDataInBatches(connection, sqlWithArguments, mapper)
 		if err != nil {
@@ -358,6 +374,8 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 		rowsByKey[key] = row
 		return true
 	})
+
+
 
 	//fetch all existing pk values into rows to classify as updatable
 	rows, err := am.fetchExistigData(connection, table, pkValues, provider)

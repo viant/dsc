@@ -33,7 +33,7 @@ func (c *interestServiceClient) GetByIDs(ids ...int) *GetByIDsResponse {
 	return response
 }
 
-func (c *interestServiceClient) Persist(interests []Interest) *PersistResponse {
+func (c *interestServiceClient) Persist(interests []*Interest) *PersistResponse {
 	response := &PersistResponse{}
 	err := toolbox.RouteToService("post", fmt.Sprintf("%v", c.url), &interests, response)
 	if err != nil {

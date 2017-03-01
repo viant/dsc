@@ -10,7 +10,7 @@ type InterestService interface {
 	GetByIDs(id ...int) *GetByIDsResponse
 
 	//Persist persists passed in interests
-	Persist(interests []Interest) *PersistResponse
+	Persist(interests []*Interest) *PersistResponse
 
 	//DeleteById deletes interestes by id.
 	DeleteByID(id int) *Response
@@ -31,11 +31,11 @@ type GetByIDResponse struct {
 //GetByIDsResponse represents a get by ids response.
 type GetByIDsResponse struct {
 	Response
-	Result []Interest
+	Result []*Interest
 }
 
 //PersistResponse represents a persist response.
 type PersistResponse struct {
 	Response
-	Result []Interest
+	Result []*Interest
 }
