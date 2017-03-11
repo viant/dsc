@@ -93,7 +93,7 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 	db.SetConnMaxLifetime(1 * time.Second)
 
 	err = db.Ping()
-	if err != nil {
+	if err == nil {
 		return result, nil
 	}
 	result, err = c.NewConnection()
