@@ -9,7 +9,7 @@ import (
 )
 
 type fileDialect struct {
-	defaultDialect
+	DefaultDialect
 }
 
 //DropTable drops a table in datastore managed by passed in manager.

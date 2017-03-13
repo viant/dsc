@@ -22,7 +22,7 @@ func (ac *AbstractConnection) ConnectionPool() chan Connection {
 	return ac.connectionPool
 }
 
-//Close closes connection if pool if full or send it back to the pool
+//Close closes connection if pool is full or send it back to the pool
 func (ac *AbstractConnection) Close() error {
 	channel := ac.Connection.ConnectionPool()
 	config := ac.config
