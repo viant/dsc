@@ -2,7 +2,7 @@ package dsc
 
 import "database/sql"
 
-//Scanner represents a datastrore data scanner. This abstraction provides ability to converting and assigning datastore record of data to provided destination
+//Scanner represents a datastore data scanner. This abstraction provides the ability to convert and assign datastore record of data to provided destination
 type Scanner interface {
 
 	//Returns all column specified in select statement.
@@ -25,7 +25,7 @@ type ParametrizedSQL struct {
 	Values []interface{} //binding parameter values
 }
 
-//DmlProvider represnet dml generator, which is responsible for providing parametrized sql, it takes operation type:
+//DmlProvider represents dml generator, which is responsible for providing parametrized sql, it takes operation type:
 //SqlTypeInsert = 0
 //SqlTypeUpdate = 1
 //SqlTypeDelete = 2
@@ -37,7 +37,7 @@ type DmlProvider interface {
 	KeyGetter
 }
 
-//Manager represents  datastore manager.
+//Manager represents datastore manager.
 type Manager interface {
 	Config() *Config
 

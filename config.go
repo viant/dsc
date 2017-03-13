@@ -62,11 +62,11 @@ func NewConfig(driverName string, descriptor string, encodedParameters string) *
 
 //NewConfigFromUrl returns new config from url
 func NewConfigFromUrl(url string) (*Config, error) {
-	resullt := &Config{}
-	err := toolbox.LoadConfigFromUrl(url, resullt)
+	result := &Config{}
+	err := toolbox.LoadConfigFromUrl(url, result)
 	if err != nil {
 		return nil, err
 	}
-	resullt.Init()
-	return resullt, nil
+	result.Init()
+	return result, nil
 }
