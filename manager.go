@@ -303,20 +303,25 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 		seq, lastInsertErr := result.LastInsertId()
 
 		if lastInsertErr == nil && seq > 0 {
-
-			dataType := reflect.TypeOf(data[i]);
+			var ptrType = false
+			dataType := reflect.TypeOf(data[i])
+			itemValue := reflect.ValueOf(data[i])
 			if dataType.Kind() == reflect.Ptr {
 				dataType = dataType.Elem()
+				ptrType = true
 			}
-			structPointerValue := reflect.New(dataType)
-			itemValue := reflect.ValueOf(item)
 			if itemValue.Kind() == reflect.Ptr {
 				itemValue = itemValue.Elem()
+				ptrType = true
 			}
+			structPointerValue := reflect.New(dataType)
 			reflect.Indirect(structPointerValue).Set(itemValue)
 			keySetter.SetKey(structPointerValue.Interface(), seq)
-			data[i] = structPointerValue.Elem().Interface()
-
+			if ptrType {
+				data[i] = structPointerValue.Interface()
+			} else {
+				data[i] = structPointerValue.Elem().Interface()
+			}
 		}
 	}
 	return processed, nil

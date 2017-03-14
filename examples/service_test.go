@@ -105,12 +105,11 @@ func TestPersistAll(t *testing.T) {
 
 
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
-	service := services[0];
+	service := services[0]
 	var interests = make([]*examples.Interest, 0)
 	for i := 1; i <= 100000; i++ {
 		var status = true
 		interests = append(interests, &examples.Interest{
-			ID:i,
 			Name: fmt.Sprintf("Name %v", i),
 			Category:"cat",
 			Status  :&status,
