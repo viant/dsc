@@ -27,7 +27,6 @@ or any other store that deals with structured data in SQL-ish way.
 
 ## Usage:
 
-
 The following is a very simple example of CRUD operations with dsc
 
 ```go
