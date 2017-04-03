@@ -73,12 +73,12 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 
 	sqlStatement, sqlError := db.Prepare(query)
 	if sqlError != nil {
-		return fmt.Errorf("Failed to preapre sql: %v with %v due to:%v\n\t", query, args, sqlError.Error())
+		return fmt.Errorf("Failed to prepare sql: %v with %v due to:%v\n\t", query, args, sqlError.Error())
 	}
 	defer sqlStatement.Close()
 	rows, queryError := m.executeQuery(sqlStatement, query, args)
 	if queryError != nil {
-		return fmt.Errorf(fmt.Sprintf("Failed to preapre sql: %v with %v due to:%v\n\t", query, args, queryError.Error()))
+		return fmt.Errorf(fmt.Sprintf("Failed to execute sql: %v with %v due to:%v\n\t", query, args, queryError.Error()))
 	}
 	defer rows.Close()
 	for rows.Next() {

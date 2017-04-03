@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
@@ -21,6 +21,35 @@ func GetManager(t *testing.T) dsc.Manager {
 	}
 	assert.Nil(t, err)
 
+	for _, sql := range sqls {
+		_, err := manager.Execute(sql)
+		if err != nil {
+			t.Fatalf("Failed to init database %v", err)
+		}
+	}
+	return manager
+}
+
+func GetMysqlManager(t *testing.T) dsc.Manager {
+	config := dsc.NewConfig("mysql",
+		"[user]:[password]@[url]",
+		"user:root,password:dev,url:tcp(localhost:3306)/mydbname?parseTime=true")
+	factory := dsc.NewManagerFactory()
+	config.MaxPoolSize = 10
+	manager, err := factory.Create(config)
+	sqls := []string{
+		"DROP TABLE IF EXISTS users",
+		"CREATE TABLE `users` ("+
+		"`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,"+
+		"`username` varchar(255) DEFAULT NULL,"+
+		"`active` tinyint(1) DEFAULT '1',"+
+		"`salary` decimal(7,2) DEFAULT NULL,"+
+		"`comments` text,"+
+		"`last_access_time` timestamp DEFAULT CURRENT_TIMESTAMP"+
+		") ENGINE = InnoDB",
+		"INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments', '2010-05-28T15:36:56.200'),('Sam', 0, 43000, 'test comments', '2010-05-28T15:36:56.200')",
+	}
+	assert.Nil(t, err)
 	for _, sql := range sqls {
 		_, err := manager.Execute(sql)
 		if err != nil {
@@ -157,6 +186,17 @@ func TestReadSingleWithDefaultMetaMapper(t *testing.T) {
 	}
 	assert.Equal(t, true, success, "Should fetch a user")
 	assert.Equal(t, true, singleUser.Active)
+}
+
+func TestExecessiveReadAll(t *testing.T) {
+	manager := GetMysqlManager(t)
+	for i := 0; i < 10000; i++ {
+		users := make([]*User, 0)
+		err := manager.ReadAll(&users,"SELECT * FROM users", nil, nil)
+		if err != nil {
+			t.Fatal("Failed test:", err.Error())
+		}
+	}
 }
 
 func TestReadAllWithDefaultMetaMapper(t *testing.T) {
