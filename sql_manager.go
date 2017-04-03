@@ -83,7 +83,7 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 	defer rows.Close()
 	for rows.Next() {
 		scanner, _ := asScanner(rows)
-		toContinue, err := readingHandler(newScanner(scanner))
+		toContinue, err := readingHandler(NewScanner(scanner))
 		if err != nil {
 			return err
 		}

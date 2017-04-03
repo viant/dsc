@@ -173,13 +173,47 @@ func (rm *columnarRecordMapper) Map(scanner Scanner) (interface{}, error) {
 	return result, nil
 }
 
+
+
+type mapRecordMapper struct {
+	usePointer  bool
+	targetSlice reflect.Type
+}
+
+
+func (rm *mapRecordMapper) Map(scanner Scanner) (interface{}, error) {
+	result, _, err := ScanRow(scanner)
+	if err != nil {
+		return nil, err
+	}
+	columns, _ := scanner.Columns()
+	aMap := make(map[string]interface{})
+	for i, column := range columns {
+		aMap[column] = result[i]
+	}
+	if rm.usePointer {
+		return &aMap, nil
+	}
+	return aMap, nil
+}
+
+
+//NewMapRecordMapper creates a new ColumnarRecordMapper, to map a data record to slice.
+func NewMapRecordMapper(usePointer bool, targetSlice reflect.Type) RecordMapper {
+	return &mapRecordMapper{usePointer, targetSlice}
+}
+
 //NewRecordMapper create a new record mapper, if struct is passed it would be MetaRecordMapper, or for slice ColumnRecordMapper
 func NewRecordMapper(targetType reflect.Type) RecordMapper {
 	switch targetType.Kind() {
 	case reflect.Struct:
 		var mapper = NewMetaRecordMapped(targetType, false)
 		return mapper
-	case reflect.Slice, reflect.Map:
+
+	case reflect.Map:
+		var mapper = NewMapRecordMapper(false, targetType)
+		return mapper
+	case reflect.Slice:
 		var mapper = NewColumnarRecordMapper(false, targetType)
 		return mapper
 	case reflect.Ptr:

@@ -1,5 +1,6 @@
 package dsc
 
+
 type scanner struct {
 	scanner Scanner
 }
@@ -9,6 +10,7 @@ func (s *scanner) Columns() ([]string, error) {
 }
 
 func (s *scanner) Scan(destinations ...interface{}) error {
+
 	if len(destinations) == 1 {
 		if aMap, ok := destinations[0].(map[string]interface{}); ok {
 			columns, err :=  s.Columns();
@@ -18,14 +20,27 @@ func (s *scanner) Scan(destinations ...interface{}) error {
 			destinations = make([]interface{}, len(columns))
 			for i, column := range columns {
 				var value interface{}
-				aMap[column] = value
+				aMap[column] = &value
+				destinations[i] = &value
+			}
+		}
+		if aMap, ok := destinations[0].(*map[string]interface{}); ok {
+			columns, err :=  s.Columns();
+			if err != nil {
+				return err
+			}
+			destinations = make([]interface{}, len(columns))
+			for i, column := range columns {
+				var value interface{}
+				(*aMap)[column] =  &value
 				destinations[i] = &value
 			}
 		}
 	}
-	return s.scanner.Scan(destinations...)
+	err :=  s.scanner.Scan(destinations...)
+	return err
 }
 
-func newScanner(s Scanner) Scanner {
+func NewScanner(s Scanner) Scanner {
 	return &scanner{s}
 }

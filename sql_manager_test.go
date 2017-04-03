@@ -184,6 +184,19 @@ func TestReadSingleRowAsSlice(t *testing.T) {
 	assert.EqualValues(t, 1, aUser[0].(int64))
 }
 
+func TestReadSingleRowAsMap(t *testing.T) {
+	manager := GetManager(t)
+	var aUser = make(map[string]interface{})
+
+	success, err := manager.ReadSingle(&aUser, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
+	if err != nil {
+		t.Error("Failed test: " + err.Error())
+	}
+	assert.Equal(t, true, success, "Should fetch a user")
+	assert.EqualValues(t, 1, aUser["id"].(int64))
+
+}
+
 func TestReadSingleAllRowAsSlice(t *testing.T) {
 	manager := GetManager(t)
 	var users = make([][]interface{}, 0)
@@ -195,7 +208,26 @@ func TestReadSingleAllRowAsSlice(t *testing.T) {
 
 	assert.Equal(t, 1, len(users))
 	user := users[0]
+
+
 	assert.Equal(t, "Edi", user[1].(string))
+}
+
+
+func TestReadSingleAllRowAsMap(t *testing.T) {
+	manager := GetManager(t)
+	var users = make([]map[string]interface{}, 0)
+
+	err := manager.ReadAll(&users, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
+	if err != nil {
+		t.Error("Failed test: " + err.Error())
+	}
+
+	assert.Equal(t, 1, len(users))
+	user := users[0]
+
+
+	assert.Equal(t, "Edi", user["username"].(string))
 }
 
 type UserDmlProvider struct{}

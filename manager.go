@@ -134,12 +134,13 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 	var elementType = reflect.TypeOf(resultPointer).Elem()
 
 	err = am.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, func(scanner Scanner) (toContinue bool, err error) {
+
 		mapped, err = mapper.Map(scanner)
 		if err != nil {
 			return false, fmt.Errorf("Failed to map record sql: %v due to %v", query, err)
 		}
-
 		if mapped != nil {
+
 			if elementType.Kind() == reflect.Slice {
 				slice := reflect.ValueOf(resultPointer).Elem()
 				toolbox.ProcessSlice(mapped, func(item interface{}) bool {
@@ -150,6 +151,15 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 					slice.Set(reflect.Append(slice, reflect.ValueOf(item)))
 					return true
 				})
+
+			} else if elementType.Kind() == reflect.Map {
+				toolbox.ProcessMap(mapped, func(key, value interface{}) bool {
+					aMap := reflect.ValueOf(resultPointer).Elem()
+					aMap.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
+					return true
+				})
+
+
 			} else {
 				if reflect.ValueOf(mapped).Kind() == reflect.Ptr {
 					mapped = reflect.ValueOf(mapped).Elem().Interface()
@@ -158,6 +168,7 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 			}
 			success = true
 		}
+
 		return false, nil
 	})
 	return success, err
@@ -217,7 +228,8 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 
 	var isStructPointer = structType.Kind() == reflect.Ptr
 	var insertableMapping map[int]int
-	if descriptor.Autoincrement { //we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
+	if descriptor.Autoincrement {
+		//we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
 		insertableMapping = make(map[int]int)
 		toolbox.ProcessSliceWithIndex(dataPointer, func(index int, value interface{}) bool {
 			for j, insertable := range insertables {
@@ -343,7 +355,6 @@ func (am *AbstractManager) fetchExistigData(connection Connection, table string,
 		descriptor := TableDescriptor{Table: table, PkColumns: descriptor.PkColumns}
 		sqlBuilder := NewQueryBuilder(&descriptor, "")
 
-
 		sqlWithArguments := sqlBuilder.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, batchSize)
 
 		var mapper = NewColumnarRecordMapper(false, reflect.TypeOf(rows))
@@ -444,7 +455,7 @@ func (am *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoin
 		where := strings.Join(descriptor.PkColumns, ",")
 		if len(descriptor.PkColumns) > 1 {
 			values := strings.Repeat("?,", len(descriptor.PkColumns))
-			values = values[0 : len(values)-1]
+			values = values[0 : len(values) - 1]
 			where = where + " IN (" + values + ")"
 		} else {
 			where = where + " = ?"
