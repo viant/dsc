@@ -159,7 +159,6 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 					return true
 				})
 
-
 			} else {
 				if reflect.ValueOf(mapped).Kind() == reflect.Ptr {
 					mapped = reflect.ValueOf(mapped).Elem().Interface()
@@ -343,7 +342,7 @@ func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArg
 	var rows = make([][]interface{}, 0)
 	for _, sqlWihtArguments := range sqlsWihtArguments {
 		if len(sqlWihtArguments.Values) == 0 {
-			break;
+			break
 		}
 		err := am.Manager.ReadAllOnConnection(connection, &rows, sqlWihtArguments.SQL, sqlWihtArguments.Values, mapper)
 		if err != nil {
@@ -390,8 +389,6 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 		rowsByKey[key] = row
 		return true
 	})
-
-
 
 	//fetch all existing pk values into rows to classify as updatable
 	rows, err := am.fetchExistigData(connection, table, pkValues, provider)
@@ -460,7 +457,7 @@ func (am *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoin
 		where := strings.Join(descriptor.PkColumns, ",")
 		if len(descriptor.PkColumns) > 1 {
 			values := strings.Repeat("?,", len(descriptor.PkColumns))
-			values = values[0 : len(values) - 1]
+			values = values[0 : len(values)-1]
 			where = where + " IN (" + values + ")"
 		} else {
 			where = where + " = ?"
