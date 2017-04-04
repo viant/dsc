@@ -2,12 +2,12 @@ package dsc_test
 
 import (
 	"fmt"
-	"testing"
-	"time"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
+	"testing"
+	"time"
 )
 
 func GetManager(t *testing.T) dsc.Manager {
@@ -39,14 +39,14 @@ func GetMysqlManager(t *testing.T) dsc.Manager {
 	manager, err := factory.Create(config)
 	sqls := []string{
 		"DROP TABLE IF EXISTS users",
-		"CREATE TABLE `users` ("+
-		"`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,"+
-		"`username` varchar(255) DEFAULT NULL,"+
-		"`active` tinyint(1) DEFAULT '1',"+
-		"`salary` decimal(7,2) DEFAULT NULL,"+
-		"`comments` text,"+
-		"`last_access_time` timestamp DEFAULT CURRENT_TIMESTAMP"+
-		") ENGINE = InnoDB",
+		"CREATE TABLE `users` (" +
+			"`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT," +
+			"`username` varchar(255) DEFAULT NULL," +
+			"`active` tinyint(1) DEFAULT '1'," +
+			"`salary` decimal(7,2) DEFAULT NULL," +
+			"`comments` text," +
+			"`last_access_time` timestamp DEFAULT CURRENT_TIMESTAMP" +
+			") ENGINE = InnoDB",
 		"INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments', '2010-05-28T15:36:56.200'),('Sam', 0, 43000, 'test comments', '2010-05-28T15:36:56.200')",
 	}
 	assert.Nil(t, err)
@@ -192,7 +192,7 @@ func TestExecessiveReadAll(t *testing.T) {
 	manager := GetMysqlManager(t)
 	for i := 0; i < 10000; i++ {
 		users := make([]*User, 0)
-		err := manager.ReadAll(&users,"SELECT * FROM users", nil, nil)
+		err := manager.ReadAll(&users, "SELECT * FROM users", nil, nil)
 		if err != nil {
 			t.Fatal("Failed test:", err.Error())
 		}
@@ -249,10 +249,8 @@ func TestReadSingleAllRowAsSlice(t *testing.T) {
 	assert.Equal(t, 1, len(users))
 	user := users[0]
 
-
 	assert.Equal(t, "Edi", user[1].(string))
 }
-
 
 func TestReadSingleAllRowAsMap(t *testing.T) {
 	manager := GetManager(t)
@@ -265,7 +263,6 @@ func TestReadSingleAllRowAsMap(t *testing.T) {
 
 	assert.Equal(t, 1, len(users))
 	user := users[0]
-
 
 	assert.Equal(t, "Edi", user["username"].(string))
 }
