@@ -173,13 +173,10 @@ func (rm *columnarRecordMapper) Map(scanner Scanner) (interface{}, error) {
 	return result, nil
 }
 
-
-
 type mapRecordMapper struct {
 	usePointer  bool
 	targetSlice reflect.Type
 }
-
 
 func (rm *mapRecordMapper) Map(scanner Scanner) (interface{}, error) {
 	result, _, err := ScanRow(scanner)
@@ -196,7 +193,6 @@ func (rm *mapRecordMapper) Map(scanner Scanner) (interface{}, error) {
 	}
 	return aMap, nil
 }
-
 
 //NewMapRecordMapper creates a new ColumnarRecordMapper, to map a data record to slice.
 func NewMapRecordMapper(usePointer bool, targetSlice reflect.Type) RecordMapper {
