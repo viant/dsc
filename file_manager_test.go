@@ -50,8 +50,8 @@ func TestPersist(t *testing.T) {
 	err = dialect.DropTable(manager, datastore, "travelers2")
 	assert.Nil(t, err)
 
-	travelers := make([]Traveler, 2)
-	travelers[0] = Traveler{
+	travelers := make([]*Traveler, 2)
+	travelers[0] = &Traveler{
 		Id:            10,
 		Name:          "Cook",
 		LastVisitTime: time.Now(),
@@ -59,7 +59,7 @@ func TestPersist(t *testing.T) {
 		MostLikedCity: MostLikedCity{City: "Cracow", Visits: 4},
 	}
 
-	travelers[1] = Traveler{
+	travelers[1] = &Traveler{
 		Id:            20,
 		Name:          "Robin",
 		LastVisitTime: time.Now(),
@@ -73,12 +73,12 @@ func TestPersist(t *testing.T) {
 	assert.Equal(t, 0, updated)
 
 	travelers[1].Achievements = []string{"z", "g"}
-	inserted, updated, err = manager.PersistSingle(&travelers[1], "travelers2", nil)
+	inserted, updated, err = manager.PersistSingle(travelers[1], "travelers2", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, inserted)
 	assert.Equal(t, 1, updated)
 
-	success, err := manager.DeleteSingle(&travelers[0], "travelers2", nil)
+	success, err := manager.DeleteSingle(travelers[0], "travelers2", nil)
 	assert.Nil(t, err)
 	assert.True(t, success)
 

@@ -22,6 +22,6 @@ func init() {
 	RegisterDatastoreDialect("ora", newOraDialect())
 	RegisterDatastoreDialect("mssql", newMsSQLDialect())
 	RegisterDatastoreDialect("sqlite3", newSQLLiteDialect())
-	RegisterDatastoreDialect("odbc", newSQLLiteDialect())
+	RegisterDatastoreDialect("odbc", newOraDialect())
 	RegisterDatastoreDialect("ndjson", &fileDialect{})
 }

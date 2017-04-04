@@ -23,10 +23,13 @@ const pgSequenceSQL = "SELECT currval(%v) + 1"
 const oraTableSQL = "SELECT table_name AS name  FROM all_tables WHERE owner = ?"
 const oraSchemaSQL = "SELECT sys_context( 'userenv', 'current_schema' ) AS name FROM dual"
 const oraSequenceSQL = "SELECT %v.nextval AS name from dual"
-const oraAllSchemaSQL = "SELECT username AS name FROM all_users"
+const oraAllSchemaSQL = "SELECT schema_name AS name FROM all_tables GROUP BY 1"
 
 const msSchemaSQL = "SELECT SCHEMA_NAME() AS name"
 const msSequenceSQL = "SELECT current_value FROM sys.sequences WHERE  name = '%v'"
+
+
+
 
 type nameRecord struct {
 	Name string `column:"name"`
@@ -188,6 +191,18 @@ func newPgDialect() *pgDialect {
 
 type oraDialect struct {
 	DatastoreDialect
+}
+
+//CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
+func (d oraDialect) CreateDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("CREATE SCHEMA IF NOT EXISTS " + datastore)
+	return err
+}
+
+//DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
+func (d oraDialect) DropDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("DROP SCHEMA " + datastore)
+	return err
 }
 
 func newOraDialect() *oraDialect {

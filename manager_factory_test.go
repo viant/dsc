@@ -20,7 +20,7 @@ func TestCreateFromURL(t *testing.T) {
 		assert.NotNil(t, manager)
 	}
 	{
-		manager, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/store.json"))
+		manager, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/vertica_store.json"))
 		assert.Nil(t, err)
 		assert.NotNil(t, manager)
 	}

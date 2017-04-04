@@ -14,13 +14,13 @@ import (
 
 func init() {
 	go func() {
-		examples.StartServer(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/store.json"), "8084")
+		examples.StartServer(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/vertica_store.json"), "8084")
 	}()
 	time.Sleep(2 * time.Second)
 }
 
 func getServices() ([]examples.InterestService, error) {
-	local, err := examples.NewInterestService(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/store.json"))
+	local, err := examples.NewInterestService(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/vertica_store.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func getServices() ([]examples.InterestService, error) {
 
 func TestRead(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 
 	dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Read")
 	services, err := getServices()
@@ -72,7 +72,7 @@ func TestPersist(t *testing.T) {
 	for _, service := range services {
 		{
 			falseValue := false
-			dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+			dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 			dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Persist")
 			response := service.GetByID(1)
 			assert.Equal(t, "ok", response.Status, response.Message)
@@ -104,7 +104,7 @@ func TestPersistAll(t *testing.T) {
 	}
 
 
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 	service := services[0]
 	var interests = make([]*examples.Interest, 0)
 	for i := 1; i <= 100000; i++ {
@@ -134,7 +134,7 @@ func TestDelete(t *testing.T) {
 	}
 	for _, service := range services {
 		{
-			dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+			dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 			dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Delete")
 
 			deleteResponse := service.DeleteByID(1)
