@@ -211,7 +211,7 @@ type TableDescriptor struct {
 	Autoincrement bool
 	PkColumns     []string
 	Columns       []string
-	OrderColumns       []string
+	OrderColumns  []string
 	Schema        []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
 	SchemaUrl     string                   //url with JSON to the TableDescriptor.Schema.
 	FromQuery     string                   //If table is query base then specify FromQuery
