@@ -1,11 +1,10 @@
 package dsc
 
 import (
-	"io/ioutil"
-	"os"
 	"path"
-
-	"github.com/viant/toolbox"
+	"fmt"
+	"net/url"
+	"strings"
 )
 
 type fileDialect struct {
@@ -14,28 +13,59 @@ type fileDialect struct {
 
 //DropTable drops a table in datastore managed by passed in manager.
 func (d fileDialect) DropTable(manager Manager, datastore string, table string) error {
-	file, err := toolbox.FileFromURL(getTableURL(manager, table))
+	fileManager, ok := manager.(*FileManager)
+	if ! ok {
+		return fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
+	}
+	tableURL := getTableURL(manager, table)
+	exists, err := fileManager.service.Exists(tableURL)
 	if err != nil {
 		return err
 	}
-	return os.Remove(file)
+	if ! exists {
+		return nil
+	}
+
+	object, err := fileManager.service.StorageObject(tableURL)
+	if err != nil {
+		return err
+	}
+	if object == nil {
+		return nil
+	}
+	return fileManager.service.Delete(object)
 }
 
 //GetTables return tables names for passed in datastore managed by passed in manager.
 func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, error) {
-	basePath, err := toolbox.FileFromURL(manager.Config().Get("url"))
+	fileManager, ok := manager.(*FileManager)
+	if ! ok {
+		return nil, fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
+	}
+	baseURL := manager.Config().Get("url")
+
+	exists, err := fileManager.service.Exists(baseURL)
+	if err != nil {
+		return nil, err
+	}
+	if ! exists {
+		return []string{}, nil
+	}
+
+	objects, err := fileManager.service.List(baseURL)
 	ext := "." + manager.Config().Get("ext")
-	if err != nil {
-		return nil, err
-	}
-	files, err := ioutil.ReadDir(basePath)
-	if err != nil {
-		return nil, err
-	}
 	var result = make([]string, 0)
-	for _, file := range files {
-		if path.Ext(file.Name()) == ext {
-			result = append(result, file.Name())
+	for _, object := range objects {
+		if object.IsFolder() {
+			continue
+		}
+		parsedURL, err := url.Parse(object.URL())
+		if err != nil {
+			return nil, err
+		}
+		_, name := path.Split(parsedURL.Path)
+		if strings.HasSuffix(name, ext) {
+			result = append(result, name)
 		}
 	}
 	return result, nil

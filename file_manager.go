@@ -9,9 +9,15 @@ import (
 	"path"
 	"reflect"
 	"strings"
-	"sync"
-
 	"github.com/viant/toolbox"
+	"io"
+	"io/ioutil"
+	"github.com/viant/toolbox/storage"
+	"github.com/viant/toolbox/storage/gs"
+	"net/url"
+	"google.golang.org/api/option"
+	"github.com/viant/toolbox/storage/aws"
+	"compress/gzip"
 )
 
 var defaultPermission os.FileMode = 0644
@@ -23,8 +29,42 @@ var defaultPermission os.FileMode = 0644
 // You can easily add other managers providing your custom encoder and decoder factories i.e. protobuf, avro.
 type FileManager struct {
 	*AbstractManager
+	service storage.Service
+	useGzipCompressions bool
+	hasHeaderLine  bool
+	delimiter      string
 	encoderFactory toolbox.EncoderFactory
 	decoderFactory toolbox.DecoderFactory
+}
+
+func (m *FileManager) Init() error {
+	var baseUrl = m.Config().Get("url")
+	parsedUrl, err := url.Parse(baseUrl)
+	if err != nil {
+		return err
+	}
+	extension := m.Config().Get("ext")
+	m.useGzipCompressions =   extension == "gzip"
+	switch  parsedUrl.Scheme {
+		case "file":
+		case "gs":
+			credential := option.WithServiceAccountFile(m.Config().Get("credential"))
+			service := gs.NewService(credential)
+			m.service.Register(parsedUrl.Scheme, service)
+			break;
+		case "s3":
+			credential := m.Config().Get("credential")
+			service, err := aws.NewServiceWithCredential(credential)
+			if err != nil {
+				return err
+			}
+			m.service.Register(parsedUrl.Scheme, service)
+
+	default:
+		return fmt.Errorf("Unsupported scheme: %v", parsedUrl.Scheme)
+	}
+	return nil
+
 }
 
 func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
@@ -101,18 +141,17 @@ func (m *FileManager) getRecord(statement *DmlStatement, parameters toolbox.Iter
 
 }
 
-func (m *FileManager) insertRecord(meteFileTable *meteFileTable, tableURL string, statement *DmlStatement, parameters toolbox.Iterator) error {
-	if !meteFileTable.exists() {
-		err := meteFileTable.create()
+func (m *FileManager) insertRecord(tableURL string, statement *DmlStatement, parameters toolbox.Iterator) error {
+
+	buf := new(bytes.Buffer)
+	reader, err := m.getReaderForUrl(tableURL)
+	if reader != nil {
+		_, err := io.Copy(buf, reader)
 		if err != nil {
-			return fmt.Errorf("Failed to open table %v due to %v", tableURL, err)
+			return err
 		}
 	}
-	file, err := toolbox.OpenURL(tableURL, os.O_APPEND|os.O_WRONLY, defaultPermission)
-	if err != nil {
-		return fmt.Errorf("Failed to open table %v due to %v", tableURL, err)
-	}
-	defer file.Close()
+
 	record, err := m.getRecord(statement, parameters)
 	if err != nil {
 		return err
@@ -121,19 +160,41 @@ func (m *FileManager) insertRecord(meteFileTable *meteFileTable, tableURL string
 	if err != nil {
 		return err
 	}
-	_, err = file.WriteString(encodedRecord)
+
+	_, err = buf.Write(([]byte)(encodedRecord))
 	if err != nil {
-		return fmt.Errorf("Failed to write to table %v due to %v", tableURL, err)
+		return err
 	}
-	return nil
+	return m.PersistTableData(tableURL,buf.Bytes())
 }
+
+
+func  (m *FileManager) PersistTableData(tableURL string, data []byte) error {
+	if  m.useGzipCompressions {
+		buffer := new(bytes.Buffer)
+		writer := gzip.NewWriter(buffer)
+		_, err := writer.Write(data)
+		if err != nil {
+			return  err
+		}
+		err = writer.Flush()
+		if err != nil {
+			return  fmt.Errorf("Failed to compress data (flush) %v", err)
+		}
+		err = writer.Close()
+		if err != nil {
+			return  fmt.Errorf("Failed to compress data (close) %v", err)
+		}
+		data = buffer.Bytes()
+	}
+	return m.service.Upload(tableURL, bytes.NewReader(data))
+}
+
 
 func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator, onMatchedHandler func(record map[string]interface{}) (bool, error)) (int, error) {
 	var count = 0
-	tempFile, err := toolbox.OpenURL(tableURL+".swp", os.O_CREATE|os.O_WRONLY, defaultPermission)
-	if err != nil {
-		return 0, fmt.Errorf("Failed to write to table %v due to %v", tempFile.Name(), err)
-	}
+	buf := new(bytes.Buffer)
+	var err error
 	var predicate toolbox.Predicate
 	if len(statement.Criteria) > 0 {
 		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
@@ -157,30 +218,17 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 		if err != nil {
 			return false, err
 		}
-		_, err = tempFile.WriteString(encodedRecord)
+
+		buf.Write(([]byte)(encodedRecord))
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	})
-	tempFile.Close()
-
-	if err != nil {
-		return 0, fmt.Errorf("Failed to modify %v due to %v", statement.Table, err)
-	}
-	if err == nil {
-		file, err := toolbox.FileFromURL(tableURL)
-		err = os.Rename(tempFile.Name(), file)
-		if err != nil {
-			return 0, fmt.Errorf("Unable write changes %v to %v due to %v", tempFile.Name(), file, err)
-		}
-	}
-	if err != nil {
-		return 0, fmt.Errorf("Failed to modify %v due to %v", statement.Table, err)
-	}
-	return count, nil
-
+	err = m.PersistTableData(tableURL, buf.Bytes())
+	return count, err
 }
+
 
 func (m *FileManager) updateRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator) (int, error) {
 	updatedRecord, err := m.getRecord(statement, parameters)
@@ -204,20 +252,21 @@ func (m *FileManager) deleteRecords(tableURL string, statement *DmlStatement, pa
 //ExecuteOnConnection executs passed in sql on connection. It takes connection, sql and sql parameters. It returns number of rows affected, or error.
 //This method support basic insert, updated and delete operations.
 func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sqlParameters []interface{}) (sql.Result, error) {
+	if m.hasHeaderLine {
+		return nil, fmt.Errorf("Modification of delimitered files is not supported yet")
+	}
 	parser := NewDmlParser()
 	statement, err := parser.Parse(sql)
 	if err != nil {
 		return nil, err
 	}
 	tableURL := getTableURL(m, statement.Table)
-	metaFileTable := staticMetaFileTableRegistry.get(tableURL, statement.Table)
-	metaFileTable.Lock()
-	defer metaFileTable.Unlock()
+
 	var count = 0
 	parameters := toolbox.NewSliceIterator(sqlParameters)
 	switch statement.Type {
 	case "INSERT":
-		err = m.insertRecord(metaFileTable, tableURL, statement, parameters)
+		err = m.insertRecord(tableURL, statement, parameters)
 		if err == nil {
 			count = 1
 		}
@@ -232,25 +281,80 @@ func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sql
 	return NewSQLResult(int64(count), 0), nil
 }
 
+
+func (m *FileManager) getStorageObject(tableURL string) (storage.Object, error) {
+	exists, err := m.service.Exists(tableURL)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, nil
+	}
+	return  m.service.StorageObject(tableURL)
+}
+
+
+func (m *FileManager) getReaderForUrl(tableURL string) (io.Reader, error) {
+	object, err := m.getStorageObject(tableURL)
+	if err != nil {
+		return nil, err
+	}
+	if object == nil {
+		return nil, nil
+	}
+	reader, err := m.service.Download(object)
+	if err != nil {
+		return nil, err
+	}
+	if reader != nil &&  m.useGzipCompressions {
+		reader, err = gzip.NewReader(reader)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return reader, nil
+}
+
+
+
 func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
 	tableURL := getTableURL(m, table)
-	metaFileTable := staticMetaFileTableRegistry.get(tableURL, table)
-	if !metaFileTable.exists() {
-		return nil
-	}
-	reader, _, err := toolbox.OpenReaderFromURL(tableURL)
-	if err != nil {
+	reader, err := m.getReaderForUrl(tableURL)
+	if reader == nil {
 		return err
 	}
-	defer reader.Close()
+
+
 	scanner := bufio.NewScanner(reader)
+
+	var headers []string
+	if m.hasHeaderLine &&  scanner.Scan() {
+		headerLine := scanner.Text()
+		for _, column := range strings.Split(headerLine, m.delimiter) {
+			headers = append(headers, strings.Trim(column, " "))
+		}
+	}
 	for scanner.Scan() {
 		line := scanner.Text()
 		decoder := m.decoderFactory.Create(strings.NewReader(line))
 		record := make(map[string]interface{})
-		err := decoder.Decode(&record)
-		if err != nil {
-			return fmt.Errorf("Failed to decode record from %v due to %v \n%v\n", table, err, line)
+
+		if m.hasHeaderLine {
+			delimiteredRecord := &DelimiteredRecord{
+				Delimiter: m.delimiter,
+				Record:    record,
+				Columns:   headers,
+			}
+			err := decoder.Decode(delimiteredRecord)
+			if err != nil {
+				return fmt.Errorf("Failed to decode record from %v due to %v \n%v\n", table, err, line)
+			}
+		} else {
+
+			err := decoder.Decode(&record)
+			if err != nil {
+				return fmt.Errorf("Failed to decode record from %v due to %v \n%v\n", table, err, line)
+			}
 		}
 		matched := true
 		if predicate != nil {
@@ -317,60 +421,82 @@ func (m *FileManager) ReadAllOnWithHandlerOnConnection(connection Connection, qu
 }
 
 //NewFileManager creates a new file manager.
-func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbox.DecoderFactory) *FileManager {
-	return &FileManager{
+func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbox.DecoderFactory, valuesDelimiter string) *FileManager {
+	result := &FileManager{
+		service:storage.NewService(),
+		delimiter:      valuesDelimiter,
+		hasHeaderLine:  len(valuesDelimiter) > 0,
 		encoderFactory: encoderFactory,
 		decoderFactory: decoderFactory,
 	}
-}
-
-type meteFileTable struct {
-	sync.RWMutex
-	table string
-	url   string
-}
-
-func (m *meteFileTable) exists() bool {
-	filePath, err := toolbox.FileFromURL(m.url)
-	if err != nil {
-		return false
-	}
-	_, err = os.Stat(filePath)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func (m *meteFileTable) create() error {
-	filePath, err := toolbox.OpenURL(m.url, os.O_CREATE, defaultPermission)
-	if err != nil {
-		return err
-	}
-	filePath.Close()
-	return nil
-}
-
-type metaFileTableRegistry struct {
-	sync.RWMutex
-	registry map[string]*meteFileTable
-}
-
-func (r *metaFileTableRegistry) get(url string, table string) *meteFileTable {
-	r.Lock()
-	defer r.Unlock()
-	result, found := r.registry[url]
-
-	if found {
-		return result
-	}
-	result = &meteFileTable{url: url, table: table}
-	r.registry[url] = result
 	return result
 }
 
-func newMetaFileTableRegistry() *metaFileTableRegistry {
-	return &metaFileTableRegistry{registry: make(map[string]*meteFileTable)}
+
+
+
+
+type DelimiteredRecord struct {
+	Columns   []string
+	Delimiter string
+	Record    map[string]interface{}
 }
 
-var staticMetaFileTableRegistry = newMetaFileTableRegistry()
+
+type delimiterDecoder struct {
+	reader io.Reader
+}
+
+
+func (d *delimiterDecoder) Decode(target interface{}) error {
+	delimiteredRecord, ok := target.(*DelimiteredRecord)
+	if ! ok {
+		return fmt.Errorf("Invalid target type, expected %T but had %T", &DelimiteredRecord{}, target)
+	}
+	var isInDoubleQuote = false
+	var index = 0
+	var value = ""
+	var delimiter = delimiteredRecord.Delimiter
+	payload, err := ioutil.ReadAll(d.reader)
+	if err != nil {
+		return err
+	}
+	encoded := string(payload)
+	for i:= 0; i <len(encoded);i++{
+		aChar := string(encoded[i:i+1])
+		//escape " only if value is already inside "s
+		if isInDoubleQuote && aChar == "\\"  {
+			nextChar := encoded[i+1 : i+2]
+			if nextChar == "\"" {
+				i++
+				value = value + nextChar
+				continue
+			}
+		}
+		//allow unescaped " be inside text if the whole text is not enclosed in "s
+		if aChar == "\"" && (len(value) == 0 || isInDoubleQuote) {
+			isInDoubleQuote = !isInDoubleQuote
+			continue
+		}
+		if encoded[i:i+1] == delimiter && !isInDoubleQuote {
+			var columnName = delimiteredRecord.Columns[index]
+			delimiteredRecord.Record[columnName] = value
+			value = ""
+			index++
+			continue
+		}
+		value = value + aChar
+	}
+	if len(value) > 0 {
+		var columnName = delimiteredRecord.Columns[index]
+		delimiteredRecord.Record[columnName] = value
+	}
+	return nil
+}
+
+type delimiterDecoderFactory struct {}
+
+
+func (f *delimiterDecoderFactory) Create(reader io.Reader) toolbox.Decoder {
+	return &delimiterDecoder{reader:reader}
+}
