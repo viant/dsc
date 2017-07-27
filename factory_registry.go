@@ -11,6 +11,8 @@ func init() {
 		RegisterManagerFactory(driver, managerFactory)
 	}
 	RegisterManagerFactory("ndjson", &jsonFileManagerFactory{})
+	RegisterManagerFactory("csv", &delimiteredFileManagerFactory{","})
+	RegisterManagerFactory("tsv", &delimiteredFileManagerFactory{"\t"})
 }
 
 
