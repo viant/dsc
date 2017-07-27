@@ -9,7 +9,7 @@ type InterestService interface {
 	//GetByIds returns interests by passed in ids
 	GetByIDs(id ...int) *GetByIDsResponse
 
-	//Persist persists passed in interests
+	//PersistTable persists passed in interests
 	Persist(interests []*Interest) *PersistResponse
 
 	//DeleteById deletes interestes by id.
