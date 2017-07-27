@@ -8,6 +8,57 @@ import (
 	"github.com/viant/toolbox"
 )
 
+
+func TestAggregationQueryParser(t *testing.T) {
+
+	parser := dsc.NewQueryParser()
+	{
+		query, err := parser.Parse("SELECT col1, SUM(col2) FROM bar GROUP BY 1")
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		assert.NotNil(t, query, "should have query")
+		assert.Equal(t, 2, len(query.Columns))
+
+		assert.Equal(t, "col1", query.Columns[0].Name)
+
+		assert.Equal(t, "SUM (col2)", query.Columns[1].Expression)
+
+		assert.Equal(t, "SUM", query.Columns[1].Function)
+		assert.Equal(t, "col2", query.Columns[1].FunctionArguments)
+
+		assert.Equal(t, "f1", query.Columns[1].Alias)
+
+
+		assert.Equal(t, 1, len(query.GroupBy))
+		assert.Equal(t, "col1", query.Columns[0].Name)
+
+
+
+		assert.Equal(t, "bar", query.Table)
+	}
+
+	{
+		query, err := parser.Parse("SELECT col1, SUM(col2) FROM bar WHERE col3 > 7 GROUP BY 1")
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		assert.NotNil(t, query, "should have query")
+		assert.Equal(t, 2, len(query.Columns))
+
+		assert.Equal(t, "col1", query.Columns[0].Name)
+		assert.Equal(t, "SUM (col2)", query.Columns[1].Expression)
+		assert.Equal(t, "SUM", query.Columns[1].Function)
+		assert.Equal(t, "col2", query.Columns[1].FunctionArguments)
+		assert.Equal(t, "f1", query.Columns[1].Alias)
+		assert.Equal(t, 1, len(query.GroupBy))
+		assert.Equal(t, "col1", query.Columns[0].Name)
+		assert.Equal(t, "bar", query.Table)
+	}
+
+
+}
+
 func TestQueryParser(t *testing.T) {
 	parser := dsc.NewQueryParser()
 	{

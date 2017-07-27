@@ -4,15 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 	"github.com/viant/toolbox"
 )
 
 //SQLColumn represents a sql column
 type SQLColumn struct {
-	Name        string
-	Alias       string
-	Expressions string
+	Name              string
+	Alias             string
+	Expression        string
+	Function          string
+	FunctionArguments string
 }
 
 //SQLCriterion represents single where clause condiction
@@ -29,8 +30,8 @@ type SQLCriterion struct {
 type BaseStatement struct {
 	SQL      string
 	Table    string
-	Columns  []SQLColumn
-	Criteria []SQLCriterion
+	Columns  []*SQLColumn
+	Criteria []*SQLCriterion
 }
 
 //ColumnNames returns a column names.
@@ -56,7 +57,7 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 		return values[0], nil
 	}
 	if strings.HasPrefix(textOperand, "'") {
-		return textOperand[1 : len(textOperand)-1], nil
+		return textOperand[1: len(textOperand)-1], nil
 	}
 
 	if !toolbox.CanConvertToString(source) {
@@ -89,7 +90,11 @@ func (bs BaseStatement) CriteriaValues(parameters toolbox.Iterator) ([]interface
 type QueryStatement struct {
 	BaseStatement
 	AllField bool
+	UnionTables []string
+	GroupBy  []*SQLColumn
 }
+
+
 
 //DmlStatement represents dml statement.
 type DmlStatement struct {
@@ -126,7 +131,7 @@ func (ds DmlStatement) ColumnValueMap(parameters toolbox.Iterator) (map[string]i
 }
 
 const (
-	undefined int = iota
+	undefined              int = iota
 	eof
 	illegal
 	whitespaces
@@ -147,10 +152,14 @@ const (
 	notKeyword
 	groupingBegin
 	groupingEnd
+	expression
 	selectKeyword
 	fromKeyword
 	whereKeyword
 	asKeyword
+	groupKeyword
+	byKeyword
+	columnRef
 	insertKeyword
 	intoKeyword
 	valuesKeyword
@@ -167,7 +176,7 @@ var sqlMatchers = map[int]toolbox.Matcher{
 	asterisk:    toolbox.CharactersMatcher{"*"},
 	coma:        toolbox.CharactersMatcher{","},
 	operator: toolbox.KeywordsMatcher{
-		Keywords:      []string{"=", ">=", "<=", "<>", "!="},
+		Keywords:      []string{"=", ">=", "<=", "<>",  ">", "<", "!="},
 		CaseSensitive: false,
 	},
 	notKeyword: toolbox.KeywordsMatcher{
@@ -208,8 +217,12 @@ var sqlMatchers = map[int]toolbox.Matcher{
 		valueOptionallyEnclosedWithChar: "'",
 		valueTerminatorCharacters:       ", \n\t)",
 	},
+	columnRef:     &toolbox.IntMatcher{},
 	groupingBegin: toolbox.CharactersMatcher{"("},
 	groupingEnd:   toolbox.CharactersMatcher{")"},
+	expression:    &toolbox.BodyMatcher{"(", ")"},
+	groupKeyword:  toolbox.KeywordMatcher{Keyword: "GROUP", CaseSensitive: false},
+	byKeyword:     toolbox.KeywordMatcher{Keyword: "BY", CaseSensitive: false},
 	selectKeyword: toolbox.KeywordMatcher{Keyword: "SELECT", CaseSensitive: false},
 	fromKeyword:   toolbox.KeywordMatcher{Keyword: "FROM", CaseSensitive: false},
 	whereKeyword:  toolbox.KeywordMatcher{Keyword: "WHERE", CaseSensitive: false},
@@ -301,7 +314,7 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 		return "", nil, err
 	}
 	value := token.Matched
-	values, err := bp.readValues(value[1 : len(value)-1])
+	values, err := bp.readValues(value[1: len(value)-1])
 	if err != nil {
 		return "", nil, err
 	}
@@ -309,7 +322,7 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 }
 
 func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *BaseStatement, token *toolbox.Token) (err error) {
-	statement.Criteria = make([]SQLCriterion, 0)
+	statement.Criteria = make([]*SQLCriterion, 0)
 	for {
 		token, err = bp.expectWhitespaceFollowedBy(tokenizer, "value", sqlValue)
 		if err != nil {
@@ -320,7 +333,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 		}
 
 		index := len(statement.Criteria)
-		statement.Criteria = append(statement.Criteria, SQLCriterion{LeftOperand: token.Matched})
+		statement.Criteria = append(statement.Criteria, &SQLCriterion{LeftOperand: token.Matched})
 
 		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", inOperatorKeyword, likeOperatorKeyword, betweenOperatorKeyword, notKeyword, isOperatorKeyword, operator, eof)
 		if err != nil {
@@ -379,12 +392,16 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 			toValue := token.Matched
 			statement.Criteria[index].RightOperands = []interface{}{fromValue, toValue}
 		}
-		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "or | and | eof", eof, logicalOperator)
+		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "or | and | eof", eof, logicalOperator, groupKeyword)
 		if err != nil {
 			return err
 		}
 		if token.Token == eof {
 			break
+		}
+		if token.Token == groupKeyword {
+			tokenizer.Index -= len(token.Matched)
+			break;
 		}
 		statement.Criteria[index].LogicalOperator = token.Matched
 	}
@@ -394,40 +411,92 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 //QueryParser represents a simple SQL query parser.
 type QueryParser struct{ baseParser }
 
-func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *QueryStatement, token *toolbox.Token) error {
+func buildColumn(token *toolbox.Token, tokenizer *toolbox.Tokenizer, query *QueryStatement, isGroupBy bool) (*SQLColumn, error) {
+	column := &SQLColumn{}
+	if token.Token == expression {
+		column.Expression = token.Matched
+	} else if token.Token == columnRef {
+		if ! isGroupBy {
+			return nil, fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
+		}
+		columnPosition := toolbox.AsInt(token.Matched)
+		if ! (columnPosition-1 < len(query.Columns)) {
+			return nil, fmt.Errorf("Invalid colum reference %v at %v", columnPosition, tokenizer.Index)
+		}
+		column = query.Columns[columnPosition-1];
+	} else {
+		column.Name = token.Matched
+	}
+	return column, nil
+}
+
+func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *QueryStatement, columns *[]*SQLColumn, token *toolbox.Token, isGroupBy bool, terminationTokens ... int) error {
 	var err error
-	query.Columns = make([]SQLColumn, 0)
-	column := SQLColumn{Name: token.Matched}
-	query.Columns = append(query.Columns, column)
+	*columns = make([]*SQLColumn, 0)
+	column, err := buildColumn(token, tokenizer, query, isGroupBy)
+	if err != nil {
+		return err
+	}
+	*columns = append(*columns, column)
+outer:
 	for {
-		token = tokenizer.Nexts(whitespaces, coma, eof)
+		token = tokenizer.Nexts(whitespaces, id, coma, eof, expression)
 		switch token.Token {
 		case illegal, eof:
+			if isGroupBy {
+				return nil
+			}
 			return fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
 
+		case expression:
+			column.Expression = column.Name + " " + token.Matched
+			column.Function = column.Name
+			if len(token.Matched) > 2 {
+				column.FunctionArguments = string(token.Matched[1:len(token.Matched)-1])
+			}
+			column.Name = ""
+
 		case coma:
-			token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "column", id)
+			token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "column", id, expression)
 			if err != nil {
 				return err
 			}
-			column = SQLColumn{Name: token.Matched}
-			query.Columns = append(query.Columns, column)
+			column, err = buildColumn(token, tokenizer, query, isGroupBy)
+			if err != nil {
+				return err
+			}
+			*columns = append(*columns, column)
 			break
 		case whitespaces:
-			nextToken := tokenizer.Nexts(fromKeyword, asKeyword, id)
 
-			switch nextToken.Token {
-			case fromKeyword:
-				return nil
-			case asKeyword:
+			var next = make([]int, 0)
+			next = append(next, terminationTokens...)
+			next = append(next, asKeyword, id)
+			nextToken := tokenizer.Nexts(next...)
+			for _, candidate := range terminationTokens {
+				if nextToken.Token == candidate {
+					break outer
+				}
+			}
+			if nextToken.Token == asKeyword {
 				token, err = qp.expectWhitespaceFollowedBy(tokenizer, "alias", id)
 				if err != nil {
 					return err
 				}
-				query.Columns[len(query.Columns)-1].Alias = token.Matched
+				(*columns)[len(*columns)-1].Alias = token.Matched
 			}
+
 		}
 	}
+
+	var expressionAlias = 1
+	for _, column := range *columns {
+		if column.Expression != "" && column.Alias == "" {
+			column.Alias = "f" + toolbox.AsString(expressionAlias)
+			expressionAlias++
+		}
+	}
+	return nil
 }
 
 //Parse parses SQL query to build QueryStatement
@@ -442,7 +511,7 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 		return nil, err
 	}
 
-	token, err = qp.expectWhitespaceFollowedBy(tokenizer, "* | column", asterisk, id)
+	token, err = qp.expectWhitespaceFollowedBy(tokenizer, "* | column | expression ", asterisk, id, expression)
 	if err != nil {
 		return nil, err
 	}
@@ -455,8 +524,8 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 			return nil, err
 		}
 
-	case id:
-		err = qp.readQueryColumns(tokenizer, result, token)
+	case id, expression:
+		err = qp.readQueryColumns(tokenizer, result, &result.Columns, token, false, fromKeyword)
 		if err != nil {
 			return nil, err
 		}
@@ -468,7 +537,7 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	}
 	result.Table = token.Matched
 
-	token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "WHERE | eof", eof, whereKeyword)
+	token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "WHERE | GROUP BY | eof", eof, whereKeyword, groupKeyword)
 	if err != nil {
 		return nil, err
 	}
@@ -476,9 +545,35 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 		return result, nil
 	}
 
-	err = qp.readCriteria(tokenizer, &result.BaseStatement, token)
-	if err != nil {
-		return nil, err
+	if token.Token == whereKeyword {
+		err = qp.readCriteria(tokenizer, &result.BaseStatement, token)
+		if err != nil {
+			return nil, err
+		}
+		token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "WHERE | eof", eof, groupKeyword)
+		if err != nil {
+			return nil, err
+		}
+		if token.Token == eof {
+			return result, nil
+		}
+	}
+
+	if token.Token == groupKeyword {
+		token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "BY", byKeyword)
+		if err != nil {
+			return nil, err
+		}
+		token, err = qp.expectWhitespaceFollowedBy(tokenizer, "column | expression ", id, expression, columnRef)
+		if err != nil {
+			return nil, err
+		}
+
+		err = qp.readQueryColumns(tokenizer, result, &result.GroupBy, token, true, eof)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	return result, nil
@@ -497,13 +592,13 @@ func (dp *DmlParser) readInsertColumns(tokenizer *toolbox.Tokenizer, statement *
 	if err != nil {
 		return err
 	}
-	statement.Columns = make([]SQLColumn, 0)
+	statement.Columns = make([]*SQLColumn, 0)
 	for i := tokenizer.Index; i < len(tokenizer.Input); i++ {
 		token, err = dp.expectOptionalWhitespaceFollowedBy(tokenizer, "column", id)
 		if err != nil {
 			return err
 		}
-		field := SQLColumn{Name: token.Matched}
+		field := &SQLColumn{Name: token.Matched}
 		statement.Columns = append(statement.Columns, field)
 		token, err = dp.expectOptionalWhitespaceFollowedBy(tokenizer, "','", coma, groupingEnd)
 		if err != nil {
@@ -567,7 +662,7 @@ func (dp *DmlParser) parseInsert(tokenizer *toolbox.Tokenizer, statement *DmlSta
 }
 
 func (dp *DmlParser) readColumnAndValues(tokenizer *toolbox.Tokenizer, statement *DmlStatement) (*toolbox.Token, error) {
-	statement.Columns = make([]SQLColumn, 0)
+	statement.Columns = make([]*SQLColumn, 0)
 	statement.Values = make([]interface{}, 0)
 	hasColumn := false
 	for i := tokenizer.Index; i < len(tokenizer.Input); i++ {
@@ -579,7 +674,7 @@ func (dp *DmlParser) readColumnAndValues(tokenizer *toolbox.Tokenizer, statement
 			break
 		}
 		hasColumn = true
-		column := SQLColumn{Name: token.Matched}
+		column := &SQLColumn{Name: token.Matched}
 		statement.Columns = append(statement.Columns, column)
 		_, err = dp.expectWhitespaceFollowedBy(tokenizer, "=", equalOperator)
 		if err != nil {
