@@ -202,7 +202,7 @@ func getOperandValues(operands []interface{}, parameters toolbox.Iterator) ([]in
 }
 
 //NewSQLCriterionPredicate create a new predicate for passed in SQLCriterion
-func NewSQLCriterionPredicate(criterion SQLCriterion, parameters toolbox.Iterator) (toolbox.Predicate, error) {
+func NewSQLCriterionPredicate(criterion *SQLCriterion, parameters toolbox.Iterator) (toolbox.Predicate, error) {
 	if criterion.Operator == "" {
 		return nil, errors.New("criterion.Operator was empty")
 	}
@@ -258,7 +258,7 @@ func NewBooleanPredicate(leftOperand bool, operator string) toolbox.Predicate {
 }
 
 type sqlCriteriaPredicate struct {
-	criteria   []SQLCriterion
+	criteria   []*SQLCriterion
 	predicates []toolbox.Predicate
 }
 
@@ -293,7 +293,7 @@ func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 }
 
 //NewSQLCriteriaPredicate create a new sql criteria predicate, it takes binding parameters iterator, and actual criteria.
-func NewSQLCriteriaPredicate(parameters toolbox.Iterator, criteria ...SQLCriterion) (toolbox.Predicate, error) {
+func NewSQLCriteriaPredicate(parameters toolbox.Iterator, criteria ...*SQLCriterion) (toolbox.Predicate, error) {
 	var predicates = make([]toolbox.Predicate, 0)
 	for i := 0; i < len(criteria); i++ {
 		criterion := criteria[i]
