@@ -1,12 +1,12 @@
 package dsc_test
 
 import (
-	"testing"
-	"time"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"os"
+	"testing"
+	"time"
 )
 
 type MostLikedCity struct {

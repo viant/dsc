@@ -3,21 +3,21 @@ package dsc
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/storage"
+	"github.com/viant/toolbox/storage/aws"
+	"github.com/viant/toolbox/storage/gs"
+	"google.golang.org/api/option"
+	"io"
+	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"reflect"
 	"strings"
-	"github.com/viant/toolbox"
-	"io"
-	"io/ioutil"
-	"github.com/viant/toolbox/storage"
-	"github.com/viant/toolbox/storage/gs"
-	"net/url"
-	"google.golang.org/api/option"
-	"github.com/viant/toolbox/storage/aws"
-	"compress/gzip"
 )
 
 var defaultPermission os.FileMode = 0644
@@ -29,12 +29,12 @@ var defaultPermission os.FileMode = 0644
 // You can easily add other managers providing your custom encoder and decoder factories i.e. protobuf, avro.
 type FileManager struct {
 	*AbstractManager
-	service storage.Service
+	service             storage.Service
 	useGzipCompressions bool
-	hasHeaderLine  bool
-	delimiter      string
-	encoderFactory toolbox.EncoderFactory
-	decoderFactory toolbox.DecoderFactory
+	hasHeaderLine       bool
+	delimiter           string
+	encoderFactory      toolbox.EncoderFactory
+	decoderFactory      toolbox.DecoderFactory
 }
 
 func (m *FileManager) Init() error {
@@ -44,21 +44,21 @@ func (m *FileManager) Init() error {
 		return err
 	}
 	extension := m.Config().Get("ext")
-	m.useGzipCompressions =   extension == "gzip"
-	switch  parsedUrl.Scheme {
-		case "file":
-		case "gs":
-			credential := option.WithServiceAccountFile(m.Config().Get("credential"))
-			service := gs.NewService(credential)
-			m.service.Register(parsedUrl.Scheme, service)
-			break;
-		case "s3":
-			credential := m.Config().Get("credential")
-			service, err := aws.NewServiceWithCredential(credential)
-			if err != nil {
-				return err
-			}
-			m.service.Register(parsedUrl.Scheme, service)
+	m.useGzipCompressions = extension == "gzip"
+	switch parsedUrl.Scheme {
+	case "file":
+	case "gs":
+		credential := option.WithServiceAccountFile(m.Config().Get("credential"))
+		service := gs.NewService(credential)
+		m.service.Register(parsedUrl.Scheme, service)
+		break
+	case "s3":
+		credential := m.Config().Get("credential")
+		service, err := aws.NewServiceWithCredential(credential)
+		if err != nil {
+			return err
+		}
+		m.service.Register(parsedUrl.Scheme, service)
 
 	default:
 		return fmt.Errorf("Unsupported scheme: %v", parsedUrl.Scheme)
@@ -165,31 +165,29 @@ func (m *FileManager) insertRecord(tableURL string, statement *DmlStatement, par
 	if err != nil {
 		return err
 	}
-	return m.PersistTableData(tableURL,buf.Bytes())
+	return m.PersistTableData(tableURL, buf.Bytes())
 }
 
-
-func  (m *FileManager) PersistTableData(tableURL string, data []byte) error {
-	if  m.useGzipCompressions {
+func (m *FileManager) PersistTableData(tableURL string, data []byte) error {
+	if m.useGzipCompressions {
 		buffer := new(bytes.Buffer)
 		writer := gzip.NewWriter(buffer)
 		_, err := writer.Write(data)
 		if err != nil {
-			return  err
+			return err
 		}
 		err = writer.Flush()
 		if err != nil {
-			return  fmt.Errorf("Failed to compress data (flush) %v", err)
+			return fmt.Errorf("Failed to compress data (flush) %v", err)
 		}
 		err = writer.Close()
 		if err != nil {
-			return  fmt.Errorf("Failed to compress data (close) %v", err)
+			return fmt.Errorf("Failed to compress data (close) %v", err)
 		}
 		data = buffer.Bytes()
 	}
 	return m.service.Upload(tableURL, bytes.NewReader(data))
 }
-
 
 func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator, onMatchedHandler func(record map[string]interface{}) (bool, error)) (int, error) {
 	var count = 0
@@ -228,7 +226,6 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 	err = m.PersistTableData(tableURL, buf.Bytes())
 	return count, err
 }
-
 
 func (m *FileManager) updateRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator) (int, error) {
 	updatedRecord, err := m.getRecord(statement, parameters)
@@ -281,7 +278,6 @@ func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sql
 	return NewSQLResult(int64(count), 0), nil
 }
 
-
 func (m *FileManager) getStorageObject(tableURL string) (storage.Object, error) {
 	exists, err := m.service.Exists(tableURL)
 	if err != nil {
@@ -290,9 +286,8 @@ func (m *FileManager) getStorageObject(tableURL string) (storage.Object, error) 
 	if !exists {
 		return nil, nil
 	}
-	return  m.service.StorageObject(tableURL)
+	return m.service.StorageObject(tableURL)
 }
-
 
 func (m *FileManager) getReaderForUrl(tableURL string) (io.Reader, error) {
 	object, err := m.getStorageObject(tableURL)
@@ -306,7 +301,7 @@ func (m *FileManager) getReaderForUrl(tableURL string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	if reader != nil &&  m.useGzipCompressions {
+	if reader != nil && m.useGzipCompressions {
 		reader, err = gzip.NewReader(reader)
 		if err != nil {
 			return nil, err
@@ -315,8 +310,6 @@ func (m *FileManager) getReaderForUrl(tableURL string) (io.Reader, error) {
 	return reader, nil
 }
 
-
-
 func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
 	tableURL := getTableURL(m, table)
 	reader, err := m.getReaderForUrl(tableURL)
@@ -324,11 +317,10 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 		return err
 	}
 
-
 	scanner := bufio.NewScanner(reader)
 
 	var headers []string
-	if m.hasHeaderLine &&  scanner.Scan() {
+	if m.hasHeaderLine && scanner.Scan() {
 		headerLine := scanner.Text()
 		for _, column := range strings.Split(headerLine, m.delimiter) {
 			headers = append(headers, strings.Trim(column, " "))
@@ -423,7 +415,7 @@ func (m *FileManager) ReadAllOnWithHandlerOnConnection(connection Connection, qu
 //NewFileManager creates a new file manager.
 func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbox.DecoderFactory, valuesDelimiter string) *FileManager {
 	result := &FileManager{
-		service:storage.NewService(),
+		service:        storage.NewService(),
 		delimiter:      valuesDelimiter,
 		hasHeaderLine:  len(valuesDelimiter) > 0,
 		encoderFactory: encoderFactory,
@@ -432,25 +424,19 @@ func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbo
 	return result
 }
 
-
-
-
-
 type DelimiteredRecord struct {
 	Columns   []string
 	Delimiter string
 	Record    map[string]interface{}
 }
 
-
 type delimiterDecoder struct {
 	reader io.Reader
 }
 
-
 func (d *delimiterDecoder) Decode(target interface{}) error {
 	delimiteredRecord, ok := target.(*DelimiteredRecord)
-	if ! ok {
+	if !ok {
 		return fmt.Errorf("Invalid target type, expected %T but had %T", &DelimiteredRecord{}, target)
 	}
 	var isInDoubleQuote = false
@@ -462,10 +448,10 @@ func (d *delimiterDecoder) Decode(target interface{}) error {
 		return err
 	}
 	encoded := string(payload)
-	for i:= 0; i <len(encoded);i++{
-		aChar := string(encoded[i:i+1])
+	for i := 0; i < len(encoded); i++ {
+		aChar := string(encoded[i : i+1])
 		//escape " only if value is already inside "s
-		if isInDoubleQuote && aChar == "\\"  {
+		if isInDoubleQuote && aChar == "\\" {
 			nextChar := encoded[i+1 : i+2]
 			if nextChar == "\"" {
 				i++
@@ -494,9 +480,8 @@ func (d *delimiterDecoder) Decode(target interface{}) error {
 	return nil
 }
 
-type delimiterDecoderFactory struct {}
-
+type delimiterDecoderFactory struct{}
 
 func (f *delimiterDecoderFactory) Create(reader io.Reader) toolbox.Decoder {
-	return &delimiterDecoder{reader:reader}
+	return &delimiterDecoder{reader: reader}
 }

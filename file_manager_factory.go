@@ -24,11 +24,9 @@ func (f jsonFileManagerFactory) CreateFromURL(url string) (Manager, error) {
 	return f.Create(config)
 }
 
-
 type delimiteredFileManagerFactory struct {
 	delimiter string
 }
-
 
 func (f *delimiteredFileManagerFactory) Create(config *Config) (Manager, error) {
 	var connectionProvider = newFileConnectionProvider(config)
