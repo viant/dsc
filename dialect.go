@@ -46,8 +46,22 @@ func (d DefaultDialect) GetSequence(manager Manager, name string) (int64, error)
 	return 0, errUnsupportedOperation
 }
 
+func (d DefaultDialect) GetKeyName(manager Manager, datastore, table string) string {
+	return ""
+}
+
 func (d DefaultDialect) CanPersistBatch() bool {
 	return false
+}
+
+//DisableForeignKeyCheck disables fk check
+func (d DefaultDialect) DisableForeignKeyCheck(manager Manager) error {
+	return nil
+}
+
+//DisableForeignKeyCheck disables fk check
+func (d DefaultDialect) EnableForeignKeyCheck(manager Manager) error {
+	return nil
 }
 
 //NewDefaultDialect crates a defulat dialect. DefaultDialect can be used as a embeddable struct (super class).

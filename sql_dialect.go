@@ -9,8 +9,13 @@ import (
 
 const defaultTableSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
 const defaultSequenceSQL = "SELECT auto_increment FROM information_schema.tables WHERE table_name = '%v' AND table_schema = DATABASE()"
+const defaultKeySQL = "SELECT column_name AS name FROM information_schema.key_column_usage WHERE table_name = '%v' AND table_schema = '%v' AND constraint_name='PRIMARY'"
+
 const defaultSchemaSQL = "SELECT DATABASE() AS name"
 const defaultAllSchemaSQL = "SELECT schema_name AS name FROM  information_schema.schemata"
+
+const mysqlDisableForeignCheck = "SET FOREIGN_KEY_CHECKS=0"
+const mysqlEnableForeignCheck = "SET FOREIGN_KEY_CHECKS=1"
 
 const schemaSQL = "SELECT current_schema() AS name"
 
@@ -28,19 +33,19 @@ const oraAllSchemaSQL = "SELECT schema_name AS name FROM all_tables GROUP BY 1"
 const msSchemaSQL = "SELECT SCHEMA_NAME() AS name"
 const msSequenceSQL = "SELECT current_value FROM sys.sequences WHERE  name = '%v'"
 
-
-
-
 type nameRecord struct {
 	Name string `column:"name"`
 }
 
 type sqlDatastoreDialect struct {
-	tablesSQL            string
-	sequenceSQL          string
-	schemaSQL            string
-	allSchemaSQL         string
-	schemaResultsetIndex int
+	tablesSQL              string
+	sequenceSQL            string
+	schemaSQL              string
+	allSchemaSQL           string
+	keySQL                 string
+	disableForeignKeyCheck string
+	enableForeignKeyCheck  string
+	schemaResultsetIndex   int
 }
 
 //CanDropDatastore returns true if this dialect can create datastore
@@ -101,6 +106,23 @@ func normalizeName(name string) string {
 	return file
 }
 
+//GetKeyName returns key name
+func (d sqlDatastoreDialect) GetKeyName(manager Manager, datastore, table string) string {
+	if d.keySQL == "" {
+		return ""
+	}
+	var records = make([]map[string]interface{}, 0)
+	err := manager.ReadAll(&records, fmt.Sprintf(d.keySQL, table, datastore), []interface{}{}, nil)
+	if err != nil {
+		return ""
+	}
+	var result = make([]string, 0)
+	for _, item := range records {
+		result = append(result, toolbox.AsString(item["name"]))
+	}
+	return strings.Join(result, ",")
+}
+
 //GetDatastores returns name of datastores, takes  manager as parameter
 func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 	var rows = make([][]interface{}, 0)
@@ -136,14 +158,32 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 	return result[0], nil
 }
 
+//DisableForeignKeyCheck disables fk check
+func (d sqlDatastoreDialect) DisableForeignKeyCheck(manager Manager) error {
+	if d.disableForeignKeyCheck == "" {
+		return nil
+	}
+	_, err := manager.Execute(d.disableForeignKeyCheck)
+	return err
+}
+
+//EnableForeignKeyCheck disables fk check
+func (d sqlDatastoreDialect) EnableForeignKeyCheck(manager Manager) error {
+	if d.enableForeignKeyCheck == "" {
+		return nil
+	}
+	_, err := manager.Execute(d.enableForeignKeyCheck)
+	return err
+}
+
 //CanPersistBatch return true if datastore can persist in batch
 func (d sqlDatastoreDialect) CanPersistBatch() bool {
 	return false
 }
 
 //NewSQLDatastoreDialect creates a new default sql dialect
-func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL string, schmeaIndex int) DatastoreDialect {
-	return &sqlDatastoreDialect{tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, schmeaIndex}
+func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck string, schmeaIndex int) DatastoreDialect {
+	return &sqlDatastoreDialect{tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, schmeaIndex}
 }
 
 type mySQLDialect struct {
@@ -151,7 +191,7 @@ type mySQLDialect struct {
 }
 
 func newMySQLDialect() mySQLDialect {
-	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, defaultSequenceSQL, defaultSchemaSQL, defaultAllSchemaSQL, 0)}
+	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, defaultSequenceSQL, defaultSchemaSQL, defaultAllSchemaSQL, defaultKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, 0)}
 }
 
 type sqlLiteDialect struct {
@@ -178,7 +218,7 @@ func (d sqlLiteDialect) DropDatastore(manager Manager, datastore string) error {
 }
 
 func newSQLLiteDialect() *sqlLiteDialect {
-	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, 2)}
+	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, "", "", "", 2)}
 }
 
 type pgDialect struct {
@@ -186,7 +226,7 @@ type pgDialect struct {
 }
 
 func newPgDialect() *pgDialect {
-	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, pgSequenceSQL, schemaSQL, defaultAllSchemaSQL, 0)}
+	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, pgSequenceSQL, schemaSQL, defaultAllSchemaSQL, "", "", "", 0)}
 }
 
 type oraDialect struct {
@@ -206,7 +246,7 @@ func (d oraDialect) DropDatastore(manager Manager, datastore string) error {
 }
 
 func newOraDialect() *oraDialect {
-	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, oraSequenceSQL, oraSchemaSQL, oraAllSchemaSQL, 0)}
+	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, oraSequenceSQL, oraSchemaSQL, oraAllSchemaSQL, "", "", "", 0)}
 }
 
 type msSQLDialect struct {
@@ -214,5 +254,5 @@ type msSQLDialect struct {
 }
 
 func newMsSQLDialect() *msSQLDialect {
-	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, msSequenceSQL, msSchemaSQL, defaultAllSchemaSQL, 0)}
+	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, msSequenceSQL, msSchemaSQL, defaultAllSchemaSQL, "", "", "", 0)}
 }

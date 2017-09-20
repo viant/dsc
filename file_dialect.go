@@ -1,9 +1,9 @@
 package dsc
 
 import (
-	"path"
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -14,7 +14,7 @@ type fileDialect struct {
 //DropTable drops a table in datastore managed by passed in manager.
 func (d fileDialect) DropTable(manager Manager, datastore string, table string) error {
 	fileManager, ok := manager.(*FileManager)
-	if ! ok {
+	if !ok {
 		return fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
 	}
 	tableURL := getTableURL(manager, table)
@@ -22,7 +22,7 @@ func (d fileDialect) DropTable(manager Manager, datastore string, table string) 
 	if err != nil {
 		return err
 	}
-	if ! exists {
+	if !exists {
 		return nil
 	}
 
@@ -39,7 +39,7 @@ func (d fileDialect) DropTable(manager Manager, datastore string, table string) 
 //GetTables return tables names for passed in datastore managed by passed in manager.
 func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, error) {
 	fileManager, ok := manager.(*FileManager)
-	if ! ok {
+	if !ok {
 		return nil, fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
 	}
 	baseURL := manager.Config().Get("url")
@@ -48,7 +48,7 @@ func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, err
 	if err != nil {
 		return nil, err
 	}
-	if ! exists {
+	if !exists {
 		return []string{}, nil
 	}
 

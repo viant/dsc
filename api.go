@@ -128,10 +128,20 @@ type DatastoreDialect interface {
 
 	GetCurrentDatastore(manager Manager) (string, error)
 
+	//GetSequence returns a sequence number
 	GetSequence(manager Manager, name string) (int64, error)
+
+	//GetKeyName returns a name of column name that is a key, or coma separated list if complex key
+	GetKeyName(manager Manager, datastore, table string) string
 
 	//Flag if data store can persist batch
 	CanPersistBatch() bool
+
+	//DisableForeignKeyCheck disables fk check
+	DisableForeignKeyCheck(manager Manager) error
+
+	//EnableForeignKeyCheck disables fk check
+	EnableForeignKeyCheck(manager Manager) error
 }
 
 //TransactionManager represents a transaction manager.
