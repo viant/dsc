@@ -3,8 +3,8 @@ package dsc
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/viant/toolbox"
+	"strings"
 )
 
 //SQLColumn represents a sql column
@@ -57,7 +57,7 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 		return values[0], nil
 	}
 	if strings.HasPrefix(textOperand, "'") {
-		return textOperand[1: len(textOperand)-1], nil
+		return textOperand[1 : len(textOperand)-1], nil
 	}
 
 	if !toolbox.CanConvertToString(source) {
@@ -89,12 +89,10 @@ func (bs BaseStatement) CriteriaValues(parameters toolbox.Iterator) ([]interface
 //QueryStatement represents SQL query statement.
 type QueryStatement struct {
 	BaseStatement
-	AllField bool
+	AllField    bool
 	UnionTables []string
-	GroupBy  []*SQLColumn
+	GroupBy     []*SQLColumn
 }
-
-
 
 //DmlStatement represents dml statement.
 type DmlStatement struct {
@@ -131,7 +129,7 @@ func (ds DmlStatement) ColumnValueMap(parameters toolbox.Iterator) (map[string]i
 }
 
 const (
-	undefined              int = iota
+	undefined int = iota
 	eof
 	illegal
 	whitespaces
@@ -176,7 +174,7 @@ var sqlMatchers = map[int]toolbox.Matcher{
 	asterisk:    toolbox.CharactersMatcher{"*"},
 	coma:        toolbox.CharactersMatcher{","},
 	operator: toolbox.KeywordsMatcher{
-		Keywords:      []string{"=", ">=", "<=", "<>",  ">", "<", "!="},
+		Keywords:      []string{"=", ">=", "<=", "<>", ">", "<", "!="},
 		CaseSensitive: false,
 	},
 	notKeyword: toolbox.KeywordsMatcher{
@@ -314,7 +312,7 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 		return "", nil, err
 	}
 	value := token.Matched
-	values, err := bp.readValues(value[1: len(value)-1])
+	values, err := bp.readValues(value[1 : len(value)-1])
 	if err != nil {
 		return "", nil, err
 	}
@@ -401,7 +399,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 		}
 		if token.Token == groupKeyword {
 			tokenizer.Index -= len(token.Matched)
-			break;
+			break
 		}
 		statement.Criteria[index].LogicalOperator = token.Matched
 	}
@@ -416,21 +414,21 @@ func buildColumn(token *toolbox.Token, tokenizer *toolbox.Tokenizer, query *Quer
 	if token.Token == expression {
 		column.Expression = token.Matched
 	} else if token.Token == columnRef {
-		if ! isGroupBy {
+		if !isGroupBy {
 			return nil, fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
 		}
 		columnPosition := toolbox.AsInt(token.Matched)
-		if ! (columnPosition-1 < len(query.Columns)) {
+		if !(columnPosition-1 < len(query.Columns)) {
 			return nil, fmt.Errorf("Invalid colum reference %v at %v", columnPosition, tokenizer.Index)
 		}
-		column = query.Columns[columnPosition-1];
+		column = query.Columns[columnPosition-1]
 	} else {
 		column.Name = token.Matched
 	}
 	return column, nil
 }
 
-func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *QueryStatement, columns *[]*SQLColumn, token *toolbox.Token, isGroupBy bool, terminationTokens ... int) error {
+func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *QueryStatement, columns *[]*SQLColumn, token *toolbox.Token, isGroupBy bool, terminationTokens ...int) error {
 	var err error
 	*columns = make([]*SQLColumn, 0)
 	column, err := buildColumn(token, tokenizer, query, isGroupBy)
@@ -452,7 +450,7 @@ outer:
 			column.Expression = column.Name + " " + token.Matched
 			column.Function = column.Name
 			if len(token.Matched) > 2 {
-				column.FunctionArguments = string(token.Matched[1:len(token.Matched)-1])
+				column.FunctionArguments = string(token.Matched[1 : len(token.Matched)-1])
 			}
 			column.Name = ""
 
