@@ -8,7 +8,6 @@ import (
 	"github.com/viant/toolbox"
 )
 
-
 func TestAggregationQueryParser(t *testing.T) {
 
 	parser := dsc.NewQueryParser()
@@ -29,11 +28,8 @@ func TestAggregationQueryParser(t *testing.T) {
 
 		assert.Equal(t, "f1", query.Columns[1].Alias)
 
-
 		assert.Equal(t, 1, len(query.GroupBy))
 		assert.Equal(t, "col1", query.Columns[0].Name)
-
-
 
 		assert.Equal(t, "bar", query.Table)
 	}
@@ -55,7 +51,6 @@ func TestAggregationQueryParser(t *testing.T) {
 		assert.Equal(t, "col1", query.Columns[0].Name)
 		assert.Equal(t, "bar", query.Table)
 	}
-
 
 }
 
