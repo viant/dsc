@@ -13,7 +13,7 @@ type Config struct {
 	MaxPoolSize         int
 	Descriptor          string
 	Parameters          map[string]string
-	SecretParametersURL string //url to JSON object, this delegates credential or secret out of dev
+	SecretParametersURL string //url to JSON object, to delegate credential or secret out of dev
 }
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
@@ -43,11 +43,27 @@ func (c *Config) Has(name string) bool {
 }
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
-func (c *Config) Init() {
-	for key := range c.Parameters {
-		macro := "[" + key + "]"
-		c.Descriptor = strings.Replace(c.Descriptor, macro, c.Parameters[key], 1)
+func (c *Config) Init() error {
+	if c.SecretParametersURL != "" {
+		var secretParameters = make(map[string]string)
+		reader, _, err := toolbox.OpenReaderFromURL(c.SecretParametersURL)
+		if err != nil {
+			return err
+		}
+		err = toolbox.NewJSONDecoderFactory().Create(reader).Decode(secretParameters)
+		if err != nil {
+			return err
+		}
+		for key, value := range secretParameters {
+			macro := "[" + key + "]"
+			c.Descriptor = strings.Replace(c.Descriptor, macro, value, 1)
+		}
 	}
+	for key, value := range c.Parameters {
+		macro := "[" + key + "]"
+		c.Descriptor = strings.Replace(c.Descriptor, macro, value, 1)
+	}
+	return nil
 }
 
 //NewConfig creates new Config, it takes the following parameters
