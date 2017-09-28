@@ -54,7 +54,21 @@ func (am *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 
 //ExecuteAllOnConnection executes passed in SQLs on connection. It returns sql result, or an error.
 func (am *AbstractManager) ExecuteAllOnConnection(connection Connection, sqls []string) ([]sql.Result, error) {
+
 	var result = make([]sql.Result, len(sqls))
+
+	err := connection.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err == nil {
+			connection.Commit()
+		}
+		if err != nil {
+			connection.Rollback()
+		}
+	}()
 	for i, sql := range sqls {
 		var err error
 		result[i], err = am.Manager.ExecuteOnConnection(connection, sql, nil)
@@ -341,9 +355,11 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {
 	var rows = make([][]interface{}, 0)
 	for _, sqlWihtArguments := range sqlsWihtArguments {
+
 		if len(sqlWihtArguments.Values) == 0 {
 			break
 		}
+
 		err := am.Manager.ReadAllOnConnection(connection, &rows, sqlWihtArguments.SQL, sqlWihtArguments.Values, mapper)
 		if err != nil {
 			return nil, err
@@ -355,7 +371,9 @@ func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArg
 func (am *AbstractManager) fetchExistigData(connection Connection, table string, pkValues [][]interface{}, provider DmlProvider) ([][]interface{}, error) {
 	var rows = make([][]interface{}, 0)
 	descriptor := am.tableDescriptorRegistry.Get(table)
+
 	if len(pkValues) > 0 {
+
 		descriptor := TableDescriptor{Table: table, PkColumns: descriptor.PkColumns}
 		sqlBuilder := NewQueryBuilder(&descriptor, "")
 
@@ -389,7 +407,6 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 		rowsByKey[key] = row
 		return true
 	})
-
 	//fetch all existing pk values into rows to classify as updatable
 	rows, err := am.fetchExistigData(connection, table, pkValues, provider)
 	if err != nil {
@@ -404,6 +421,7 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 			delete(rowsByKey, key)
 		}
 	}
+
 	//go over all candidates and if no key or entries still found in rows by key then classify as insertable
 	for _, candidate := range candidates {
 		var values = provider.Key(candidate)
@@ -546,5 +564,8 @@ func (am *AbstractManager) TableDescriptorRegistry() TableDescriptorRegistry {
 
 //NewAbstractManager create a new abstract manager, it takes config, conneciton provider, and target (sub class) manager
 func NewAbstractManager(config *Config, connectionProvider ConnectionProvider, self Manager) *AbstractManager {
-	return &AbstractManager{config: config, connectionProvider: connectionProvider, Manager: self, tableDescriptorRegistry: NewTableDescriptorRegistry()}
+	var descriptorRegistry = newTableDescriptorRegistry()
+	var result = &AbstractManager{config: config, connectionProvider: connectionProvider, Manager: self, tableDescriptorRegistry: descriptorRegistry}
+	descriptorRegistry.manager = result
+	return result
 }
