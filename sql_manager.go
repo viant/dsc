@@ -57,7 +57,6 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	if args == nil {
 		args = make([]interface{}, 0)
 	}
-
 	result, err := executable.Exec(sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf(fmt.Sprintf("Failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))
@@ -70,7 +69,6 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 	if err != nil {
 		return err
 	}
-
 	sqlStatement, sqlError := db.Prepare(query)
 	if sqlError != nil {
 		return fmt.Errorf("Failed to prepare sql: %v with %v due to:%v\n\t", query, args, sqlError.Error())
