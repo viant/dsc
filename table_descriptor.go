@@ -6,10 +6,12 @@ import (
 	"sync"
 
 	"github.com/viant/toolbox"
+	"strings"
 )
 
 type commonTableDescriptorRegistry struct {
 	sync.RWMutex
+	manager  Manager
 	registry map[string]*TableDescriptor
 }
 
@@ -20,13 +22,28 @@ func (r *commonTableDescriptorRegistry) Has(table string) bool {
 	return found
 }
 
+func (r *commonTableDescriptorRegistry) getDescriptor(table string) *TableDescriptor {
+	dbConfig := r.manager.Config()
+	dialect := GetDatastoreDialect(dbConfig.DriverName)
+	datastore, _ := dialect.GetCurrentDatastore(r.manager)
+	key := dialect.GetKeyName(r.manager, datastore, table)
+	descriptor := &TableDescriptor{
+		Table:     table,
+		PkColumns: strings.Split(key, ","),
+	}
+	return descriptor
+}
+
 func (r *commonTableDescriptorRegistry) Get(table string) *TableDescriptor {
 	r.RLock()
-	defer r.RUnlock()
 	if descriptor, found := r.registry[table]; found {
+		r.RUnlock()
 		return descriptor
 	}
-	panic("Failed to lookup table descriptor for " + table)
+	r.RUnlock()
+	var result = r.getDescriptor(table)
+	r.Register(result)
+	return result
 }
 
 func (r *commonTableDescriptorRegistry) Register(descriptor *TableDescriptor) {
@@ -48,10 +65,9 @@ func (r *commonTableDescriptorRegistry) Tables() []string {
 	return result
 }
 
-//NewTableDescriptorRegistry returns a new NewTableDescriptorRegistry
-func NewTableDescriptorRegistry() TableDescriptorRegistry {
-	var result TableDescriptorRegistry = &commonTableDescriptorRegistry{registry: make(map[string]*TableDescriptor)}
-	return result
+//newTableDescriptorRegistry returns a new newTableDescriptorRegistry
+func newTableDescriptorRegistry() *commonTableDescriptorRegistry {
+	return &commonTableDescriptorRegistry{registry: make(map[string]*TableDescriptor)}
 }
 
 //HasSchema check if table desciptor has defined schema.
