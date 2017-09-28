@@ -159,20 +159,20 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 }
 
 //DisableForeignKeyCheck disables fk check
-func (d sqlDatastoreDialect) DisableForeignKeyCheck(manager Manager) error {
+func (d sqlDatastoreDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
 	if d.disableForeignKeyCheck == "" {
 		return nil
 	}
-	_, err := manager.Execute(d.disableForeignKeyCheck)
+	_, err := manager.ExecuteOnConnection(connection, d.disableForeignKeyCheck, nil)
 	return err
 }
 
 //EnableForeignKeyCheck disables fk check
-func (d sqlDatastoreDialect) EnableForeignKeyCheck(manager Manager) error {
+func (d sqlDatastoreDialect) EnableForeignKeyCheck(manager Manager, connection Connection) error {
 	if d.enableForeignKeyCheck == "" {
 		return nil
 	}
-	_, err := manager.Execute(d.enableForeignKeyCheck)
+	_, err := manager.ExecuteOnConnection(connection, d.enableForeignKeyCheck, nil)
 	return err
 }
 

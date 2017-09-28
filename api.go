@@ -138,10 +138,10 @@ type DatastoreDialect interface {
 	CanPersistBatch() bool
 
 	//DisableForeignKeyCheck disables fk check
-	DisableForeignKeyCheck(manager Manager) error
+	DisableForeignKeyCheck(manager Manager, connection Connection) error
 
 	//EnableForeignKeyCheck disables fk check
-	EnableForeignKeyCheck(manager Manager) error
+	EnableForeignKeyCheck(manager Manager, connection Connection) error
 }
 
 //TransactionManager represents a transaction manager.

@@ -55,12 +55,12 @@ func (d DefaultDialect) CanPersistBatch() bool {
 }
 
 //DisableForeignKeyCheck disables fk check
-func (d DefaultDialect) DisableForeignKeyCheck(manager Manager) error {
+func (d DefaultDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
 	return nil
 }
 
 //DisableForeignKeyCheck disables fk check
-func (d DefaultDialect) EnableForeignKeyCheck(manager Manager) error {
+func (d DefaultDialect) EnableForeignKeyCheck(manager Manager, connection Connection) error {
 	return nil
 }
 
