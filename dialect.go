@@ -50,6 +50,10 @@ func (d DefaultDialect) GetKeyName(manager Manager, datastore, table string) str
 	return ""
 }
 
+func (d DefaultDialect) IsAutoincrement(manager Manager, datastore, table string) bool {
+	return false
+}
+
 func (d DefaultDialect) CanPersistBatch() bool {
 	return false
 }

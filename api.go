@@ -134,6 +134,9 @@ type DatastoreDialect interface {
 	//GetKeyName returns a name of column name that is a key, or coma separated list if complex key
 	GetKeyName(manager Manager, datastore, table string) string
 
+	//IsAutoincrement returns true if autoicrement
+	IsAutoincrement(manager Manager, datastore, table string) bool
+
 	//Flag if data store can persist batch
 	CanPersistBatch() bool
 
