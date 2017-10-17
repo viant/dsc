@@ -170,7 +170,7 @@ const (
 var sqlMatchers = map[int]toolbox.Matcher{
 	eof:         toolbox.EOFMatcher{},
 	whitespaces: toolbox.CharactersMatcher{" \n\t"},
-	id:          toolbox.LiteralMatcher{},
+	id:          toolbox.IdMatcher{},
 	asterisk:    toolbox.CharactersMatcher{"*"},
 	coma:        toolbox.CharactersMatcher{","},
 	operator: toolbox.KeywordsMatcher{
