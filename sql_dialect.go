@@ -199,8 +199,6 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 			return int64(toolbox.AsInt(result[0])), nil
 		}
 	}
-
-	fmt.Printf("%v %v\n", result, fmt.Sprintf(d.sequenceSQL, name))
 	return 0, nil
 }
 
