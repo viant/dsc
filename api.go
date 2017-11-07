@@ -1,6 +1,9 @@
 package dsc
 
-import "database/sql"
+import (
+	"database/sql"
+	"time"
+)
 
 //Scanner represents a datastore data scanner. This abstraction provides the ability to convert and assign datastore record of data to provided destination
 type Scanner interface {
@@ -168,6 +171,10 @@ type Connection interface {
 	CloseNow() error //closes connecition, it does not return it back to the pool
 
 	Unwrap(target interface{}) interface{}
+
+	LastUsed() *time.Time
+
+	SetLastUsed(ts *time.Time)
 
 	TransactionManager
 }
