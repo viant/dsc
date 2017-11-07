@@ -88,14 +88,18 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 		return nil, err
 	}
 
+	if result.LastUsed() != nil && (time.Now().Sub(*result.LastUsed()) > 60 * time.Second) {
+		err = db.Ping()
+	}
+
+	if err == nil {
+		return result, nil
+	}
+
 	//TODO add to control this with config parameters
 	//set to min to not have lingered connection
 	db.SetConnMaxLifetime(1 * time.Second)
 
-	err = db.Ping()
-	if err == nil {
-		return result, nil
-	}
 	result, err = c.NewConnection()
 	if err != nil {
 		return nil, err
