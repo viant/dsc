@@ -7,6 +7,8 @@ import (
 type jsonFileManagerFactory struct{}
 
 func (f *jsonFileManagerFactory) Create(config *Config) (Manager, error) {
+
+
 	var connectionProvider = newFileConnectionProvider(config)
 	fileManager := NewFileManager(toolbox.NewJSONEncoderFactory(), toolbox.NewJSONDecoderFactory(), "")
 	super := NewAbstractManager(config, connectionProvider, fileManager)

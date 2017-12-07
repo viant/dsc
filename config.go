@@ -21,7 +21,7 @@ func (c *Config) Get(name string) string {
 	if result, ok := c.Parameters[name]; ok {
 		return result
 	}
-	panic("Missing value in descriptor " + name)
+	return "";
 }
 
 //HasDateLayout returns true if config has date layout, it checks dateLayout or dateFormat parameter names.
