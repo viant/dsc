@@ -23,6 +23,9 @@ const schemaSQL = "SELECT current_schema() AS name"
 const sqlLightTableSQL = "SELECT name FROM SQLITE_MASTER WHERE type='table' AND name NOT IN('sqlite_sequence') AND LENGTH(?) > 0"
 const sqlLightSequenceSQL = "SELECT COALESCE(MAX(name), 0) + 1   FROM (SELECT seq AS name FROM SQLITE_SEQUENCE WHERE name = '%v')"
 const sqlLightSchemaSQL = "PRAGMA database_list"
+const sqlLightPkSQL = "pragma table_info(%v);"
+
+
 
 const pgSequenceSQL = "SELECT currval(%v) + 1 AS seq_value"
 
@@ -250,6 +253,8 @@ func (d sqlLiteDialect) CreateDatastore(manager Manager, datastore string) error
 	return nil
 }
 
+
+
 func (d sqlLiteDialect) DropDatastore(manager Manager, datastore string) error {
 	tables, err := d.GetTables(manager, datastore)
 	if err != nil {
@@ -264,9 +269,28 @@ func (d sqlLiteDialect) DropDatastore(manager Manager, datastore string) error {
 	return err
 }
 
-func newSQLLiteDialect() *sqlLiteDialect {
-	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, "", "", "", "",2)}
+
+func (d sqlLiteDialect) GetKeyName(manager Manager, datastore, table string) string {
+	var records = make([]map[string]interface{}, 0)
+	err := manager.ReadAll(&records, fmt.Sprintf(sqlLightPkSQL, table), []interface{}{}, nil)
+	if err != nil {
+		return ""
+	}
+	var result = make([]string, 0)
+	for _, item := range records {
+		if toolbox.AsString(item["pk"]) == "1" {
+			result = append(result, toolbox.AsString(item["name"]))
+		}
+	}
+	return strings.Join(result, ",")
 }
+
+func newSQLLiteDialect() *sqlLiteDialect {
+	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "",2)}
+}
+
+
+
 
 type pgDialect struct {
 	DatastoreDialect
