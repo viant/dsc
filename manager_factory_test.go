@@ -14,16 +14,11 @@ func TestCreateFromURL(t *testing.T) {
 		_, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/file_config3.json"))
 		assert.NotNil(t, err)
 	}
+
 	{
 		_, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/file_config.json"))
 		assert.NotNil(t, err)
 	}
-	//{
-	//	manager, err := factory.CreateFromURL(dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/vertica_store.json"))
-	//	assert.Nil(t, err)
-	//	assert.NotNil(t, manager)
-	//}
-
 }
 
 func TestMissingDricer(t *testing.T) {
