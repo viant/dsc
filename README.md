@@ -75,8 +75,6 @@ func main() {
 	if err != nil {
         panic(err.Error())
    	}
-   	fmt.Printf("Inserted %v, updated: %v\n", inserted, updated)
-  
     deleted, err := manager.DeleteAll(&intersts, "intersts", nil)
     if err != nil {
         panic(err.Error())

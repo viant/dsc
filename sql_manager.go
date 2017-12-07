@@ -11,7 +11,7 @@ func asSQLDb(wrapped interface{}) (*sql.DB, error) {
 		return result, nil
 	}
 	wrappedType := reflect.ValueOf(wrapped)
-	return nil, fmt.Errorf(fmt.Sprintf("Failed cast as sql.DB: was %v !", wrappedType.Type()))
+	return nil, fmt.Errorf(fmt.Sprintf("failed cast as sql.DB: was %v !", wrappedType.Type()))
 }
 
 func asSQLTx(wrapped interface{}) (*sql.Tx, error) {
@@ -22,7 +22,7 @@ func asSQLTx(wrapped interface{}) (*sql.Tx, error) {
 		return result, nil
 	}
 	wrappedType := reflect.ValueOf(wrapped)
-	return nil, fmt.Errorf(fmt.Sprintf("Failed cast as sql.Tx: was %v !", wrappedType.Type()))
+	return nil, fmt.Errorf(fmt.Sprintf("failed cast as sql.Tx: was %v !", wrappedType.Type()))
 }
 
 func asScanner(wrapped interface{}) (Scanner, error) {
@@ -30,7 +30,7 @@ func asScanner(wrapped interface{}) (Scanner, error) {
 		return result, nil
 	}
 	wrappedType := reflect.ValueOf(wrapped)
-	return nil, fmt.Errorf(fmt.Sprintf("Failed cast as Scannable: was %v %v !", wrappedType.Type(), reflect.ValueOf(wrapped).Elem()))
+	return nil, fmt.Errorf(fmt.Sprintf("failed cast as Scannable: was %v %v !", wrappedType.Type(), reflect.ValueOf(wrapped).Elem()))
 }
 
 type sqlExecutor interface {
@@ -59,7 +59,7 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	}
 	result, err := executable.Exec(sql, args...)
 	if err != nil {
-		return nil, fmt.Errorf(fmt.Sprintf("Failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))
+		return nil, fmt.Errorf(fmt.Sprintf("failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))
 	}
 	return result, err
 }
@@ -71,12 +71,12 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 	}
 	sqlStatement, sqlError := db.Prepare(query)
 	if sqlError != nil {
-		return fmt.Errorf("Failed to prepare sql: %v with %v due to:%v\n\t", query, args, sqlError.Error())
+		return fmt.Errorf("failed to prepare sql: %v with %v due to:%v\n\t", query, args, sqlError.Error())
 	}
 	defer sqlStatement.Close()
 	rows, queryError := m.executeQuery(sqlStatement, query, args)
 	if queryError != nil {
-		return fmt.Errorf(fmt.Sprintf("Failed to execute sql: %v with %v due to:%v\n\t", query, args, queryError.Error()))
+		return fmt.Errorf(fmt.Sprintf("failed to execute sql: %v with %v due to:%v\n\t", query, args, queryError.Error()))
 	}
 	defer rows.Close()
 	for rows.Next() {

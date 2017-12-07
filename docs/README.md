@@ -303,7 +303,7 @@ In this scenario DmlProvider implementation is responsible for providing paramet
             }
     
         }
-        panic(fmt.Sprintf("Unsupported sql type:%v", operationType))
+        panic(fmt.Sprintf("unsupported sql type:%v", operationType))
     }
 
     

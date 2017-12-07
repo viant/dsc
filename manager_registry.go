@@ -21,7 +21,7 @@ func (r commonManagerRegistry) Get(name string) Manager {
 	if result, ok := r.registry[name]; ok {
 		return result
 	}
-	panic(fmt.Sprintf("Failed to lookup manager '%v', available names:%v", name, toolbox.MapKeysToStringSlice(r.registry)))
+	panic(fmt.Sprintf("failed to lookup manager '%v', available names:%v", name, toolbox.MapKeysToStringSlice(r.registry)))
 }
 
 func (r commonManagerRegistry) Names() []string {

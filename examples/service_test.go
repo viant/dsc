@@ -36,7 +36,7 @@ func TestRead(t *testing.T) {
 	dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Read")
 	services, err := getServices()
 	if err != nil {
-		t.Errorf("Failed to get services %v", err)
+		t.Errorf("failed to get services %v", err)
 	}
 
 	for _, service := range services {
@@ -66,7 +66,7 @@ func TestPersist(t *testing.T) {
 
 	services, err := getServices()
 	if err != nil {
-		t.Errorf("Failed to get services %v", err)
+		t.Errorf("failed to get services %v", err)
 	}
 
 	for _, service := range services {
@@ -100,7 +100,7 @@ func TestPersistAll(t *testing.T) {
 
 	services, err := getServices()
 	if err != nil {
-		t.Errorf("Failed to get services %v", err)
+		t.Errorf("failed to get services %v", err)
 	}
 
 
@@ -130,7 +130,7 @@ func TestDelete(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	services, err := getServices()
 	if err != nil {
-		t.Errorf("Failed to get services %v", err)
+		t.Errorf("failed to get services %v", err)
 	}
 	for _, service := range services {
 		{

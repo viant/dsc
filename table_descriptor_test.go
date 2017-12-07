@@ -28,7 +28,7 @@ func TestTableDescriptor(t *testing.T) {
 }
 func TestTableDescriptorRegistry(t *testing.T) {
 	descriptor := dsc.NewTableDescriptor("users", (*User1)(nil))
-	registry := dsc.newTableDescriptorRegistry()
+	registry := dsc.NewTableDescriptorRegistry()
 	assert.False(t, registry.Has("users"))
 	registry.Register(descriptor)
 	assert.True(t, registry.Has("users"))

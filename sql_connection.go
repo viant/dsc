@@ -40,7 +40,7 @@ func (c *sqlConnection) Unwrap(target interface{}) interface{} {
 	} else if target == sqlTxtPointer {
 		return c.tx
 	}
-	panic(fmt.Sprintf("Unsupported target type %v", target))
+	panic(fmt.Sprintf("unsupported target type %v", target))
 }
 
 func (c *sqlConnection) Commit() error {
@@ -69,7 +69,7 @@ func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	config := c.ConnectionProvider.Config()
 	db, err := sql.Open(config.DriverName, config.Descriptor)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
+		return nil, fmt.Errorf("failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
 	}
 	var sqlConnection = &sqlConnection{db: db}
 	var connection Connection = sqlConnection

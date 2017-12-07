@@ -94,13 +94,13 @@ func (cp *AbstractConnectionProvider) SpawnConnectionIfNeeded() {
 	for i := len(connectionPool); i < config.PoolSize; i++ {
 		connection, err := cp.ConnectionProvider.NewConnection()
 		if err != nil {
-			log.Printf("Failed to create connection %v\n", err)
+			log.Printf("failed to create connection %v\n", err)
 			break
 		}
 
 		select {
 		case <-time.After(1 * time.Second):
-			log.Fatalf("Failed to add connection to queue (size: %v, cap:%v)", len(connectionPool), cap(connectionPool))
+			log.Fatalf("failed to add connection to queue (size: %v, cap:%v)", len(connectionPool), cap(connectionPool))
 		case connectionPool <- connection:
 		}
 
@@ -132,7 +132,7 @@ func (cp *AbstractConnectionProvider) Get() (Connection, error) {
 	select {
 	case <-time.After(1 * time.Second):
 		{
-			log.Printf("Failed to acquire connection from pool after a second, creating new connection ...")
+			log.Printf("failed to acquire connection from pool after a second, creating new connection ...")
 		}
 	case result = <-connectionPool:
 	}

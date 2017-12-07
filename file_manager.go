@@ -61,7 +61,7 @@ func (m *FileManager) Init() error {
 		m.service.Register(parsedUrl.Scheme, service)
 
 	default:
-		return fmt.Errorf("Unsupported scheme: %v", parsedUrl.Scheme)
+		return fmt.Errorf("unsupported scheme: %v", parsedUrl.Scheme)
 	}
 	return nil
 
@@ -117,7 +117,7 @@ func (m *FileManager) encodeRecord(record map[string]interface{}) (string, error
 	var buffer = new(bytes.Buffer)
 	err := m.encoderFactory.Create(buffer).Encode(&record)
 	if err != nil {
-		return "", fmt.Errorf("Failed to encode record: %v due to ", err)
+		return "", fmt.Errorf("failed to encode record: %v due to ", err)
 	}
 	result := string(buffer.Bytes())
 	result = strings.Replace(result, "\n", "", len(result)) + "\n"
@@ -178,11 +178,11 @@ func (m *FileManager) PersistTableData(tableURL string, data []byte) error {
 		}
 		err = writer.Flush()
 		if err != nil {
-			return fmt.Errorf("Failed to compress data (flush) %v", err)
+			return fmt.Errorf("failed to compress data (flush) %v", err)
 		}
 		err = writer.Close()
 		if err != nil {
-			return fmt.Errorf("Failed to compress data (close) %v", err)
+			return fmt.Errorf("failed to compress data (close) %v", err)
 		}
 		data = buffer.Bytes()
 	}
@@ -197,7 +197,7 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 	if len(statement.Criteria) > 0 {
 		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
 		if err != nil {
-			return 0, fmt.Errorf("Failed to read data from %v due to %v", statement.SQL, err)
+			return 0, fmt.Errorf("failed to read data from %v due to %v", statement.SQL, err)
 		}
 	}
 	err = m.fetchRecords(statement.Table, predicate, func(record map[string]interface{}, matched bool) (bool, error) {
@@ -230,7 +230,7 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 func (m *FileManager) updateRecords(tableURL string, statement *DmlStatement, parameters toolbox.Iterator) (int, error) {
 	updatedRecord, err := m.getRecord(statement, parameters)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to update table %v, due to %v", statement.Table, err)
+		return 0, fmt.Errorf("failed to update table %v, due to %v", statement.Table, err)
 	}
 	return m.modifyRecords(tableURL, statement, parameters, func(record map[string]interface{}) (bool, error) {
 		for k, v := range updatedRecord {
@@ -339,13 +339,13 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 			}
 			err := decoder.Decode(delimiteredRecord)
 			if err != nil {
-				return fmt.Errorf("Failed to decode record from %v due to %v \n%v\n", table, err, line)
+				return fmt.Errorf("failed to decode record from %v due to %v \n%v\n", table, err, line)
 			}
 		} else {
 
 			err := decoder.Decode(&record)
 			if err != nil {
-				return fmt.Errorf("Failed to decode record from %v due to %v \n%v\n", table, err, line)
+				return fmt.Errorf("failed to decode record from %v due to %v \n%v\n", table, err, line)
 			}
 		}
 		matched := true
@@ -354,7 +354,7 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 		}
 		toContinue, err := recordHandler(record, matched)
 		if err != nil {
-			return fmt.Errorf("Failed to fetch records due to %v", err)
+			return fmt.Errorf("failed to fetch records due to %v", err)
 		}
 		if !toContinue {
 			return nil
@@ -381,7 +381,7 @@ func (m *FileManager) readWithPredicate(connection Connection, statement *QueryS
 		var scanner Scanner = fileScanner
 		toContinue, err := readingHandler(scanner)
 		if err != nil {
-			return false, fmt.Errorf("Failed to read data on statement %v, due to\n\t%v", statement.SQL, err)
+			return false, fmt.Errorf("failed to read data on statement %v, due to\n\t%v", statement.SQL, err)
 		}
 		if !toContinue {
 			return false, nil
@@ -399,14 +399,14 @@ func (m *FileManager) ReadAllOnWithHandlerOnConnection(connection Connection, qu
 	parser := NewQueryParser()
 	statement, err := parser.Parse(query)
 	if err != nil {
-		return fmt.Errorf("Failed to parse statement %v, %v", query, err)
+		return fmt.Errorf("failed to parse statement %v, %v", query, err)
 	}
 	var predicate toolbox.Predicate
 	if len(statement.Criteria) > 0 {
 		parameters := toolbox.NewSliceIterator(sqlParameters)
 		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
 		if err != nil {
-			return fmt.Errorf("Failed to read data from %v due to %v", query, err)
+			return fmt.Errorf("failed to read data from %v due to %v", query, err)
 		}
 	}
 	return m.readWithPredicate(connection, statement, sqlParameters, readingHandler, predicate)

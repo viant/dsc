@@ -1,7 +1,5 @@
 {
   "DriverName": "mysql",
-  "UserName": "root",
-  "Password": "dev",
   "Descriptor": "[user]:[password]@[url]",
   "Parameters": {
     "user": "root",

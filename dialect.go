@@ -2,7 +2,7 @@ package dsc
 
 import "errors"
 
-var errUnsupportedOperation = errors.New("Unsupported operation")
+var errUnsupportedOperation = errors.New("unsupported operation")
 
 type DefaultDialect struct{}
 

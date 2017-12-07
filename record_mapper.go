@@ -66,7 +66,7 @@ func (rm *metaRecordMapper) applyFieldMapValuesIfNeeded(fieldsValueMap map[strin
 		unwrappedValue := reflect.ValueOf(rawValue).Elem()
 		if unwrappedValue.IsNil() {
 			if field.Kind() != reflect.Ptr {
-				return fmt.Errorf("Failed to apply value map on %v, unable to set nil", fieldName)
+				return fmt.Errorf("failed to apply value map on %v, unable to set nil", fieldName)
 			}
 			continue
 		}
@@ -85,11 +85,11 @@ func (rm *metaRecordMapper) applyFieldMapValuesIfNeeded(fieldsValueMap map[strin
 			fieldValuePointer := field.Addr().Interface()
 			err := rm.converter.AssignConverted(fieldValuePointer, mappedValue)
 			if err != nil {
-				return fmt.Errorf("Failed to map record, unable convert,dur to %v", err)
+				return fmt.Errorf("failed to map record, unable convert,dur to %v", err)
 
 			}
 		} else {
-			return fmt.Errorf("Failed to map record, unable to find valid mapping, want one of %s, but had %v", valueMap, stringValue)
+			return fmt.Errorf("failed to map record, unable to find valid mapping, want one of %s, but had %v", valueMap, stringValue)
 		}
 
 	}
@@ -221,7 +221,7 @@ func NewRecordMapper(targetType reflect.Type) RecordMapper {
 			return mapper
 		}
 	default:
-		panic("Unsupported type: " + targetType.Name())
+		panic("unsupported type: " + targetType.Name())
 	}
 	return nil
 }
@@ -248,7 +248,7 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 
 	err := scanner.Scan(valuePointers...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to scan row due to %v", err)
+		return nil, nil, fmt.Errorf("failed to scan row due to %v", err)
 	}
 
 	for i := range rowValues {

@@ -77,7 +77,7 @@ func TestDialectRegistry(t *testing.T) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			expected := "Failed to lookup datastore dialectabe: test"
+			expected := "failed to lookup datastore dialectabe: test"
 			actual := fmt.Sprintf("%v", err)
 			assert.Equal(t, actual, expected, "Assert Kind")
 		}

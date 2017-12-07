@@ -110,7 +110,7 @@ func (am *AbstractManager) ReadAllOnConnection(connection Connection, resultSlic
 	err := am.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, func(scannalbe Scanner) (toContinue bool, err error) {
 		mapped, providerError := mapper.Map(scannalbe)
 		if providerError != nil {
-			return false, fmt.Errorf("Failed to map row sql: %v  due to %v", query, providerError.Error())
+			return false, fmt.Errorf("failed to map row sql: %v  due to %v", query, providerError.Error())
 		}
 		if mapped != nil {
 			//only add to slice i
@@ -151,7 +151,7 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 
 		mapped, err = mapper.Map(scanner)
 		if err != nil {
-			return false, fmt.Errorf("Failed to map record sql: %v due to %v", query, err)
+			return false, fmt.Errorf("failed to map record sql: %v due to %v", query, err)
 		}
 		if mapped != nil {
 
@@ -201,18 +201,18 @@ func (am *AbstractManager) PersistAll(dataPoiner interface{}, table string, prov
 
 	err = connection.Begin()
 	if err != nil {
-		return 0, 0, fmt.Errorf("Failed to start transaction on %v due to %v", am.config.Descriptor, err)
+		return 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", am.config.Descriptor, err)
 	}
 	inserted, updated, err := am.Manager.PersistAllOnConnection(connection, dataPoiner, table, provider)
 	if err == nil {
 		commitErr := connection.Commit()
 		if commitErr != nil {
-			return 0, 0, fmt.Errorf("Failed to commit on %v due to %v", am.config.Descriptor, commitErr)
+			return 0, 0, fmt.Errorf("failed to commit on %v due to %v", am.config.Descriptor, commitErr)
 		}
 	} else {
 		rollbackErr := connection.Rollback()
 		if rollbackErr != nil {
-			return 0, 0, fmt.Errorf("Failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
+			return 0, 0, fmt.Errorf("failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
 		}
 	}
 	return inserted, updated, err
@@ -410,7 +410,7 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 	//fetch all existing pk values into rows to classify as updatable
 	rows, err := am.fetchExistigData(connection, table, pkValues, provider)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to fetch existing data: due to:\n\t%v", err.Error())
+		return nil, nil, fmt.Errorf("failed to fetch existing data: due to:\n\t%v", err.Error())
 	}
 
 	//process existing rows and add mapped entires as updatables
@@ -441,18 +441,18 @@ func (am *AbstractManager) DeleteAll(dataPointer interface{}, table string, keyP
 	}
 	err = connection.Begin()
 	if err != nil {
-		return 0, fmt.Errorf("Failed to start transaction on %v due to %v", am.config.Descriptor, err)
+		return 0, fmt.Errorf("failed to start transaction on %v due to %v", am.config.Descriptor, err)
 	}
 	deleted, err = am.DeleteAllOnConnection(connection, dataPointer, table, keyProvider)
 	if err == nil {
 		commitErr := connection.Commit()
 		if commitErr != nil {
-			return 0, fmt.Errorf("Failed to commit on %v due to %v", am.config.Descriptor, commitErr)
+			return 0, fmt.Errorf("failed to commit on %v due to %v", am.config.Descriptor, commitErr)
 		}
 	} else {
 		rollbackErr := connection.Rollback()
 		if rollbackErr != nil {
-			return 0, fmt.Errorf("Failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
+			return 0, fmt.Errorf("failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
 		}
 	}
 	return deleted, err
@@ -507,18 +507,18 @@ func (am *AbstractManager) DeleteSingle(dataPointer interface{}, table string, k
 	}
 	err = connection.Begin()
 	if err != nil {
-		return false, fmt.Errorf("Failed to start transaction on %v due to %v", am.config.Descriptor, err)
+		return false, fmt.Errorf("failed to start transaction on %v due to %v", am.config.Descriptor, err)
 	}
 	suceess, err := am.DeleteSingleOnConnection(connection, dataPointer, table, keyProvider)
 	if err == nil {
 		commitErr := connection.Commit()
 		if commitErr != nil {
-			return false, fmt.Errorf("Failed to commit on %v due to %v", am.config.Descriptor, commitErr)
+			return false, fmt.Errorf("failed to commit on %v due to %v", am.config.Descriptor, commitErr)
 		}
 	} else {
 		rollbackErr := connection.Rollback()
 		if rollbackErr != nil {
-			return false, fmt.Errorf("Failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
+			return false, fmt.Errorf("failed to rollback on %v due to %v, %v", am.config.Descriptor, err, rollbackErr)
 		}
 	}
 	return suceess, err

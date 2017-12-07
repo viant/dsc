@@ -15,7 +15,7 @@ func StartServer(configFile string, port string) {
 
 	service, err := NewInterestService(configFile)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create service due to %v", err))
+		panic(fmt.Sprintf("failed to create service due to %v", err))
 	}
 
 	interestRouter := toolbox.NewServiceRouter(
@@ -51,7 +51,7 @@ func StartServer(configFile string, port string) {
 			response.WriteHeader(http.StatusInternalServerError)
 			err := interestRouter.WriteResponse(toolbox.NewJSONEncoderFactory(), &Response{Status: "error", Message: message}, request, response)
 			if err != nil {
-				fmt.Printf("Failed to write response :%v", err)
+				fmt.Printf("failed to write response :%v", err)
 			}
 		}
 		defer func() {

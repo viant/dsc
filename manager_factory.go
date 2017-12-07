@@ -16,7 +16,7 @@ func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
 	}
 	factory, err := GetManagerFactory(config.DriverName)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
+		return nil, fmt.Errorf("failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
 	}
 	config.Init()
 	return factory.Create(config)
@@ -37,7 +37,7 @@ func (f managerFactoryProxy) CreateFromURL(url string) (Manager, error) {
 	config.Init()
 	factory, err := GetManagerFactory(config.DriverName)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
+		return nil, fmt.Errorf("failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
 	}
 	return factory.CreateFromURL(url)
 }

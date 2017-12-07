@@ -24,7 +24,7 @@ func GetManager(t *testing.T) dsc.Manager {
 	for _, sql := range sqls {
 		_, err := manager.Execute(sql)
 		if err != nil {
-			t.Fatalf("Failed to init database %v", err)
+			t.Fatalf("failed to init database %v", err)
 		}
 	}
 	return manager
@@ -53,7 +53,7 @@ func GetMysqlManager(t *testing.T) dsc.Manager {
 	for _, sql := range sqls {
 		_, err := manager.Execute(sql)
 		if err != nil {
-			t.Fatalf("Failed to init database %v", err)
+			t.Fatalf("failed to init database %v", err)
 		}
 	}
 	return manager
@@ -144,7 +144,7 @@ func TestReadSingleWithCustomHandler(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, "Edi", user.Username)
 
@@ -155,7 +155,7 @@ func TestReadSingleWithCustomMapperDataset(t *testing.T) {
 	var recordMapper dsc.RecordMapper = &UserRecordMapper{}
 	success, err := manager.ReadSingle(&singleUser, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, recordMapper)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, true, success, "Should fetch a user")
 	assert.Equal(t, "Edi", singleUser.Username)
@@ -168,7 +168,7 @@ func TestReadAllWithCustomMapperDataset(t *testing.T) {
 	var recordMapper dsc.RecordMapper = &UserRecordMapper{}
 	err := manager.ReadAll(&users, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, recordMapper)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 1, len(users))
 	user := users[0]
@@ -182,7 +182,7 @@ func TestReadSingleWithDefaultMetaMapper(t *testing.T) {
 
 	success, err := manager.ReadSingle(&singleUser, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, true, success, "Should fetch a user")
 	assert.Equal(t, true, singleUser.Active)
@@ -194,7 +194,7 @@ func TestExecessiveReadAll(t *testing.T) {
 		users := make([]*User, 0)
 		err := manager.ReadAll(&users, "SELECT * FROM users", nil, nil)
 		if err != nil {
-			t.Fatal("Failed test:", err.Error())
+			t.Fatal("failed test:", err.Error())
 		}
 	}
 }
@@ -205,7 +205,7 @@ func TestReadAllWithDefaultMetaMapper(t *testing.T) {
 
 	err := manager.ReadAll(&users, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 1, len(users))
 	user := users[0]
@@ -218,7 +218,7 @@ func TestReadSingleRowAsSlice(t *testing.T) {
 
 	success, err := manager.ReadSingle(&aUser, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, true, success, "Should fetch a user")
 	assert.EqualValues(t, 1, aUser[0].(int64))
@@ -230,7 +230,7 @@ func TestReadSingleRowAsMap(t *testing.T) {
 
 	success, err := manager.ReadSingle(&aUser, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, true, success, "Should fetch a user")
 	assert.EqualValues(t, 1, aUser["id"].(int64))
@@ -243,7 +243,7 @@ func TestReadSingleAllRowAsSlice(t *testing.T) {
 
 	err := manager.ReadAll(&users, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 
 	assert.Equal(t, 1, len(users))
@@ -258,7 +258,7 @@ func TestReadSingleAllRowAsMap(t *testing.T) {
 
 	err := manager.ReadAll(&users, "SELECT id, username, active, salary, comments,last_access_time FROM users WHERE id = ?", []interface{}{1}, nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 
 	assert.Equal(t, 1, len(users))
@@ -285,7 +285,7 @@ func (this UserDmlProvider) Get(operationType int, instance interface{}) *dsc.Pa
 		}
 
 	}
-	panic(fmt.Sprintf("Unsupported sql type:%v", operationType))
+	panic(fmt.Sprintf("unsupported sql type:%v", operationType))
 }
 
 func (this UserDmlProvider) SetKey(instance interface{}, seq int64) {
@@ -324,7 +324,7 @@ func TestPersistAllWithCustomDmlProvider(t *testing.T) {
 	}
 	inserted, updated, err := manager.PersistAll(&users, "users", NewUserDmlProvider())
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 1, inserted)
 	assert.Equal(t, 0, updated)
@@ -347,7 +347,7 @@ func TestPersistAllWithDefaultDmlProvider(t *testing.T) {
 	}
 	inserted, updated, err := manager.PersistAll(&users, "users", nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 2, users[1].Id, "autoicrement value should be set")
 	assert.Equal(t, 1, inserted)
@@ -355,7 +355,7 @@ func TestPersistAllWithDefaultDmlProvider(t *testing.T) {
 	user := User{Username: "KLK", Active: false}
 	inserted, updated, err = manager.PersistSingle(&user, "users", nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 1, inserted)
 	assert.Equal(t, 3, user.Id, "autoicrement value should be set")
@@ -379,14 +379,14 @@ func TestPersistSingleWithDefaultDmlProvider(t *testing.T) {
 	}
 	inserted, updated, err := manager.PersistSingle(&users[0], "users", nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 1, updated)
 	assert.Equal(t, 0, inserted)
 
 	inserted, updated, err = manager.PersistSingle(&users[1], "users", nil)
 	if err != nil {
-		t.Error("Failed test: " + err.Error())
+		t.Error("failed test: " + err.Error())
 	}
 
 	assert.Equal(t, 2, users[1].Id, "autoicrement value should be set")

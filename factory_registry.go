@@ -25,5 +25,5 @@ func GetManagerFactory(driver string) (ManagerFactory, error) {
 	if result, ok := managerFactories[driver]; ok {
 		return result, nil
 	}
-	return nil, fmt.Errorf("Failed to lookup manager factory for '%v' ", driver)
+	return nil, fmt.Errorf("failed to lookup manager factory for '%v' ", driver)
 }
