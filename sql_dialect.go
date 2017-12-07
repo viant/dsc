@@ -179,10 +179,7 @@ func (d sqlDatastoreDialect) IsAutoincrement(manager Manager, datastore, table s
 func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
-	if err != nil || !success {
-		return 0, err
-	}
-	if len(result) ==  1{
+	if success && len(result) ==  1{
 		var intResult = toolbox.AsInt(result[0])
 		if intResult > 0 {
 			return int64(intResult), nil
@@ -252,6 +249,37 @@ type sqlLiteDialect struct {
 func (d sqlLiteDialect) CreateDatastore(manager Manager, datastore string) error {
 	return nil
 }
+
+
+
+//GetSequence returns sequence value or error for passed in manager and table/sequence
+func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error) {
+	var result = make([]interface{}, 0)
+	success, err := manager.ReadSingle(&result, fmt.Sprintf(sqlLightSequenceSQL, name), []interface{}{}, nil)
+	if success && len(result) ==  1{
+		var intResult = toolbox.AsInt(result[0])
+		if intResult > 0 {
+			return int64(intResult), nil
+		}
+	}
+	datastore, err := d.GetCurrentDatastore(manager)
+	if err != nil {
+		return 0, err
+	}
+	var key = d.GetKeyName(manager, datastore, name)
+	if key != "" {
+		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v) AS seq_value FROM  %v", key,  name), []interface{}{}, nil)
+		if err != nil || !success {
+			return 0, err
+		}
+		if len(result) ==  1{
+			return int64(toolbox.AsInt(result[0])), nil
+		}
+	}
+	return 0, nil
+}
+
+
 
 
 
