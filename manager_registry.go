@@ -1,8 +1,6 @@
 package dsc
 
 import (
-	"fmt"
-
 	"github.com/viant/toolbox"
 )
 
@@ -21,7 +19,7 @@ func (r commonManagerRegistry) Get(name string) Manager {
 	if result, ok := r.registry[name]; ok {
 		return result
 	}
-	panic(fmt.Sprintf("failed to lookup manager '%v', available names:%v", name, toolbox.MapKeysToStringSlice(r.registry)))
+	return nil
 }
 
 func (r commonManagerRegistry) Names() []string {

@@ -178,7 +178,7 @@ func (d sqlDatastoreDialect) IsAutoincrement(manager Manager, datastore, table s
 //GetSequence returns sequence value or error for passed in manager and table/sequence
 func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]interface{}, 0)
-	success, err := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
+	success, sequenceError := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
 	if success && len(result) ==  1{
 		var intResult = toolbox.AsInt(result[0])
 		if intResult > 0 {
@@ -199,7 +199,7 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 			return int64(toolbox.AsInt(result[0])), nil
 		}
 	}
-	return 0, nil
+	return 0, sequenceError
 }
 
 
@@ -255,7 +255,7 @@ func (d sqlLiteDialect) CreateDatastore(manager Manager, datastore string) error
 //GetSequence returns sequence value or error for passed in manager and table/sequence
 func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]interface{}, 0)
-	success, err := manager.ReadSingle(&result, fmt.Sprintf(sqlLightSequenceSQL, name), []interface{}{}, nil)
+	success, sequenceError := manager.ReadSingle(&result, fmt.Sprintf(sqlLightSequenceSQL, name), []interface{}{}, nil)
 	if success && len(result) ==  1{
 		var intResult = toolbox.AsInt(result[0])
 		if intResult > 0 {
@@ -276,7 +276,7 @@ func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error)
 			return int64(toolbox.AsInt(result[0])), nil
 		}
 	}
-	return 0, nil
+	return 0, sequenceError
 }
 
 
