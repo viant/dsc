@@ -25,8 +25,6 @@ const sqlLightSequenceSQL = "SELECT COALESCE(MAX(name), 0) + 1   FROM (SELECT se
 const sqlLightSchemaSQL = "PRAGMA database_list"
 const sqlLightPkSQL = "pragma table_info(%v);"
 
-
-
 const pgSequenceSQL = "SELECT currval(%v) + 1 AS seq_value"
 
 const oraTableSQL = "SELECT table_name AS name  FROM all_tables WHERE owner = ?"
@@ -49,7 +47,7 @@ type sqlDatastoreDialect struct {
 	keySQL                 string
 	disableForeignKeyCheck string
 	enableForeignKeyCheck  string
-	autoIncrementSQL 	string
+	autoIncrementSQL       string
 	schemaResultsetIndex   int
 }
 
@@ -145,7 +143,6 @@ func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 //GetCurrentDatastore returns name of current schema
 func (d sqlDatastoreDialect) GetCurrentDatastore(manager Manager) (string, error) {
 
-
 	var result = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&result, d.schemaSQL, nil, nil)
 	if err != nil || !success {
@@ -179,7 +176,7 @@ func (d sqlDatastoreDialect) IsAutoincrement(manager Manager, datastore, table s
 func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]interface{}, 0)
 	success, sequenceError := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
-	if success && len(result) ==  1{
+	if success && len(result) == 1 {
 		var intResult = toolbox.AsInt(result[0])
 		if intResult > 0 {
 			return int64(intResult), nil
@@ -191,19 +188,16 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 	}
 	var key = d.GetKeyName(manager, datastore, name)
 	if key != "" {
-		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v) AS seq_value FROM  %v.%v", key, datastore, name), []interface{}{}, nil)
+		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v)  AS seq_value FROM  %v.%v", key, datastore, name), []interface{}{}, nil)
 		if err != nil || !success {
 			return 0, err
 		}
-		if len(result) ==  1{
-			return int64(toolbox.AsInt(result[0])), nil
+		if len(result) == 1 {
+			return int64(toolbox.AsInt(result[0]) + 1), nil
 		}
 	}
 	return 0, sequenceError
 }
-
-
-
 
 //DisableForeignKeyCheck disables fk check
 func (d sqlDatastoreDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
@@ -230,7 +224,7 @@ func (d sqlDatastoreDialect) CanPersistBatch() bool {
 
 //NewSQLDatastoreDialect creates a new default sql dialect
 func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL string, schmeaIndex int) DatastoreDialect {
-	return &sqlDatastoreDialect{tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL,schmeaIndex}
+	return &sqlDatastoreDialect{tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL, schmeaIndex}
 }
 
 type mySQLDialect struct {
@@ -238,7 +232,7 @@ type mySQLDialect struct {
 }
 
 func newMySQLDialect() mySQLDialect {
-	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, defaultSequenceSQL, defaultSchemaSQL, defaultAllSchemaSQL, defaultKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL,0)}
+	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, defaultSequenceSQL, defaultSchemaSQL, defaultAllSchemaSQL, defaultKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, 0)}
 }
 
 type sqlLiteDialect struct {
@@ -250,13 +244,11 @@ func (d sqlLiteDialect) CreateDatastore(manager Manager, datastore string) error
 	return nil
 }
 
-
-
 //GetSequence returns sequence value or error for passed in manager and table/sequence
 func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]interface{}, 0)
 	success, sequenceError := manager.ReadSingle(&result, fmt.Sprintf(sqlLightSequenceSQL, name), []interface{}{}, nil)
-	if success && len(result) ==  1{
+	if success && len(result) == 1 {
 		var intResult = toolbox.AsInt(result[0])
 		if intResult > 0 {
 			return int64(intResult), nil
@@ -268,20 +260,16 @@ func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error)
 	}
 	var key = d.GetKeyName(manager, datastore, name)
 	if key != "" {
-		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v) AS seq_value FROM  %v", key,  name), []interface{}{}, nil)
+		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v) AS seq_value FROM  %v", key, name), []interface{}{}, nil)
 		if err != nil || !success {
 			return 0, err
 		}
-		if len(result) ==  1{
-			return int64(toolbox.AsInt(result[0])), nil
+		if len(result) == 1 {
+			return int64(toolbox.AsInt(result[0])+ 1), nil
 		}
 	}
 	return 0, sequenceError
 }
-
-
-
-
 
 func (d sqlLiteDialect) DropDatastore(manager Manager, datastore string) error {
 	tables, err := d.GetTables(manager, datastore)
@@ -296,7 +284,6 @@ func (d sqlLiteDialect) DropDatastore(manager Manager, datastore string) error {
 	}
 	return err
 }
-
 
 func (d sqlLiteDialect) GetKeyName(manager Manager, datastore, table string) string {
 	var records = make([]map[string]interface{}, 0)
@@ -314,18 +301,15 @@ func (d sqlLiteDialect) GetKeyName(manager Manager, datastore, table string) str
 }
 
 func newSQLLiteDialect() *sqlLiteDialect {
-	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "",2)}
+	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "", 2)}
 }
-
-
-
 
 type pgDialect struct {
 	DatastoreDialect
 }
 
 func newPgDialect() *pgDialect {
-	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, pgSequenceSQL, schemaSQL, defaultAllSchemaSQL, "", "", "", "",0)}
+	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, pgSequenceSQL, schemaSQL, defaultAllSchemaSQL, "", "", "", "", 0)}
 }
 
 type oraDialect struct {
@@ -345,7 +329,7 @@ func (d oraDialect) DropDatastore(manager Manager, datastore string) error {
 }
 
 func newOraDialect() *oraDialect {
-	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, oraSequenceSQL, oraSchemaSQL, oraAllSchemaSQL, "", "", "", "",0)}
+	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, oraSequenceSQL, oraSchemaSQL, oraAllSchemaSQL, "", "", "", "", 0)}
 }
 
 type msSQLDialect struct {
@@ -353,5 +337,5 @@ type msSQLDialect struct {
 }
 
 func newMsSQLDialect() *msSQLDialect {
-	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, msSequenceSQL, msSchemaSQL, defaultAllSchemaSQL, "", "", "", "",0)}
+	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, msSequenceSQL, msSchemaSQL, defaultAllSchemaSQL, "", "", "", "", 0)}
 }
