@@ -127,7 +127,7 @@ func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err e
 	}
 	err = scanner.Scan(fieldValuePointers...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to scan data: %v\n", err)
 	}
 
 	if hasFieldValueMap {
