@@ -151,7 +151,7 @@ func (am *AbstractManager) ReadSingleOnConnection(connection Connection, resultP
 
 		mapped, err = mapper.Map(scanner)
 		if err != nil {
-			return false, fmt.Errorf("failed to map record sql: %v due to %v", query, err)
+			return false, fmt.Errorf("failed to map record: %v with %T due to %v", query, mapper, err)
 		}
 		if mapped != nil {
 
