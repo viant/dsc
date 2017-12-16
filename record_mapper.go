@@ -122,7 +122,7 @@ func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err e
 			fieldValuePointers[i] = field.Addr().Interface()
 
 		} else {
-			return nil, fmt.Errorf("Unable map column %v to the result", key)
+			return nil, fmt.Errorf("unable to map column %v to the result", key)
 		}
 	}
 	err = scanner.Scan(fieldValuePointers...)

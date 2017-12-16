@@ -219,21 +219,33 @@ func (am *AbstractManager) PersistAll(dataPoiner interface{}, table string, prov
 }
 
 //RegisterDescriptorIfNeeded register a table descriptor if there it is not present, returns a pointer to a table descriptor.
-func (am *AbstractManager) RegisterDescriptorIfNeeded(table string, instance interface{}) *TableDescriptor {
+func (am *AbstractManager) RegisterDescriptorIfNeeded(table string, instance interface{}) (*TableDescriptor, error) {
 	if !am.tableDescriptorRegistry.Has(table) {
-		descriptor := NewTableDescriptor(table, instance)
+		descriptor, err := NewTableDescriptor(table, instance)
+		if err != nil {
+			return nil, err
+		}
 		am.tableDescriptorRegistry.Register(descriptor)
 	}
-	return am.tableDescriptorRegistry.Get(table)
+	var result =  am.tableDescriptorRegistry.Get(table)
+	if result != nil {
+		return result, nil
+	}
+	return nil, fmt.Errorf("failed to lookup descriptor for table: %v", table)
 }
 
 //PersistAllOnConnection persists on connection all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
 func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error) {
 	toolbox.AssertPointerKind(dataPointer, reflect.Slice, "resultSlicePointer")
 	structType := reflect.TypeOf(dataPointer).Elem().Elem()
-	provider = NewDmlProviderIfNeeded(provider, table, structType)
-	descriptor := am.RegisterDescriptorIfNeeded(table, dataPointer)
-
+	provider, err = NewDmlProviderIfNeeded(provider, table, structType)
+	if err != nil {
+		return 0, 0, err
+	}
+	descriptor, err := am.RegisterDescriptorIfNeeded(table, dataPointer)
+	if err != nil {
+		return 0, 0, err
+	}
 	insertables, updatables, err := am.Manager.ClassifyDataAsInsertableOrUpdatable(connection, dataPointer, table, provider)
 	if err != nil {
 		return 0, 0, err
@@ -295,7 +307,10 @@ func (am *AbstractManager) PersistSingle(dataPointer interface{}, table string, 
 		return 0, 0, err
 	}
 	if inserted > 0 {
-		descriptor := am.RegisterDescriptorIfNeeded(table, dataPointer)
+		descriptor, err := am.RegisterDescriptorIfNeeded(table, dataPointer)
+		if err != nil {
+			return 0, 0, err
+		}
 		if descriptor.Autoincrement {
 			value := toolbox.GetSliceValue(slice, 0)
 			reflect.ValueOf(dataPointer).Elem().Set(reflect.ValueOf(value))
@@ -464,7 +479,10 @@ func (am *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoin
 
 	deleted = 0
 	structType := toolbox.DiscoverTypeByKind(dataPointer, reflect.Struct)
-	keyProvider = NewKeyGetterIfNeeded(keyProvider, table, structType)
+	keyProvider, err = NewKeyGetterIfNeeded(keyProvider, table, structType)
+	if err != nil {
+		return 0, err
+	}
 	am.RegisterDescriptorIfNeeded(table, dataPointer)
 
 	descriptor := am.tableDescriptorRegistry.Get(table)

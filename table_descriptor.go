@@ -83,7 +83,7 @@ func (d *TableDescriptor) HasSchema() bool {
 }
 
 //NewTableDescriptor creates a new table descriptor for passed in instance, it can use the following tags:"column", "dateLayout","dateFormat", "autoincrement", "primaryKey", "sequence", "transient"
-func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
+func NewTableDescriptor(table string, instance interface{}) (*TableDescriptor, error) {
 	targetType := toolbox.DiscoverTypeByKind(instance, reflect.Struct)
 	var autoincrement bool
 	var pkColumns = make([]string, 0)
@@ -125,12 +125,12 @@ func NewTableDescriptor(table string, instance interface{}) *TableDescriptor {
 		}
 	}
 	if len(pkColumns) == 0 {
-		panic(fmt.Sprintf("No primary key defined on table: %v, type: %v", table, targetType))
+		return nil, fmt.Errorf("No primary key defined on table: %v, type: %v, consider adding 'primaryKey' tag to primary key column", table, targetType)
 	}
 	return &TableDescriptor{
 		Table:         table,
 		Autoincrement: autoincrement,
 		Columns:       columns,
 		PkColumns:     pkColumns,
-	}
+	},nil
 }

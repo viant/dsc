@@ -17,7 +17,8 @@ type User1 struct {
 
 func TestTableDescriptor(t *testing.T) {
 
-	descriptor := dsc.NewTableDescriptor("users", (*User1)(nil))
+	descriptor, err := dsc.NewTableDescriptor("users", (*User1)(nil))
+	assert.Nil(t, err)
 	assert.Equal(t, "users", descriptor.Table)
 	assert.Equal(t, "Id", descriptor.PkColumns[0])
 	assert.Equal(t, true, descriptor.Autoincrement)
@@ -27,7 +28,8 @@ func TestTableDescriptor(t *testing.T) {
 
 }
 func TestTableDescriptorRegistry(t *testing.T) {
-	descriptor := dsc.NewTableDescriptor("users", (*User1)(nil))
+	descriptor, err := dsc.NewTableDescriptor("users", (*User1)(nil))
+	assert.Nil(t, err)
 	registry := dsc.NewTableDescriptorRegistry()
 	assert.False(t, registry.Has("users"))
 	registry.Register(descriptor)

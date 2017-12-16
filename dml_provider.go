@@ -86,29 +86,28 @@ func (p *metaDmlProvider) Get(sqlType int, instance interface{}) *ParametrizedSQ
 	})
 }
 
-func newMetaDmlProvider(table string, targetType reflect.Type) DmlProvider {
-	descriptor := NewTableDescriptor(table, targetType)
+func newMetaDmlProvider(table string, targetType reflect.Type) (DmlProvider, error) {
+	descriptor, err := NewTableDescriptor(table, targetType)
+	if err != nil {
+		return nil, err
+	}
 	dmlBuilder := NewDmlBuilder(descriptor)
 	return &metaDmlProvider{dmlBuilder: dmlBuilder,
-		columnToFieldNameMap: toolbox.NewFieldSettingByKey(targetType, "column")}
+		columnToFieldNameMap: toolbox.NewFieldSettingByKey(targetType, "column")}, nil
 }
 
 //NewDmlProviderIfNeeded returns a new NewDmlProvider for a table and target type if passed provider was nil.
-func NewDmlProviderIfNeeded(provider DmlProvider, table string, targetType reflect.Type) DmlProvider {
+func NewDmlProviderIfNeeded(provider DmlProvider, table string, targetType reflect.Type) (DmlProvider, error) {
 	if provider != nil {
-		return provider
+		return provider, nil
 	}
-	var result DmlProvider
-	result = newMetaDmlProvider(table, targetType)
-	return result
+	return newMetaDmlProvider(table, targetType)
 }
 
 //NewKeyGetterIfNeeded returns a new ketter if passedin keyGetter was nil for the target type
-func NewKeyGetterIfNeeded(keyGetter KeyGetter, table string, targetType reflect.Type) KeyGetter {
+func NewKeyGetterIfNeeded(keyGetter KeyGetter, table string, targetType reflect.Type) (KeyGetter, error) {
 	if keyGetter != nil {
-		return keyGetter
+		return keyGetter, nil
 	}
-	var result KeyGetter
-	result = newMetaDmlProvider(table, targetType)
-	return result
+	return newMetaDmlProvider(table, targetType)
 }
