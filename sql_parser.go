@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
-	"runtime/debug"
+
 )
 
 //SQLColumn represents a sql column
@@ -798,6 +798,5 @@ func (e illegalTokenParsingError) Error() string {
 }
 
 func newIllegalTokenParsingError(index int, expected string) error {
-	debug.PrintStack()
 	return &illegalTokenParsingError{Index: index, Expected: expected, error: fmt.Sprintf("illegal token at %v, expected %v", index, expected)}
 }
