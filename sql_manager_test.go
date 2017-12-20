@@ -30,7 +30,7 @@ func GetManager(t *testing.T) dsc.Manager {
 	return manager
 }
 
-func GetMysqlManager(t *testing.T) dsc.Manager {
+func GetSqlManager(t *testing.T) dsc.Manager {
 	config := dsc.NewConfig("mysql",
 		"[user]:[password]@[url]",
 		"user:root,password:dev,url:tcp(localhost:3306)/mydbname?parseTime=true")
@@ -188,16 +188,16 @@ func TestReadSingleWithDefaultMetaMapper(t *testing.T) {
 	assert.Equal(t, true, singleUser.Active)
 }
 
-func TestExecessiveReadAll(t *testing.T) {
-	manager := GetMysqlManager(t)
-	for i := 0; i < 10000; i++ {
-		users := make([]*User, 0)
-		err := manager.ReadAll(&users, "SELECT * FROM users", nil, nil)
-		if err != nil {
-			t.Fatal("failed test:", err.Error())
-		}
-	}
-}
+//func TestExecessiveReadAll(t *testing.T) {
+//	manager := GetSqlManager(t)
+//	for i := 0; i < 10000; i++ {
+//		users := make([]*User, 0)
+//		err := manager.ReadAll(&users, "SELECT * FROM users", nil, nil)
+//		if err != nil {
+//			t.Fatal("failed test:", err.Error())
+//		}
+//	}
+//}
 
 func TestReadAllWithDefaultMetaMapper(t *testing.T) {
 	manager := GetManager(t)
@@ -349,7 +349,7 @@ func TestPersistAllWithDefaultDmlProvider(t *testing.T) {
 	if err != nil {
 		t.Error("failed test: " + err.Error())
 	}
-	assert.Equal(t, 2, users[1].Id, "autoicrement value should be set")
+	assert.Equal(t, 2, users[1].Id, "autoincrement value should be set")
 	assert.Equal(t, 1, inserted)
 	assert.Equal(t, 1, updated)
 	user := User{Username: "KLK", Active: false}
@@ -358,7 +358,7 @@ func TestPersistAllWithDefaultDmlProvider(t *testing.T) {
 		t.Error("failed test: " + err.Error())
 	}
 	assert.Equal(t, 1, inserted)
-	assert.Equal(t, 3, user.Id, "autoicrement value should be set")
+	assert.Equal(t, 3, user.Id, "autoincrement value should be set")
 
 }
 
