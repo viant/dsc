@@ -104,10 +104,48 @@ func NewDmlProviderIfNeeded(provider DmlProvider, table string, targetType refle
 	return newMetaDmlProvider(table, targetType)
 }
 
-//NewKeyGetterIfNeeded returns a new ketter if passedin keyGetter was nil for the target type
+//NewKeyGetterIfNeeded returns a new key getter if supplied keyGetter was nil for the target type
 func NewKeyGetterIfNeeded(keyGetter KeyGetter, table string, targetType reflect.Type) (KeyGetter, error) {
 	if keyGetter != nil {
 		return keyGetter, nil
 	}
 	return newMetaDmlProvider(table, targetType)
+}
+
+
+
+
+
+type mapDmlProvider struct {
+	tableDescriptor *TableDescriptor
+	dmlBuilder *DmlBuilder
+}
+
+func (p *mapDmlProvider) Key(instance interface{}) []interface{} {
+	var record = toolbox.AsMap(instance)
+	var result = make([]interface{}, len(p.tableDescriptor.PkColumns))
+	for i, column := range p.tableDescriptor.PkColumns {
+		result[i] = record[column]
+	}
+	return result
+}
+
+func (p *mapDmlProvider) SetKey(instance interface{}, seq int64) {
+	var record = toolbox.AsMap(instance)
+	record[p.tableDescriptor.PkColumns[0]] = seq
+}
+
+func (p *mapDmlProvider) Get(sqlType int, instance interface{}) *ParametrizedSQL {
+	var record = toolbox.AsMap(instance)
+	return p.dmlBuilder.GetParametrizedSQL(sqlType, func(column string) interface{} {
+		return record[column]
+	})
+}
+
+func NewMapDmlProvider(descriptor *TableDescriptor) DmlProvider {
+	var result = &mapDmlProvider{
+		tableDescriptor:descriptor,
+		dmlBuilder:NewDmlBuilder(descriptor),
+	}
+	return result
 }

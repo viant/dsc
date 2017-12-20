@@ -329,7 +329,12 @@ func (am *AbstractManager) PersistSingleOnConnection(connection Connection, data
 func (am *AbstractManager) PersistData(connection Connection, data []interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
 	var processed = 0
 	for i, item := range data {
+
 		parametrizedSQL := sqlProvider(item)
+		if len(parametrizedSQL.Values) == 1 && strings.HasPrefix(parametrizedSQL.SQL, "UPDATE ") {
+			//nothing to udpate, one parameter is ID=? without values to update
+			continue
+		}
 		result, err := am.Manager.ExecuteOnConnection(connection, parametrizedSQL.SQL, parametrizedSQL.Values)
 		if err != nil {
 			return 0, err
@@ -383,7 +388,7 @@ func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArg
 	return &rows, nil
 }
 
-func (am *AbstractManager) fetchExistigData(connection Connection, table string, pkValues [][]interface{}, provider DmlProvider) ([][]interface{}, error) {
+func (am *AbstractManager) fetchExistingData(connection Connection, table string, pkValues [][]interface{}, provider DmlProvider) ([][]interface{}, error) {
 	var rows = make([][]interface{}, 0)
 	descriptor := am.tableDescriptorRegistry.Get(table)
 
@@ -423,7 +428,7 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 		return true
 	})
 	//fetch all existing pk values into rows to classify as updatable
-	rows, err := am.fetchExistigData(connection, table, pkValues, provider)
+	rows, err := am.fetchExistingData(connection, table, pkValues, provider)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to fetch existing data: due to:\n\t%v", err.Error())
 	}

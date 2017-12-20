@@ -8,9 +8,6 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/storage"
-	"github.com/viant/toolbox/storage/aws"
-	"github.com/viant/toolbox/storage/gs"
-	"google.golang.org/api/option"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -47,14 +44,13 @@ func (m *FileManager) Init() error {
 	m.useGzipCompressions = extension == "gzip"
 	switch parsedUrl.Scheme {
 	case "file":
+
 	case "gs":
-		credential := option.WithServiceAccountFile(m.Config().Get("credential"))
-		service := gs.NewService(credential)
-		m.service.Register(parsedUrl.Scheme, service)
-		break
+		fallthrough
 	case "s3":
-		credential := m.Config().Get("credential")
-		service, err := aws.NewServiceWithCredential(credential)
+
+		credential:= m.Config().Get("credential")
+		service, err := storage.NewServiceForURL(baseUrl, credential)
 		if err != nil {
 			return err
 		}
@@ -113,9 +109,16 @@ func getTableURL(manager Manager, table string) string {
 	return path.Join(manager.Config().Get("url"), tableFile)
 }
 
-func (m *FileManager) encodeRecord(record map[string]interface{}) (string, error) {
+func (m *FileManager) encodeRecord(record map[string]interface{}, table string) (string, error) {
 	var buffer = new(bytes.Buffer)
-	err := m.encoderFactory.Create(buffer).Encode(&record)
+	var encoder = m.encoderFactory.Create(buffer)
+
+	if m.delimiter != "" {
+		descriptor := m.TableDescriptorRegistry().Get(table)
+		encoder.Encode(descriptor.Columns)
+	}
+
+	err := encoder.Encode(&record)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode record: %v due to ", err)
 	}
@@ -141,30 +144,43 @@ func (m *FileManager) getRecord(statement *DmlStatement, parameters toolbox.Iter
 
 }
 
-func (m *FileManager) insertRecord(tableURL string, statement *DmlStatement, parameters toolbox.Iterator) error {
+func (m *FileManager) insertRecord(connection Connection, tableURL string, statement *DmlStatement, parameters toolbox.Iterator) error {
+	parsedURL, _ := url.Parse(tableURL)
+	recordBuffer := new(bytes.Buffer)
+	record, err := m.getRecord(statement, parameters)
+	if err != nil {
+		return err
+	}
+	encodedRecord, err := m.encodeRecord(record, statement.Table)
+	if err != nil {
+		return err
+	}
+	_, err = recordBuffer.Write(([]byte)(encodedRecord))
+	if err != nil {
+		return err
+	}
+
+	if parsedURL.Scheme == "file" && !  m.useGzipCompressions {
+		writer, err := getFile(parsedURL.Path, connection)
+		if err != nil {
+			return err
+		}
+		if _, err = writer.Write(recordBuffer.Bytes()); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	buf := new(bytes.Buffer)
-	reader, err := m.getReaderForUrl(tableURL)
+	reader, err := m.getReaderForURL(tableURL)
 	if reader != nil {
+		defer reader.Close()
 		_, err := io.Copy(buf, reader)
 		if err != nil {
 			return err
 		}
 	}
-
-	record, err := m.getRecord(statement, parameters)
-	if err != nil {
-		return err
-	}
-	encodedRecord, err := m.encodeRecord(record)
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.Write(([]byte)(encodedRecord))
-	if err != nil {
-		return err
-	}
+	buf.Write(recordBuffer.Bytes())
 	return m.PersistTableData(tableURL, buf.Bytes())
 }
 
@@ -212,7 +228,7 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 				return true, nil //continue process next rows
 			}
 		}
-		encodedRecord, err := m.encodeRecord(record)
+		encodedRecord, err := m.encodeRecord(record, statement.Table)
 		if err != nil {
 			return false, err
 		}
@@ -249,13 +265,11 @@ func (m *FileManager) deleteRecords(tableURL string, statement *DmlStatement, pa
 //ExecuteOnConnection executs passed in sql on connection. It takes connection, sql and sql parameters. It returns number of rows affected, or error.
 //This method support basic insert, updated and delete operations.
 func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sqlParameters []interface{}) (sql.Result, error) {
-	if m.hasHeaderLine {
-		return nil, fmt.Errorf("Modification of delimitered files is not supported yet")
-	}
 	parser := NewDmlParser()
 	statement, err := parser.Parse(sql)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse sql: %v, %v", sql, err)
+
 	}
 	tableURL := getTableURL(m, statement.Table)
 
@@ -263,7 +277,7 @@ func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sql
 	parameters := toolbox.NewSliceIterator(sqlParameters)
 	switch statement.Type {
 	case "INSERT":
-		err = m.insertRecord(tableURL, statement, parameters)
+		err = m.insertRecord(connection, tableURL, statement, parameters)
 		if err == nil {
 			count = 1
 		}
@@ -289,7 +303,7 @@ func (m *FileManager) getStorageObject(tableURL string) (storage.Object, error) 
 	return m.service.StorageObject(tableURL)
 }
 
-func (m *FileManager) getReaderForUrl(tableURL string) (io.Reader, error) {
+func (m *FileManager) getReaderForURL(tableURL string) (io.ReadCloser, error) {
 	object, err := m.getStorageObject(tableURL)
 	if err != nil {
 		return nil, err
@@ -302,57 +316,84 @@ func (m *FileManager) getReaderForUrl(tableURL string) (io.Reader, error) {
 		return nil, err
 	}
 	if reader != nil && m.useGzipCompressions {
-		reader, err = gzip.NewReader(reader)
-		if err != nil {
-			return nil, err
-		}
+		defer reader.Close()
+		return gzip.NewReader(reader)
 	}
 	return reader, nil
 }
 
-func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
-	tableURL := getTableURL(m, table)
-	reader, err := m.getReaderForUrl(tableURL)
-	if reader == nil {
-		return err
+func (m *FileManager) getRecordProvider(columns ... string) func() interface{} {
+	if m.hasHeaderLine {
+		return func() interface{} {
+			record := make(map[string]interface{})
+			return &DelimiteredRecord{
+				Delimiter: m.delimiter,
+				Record:    record,
+				Columns:   columns,
+			}
+		}
+
 	}
+	return func() interface{} {
+		var result = make(map[string]interface{})
+		return &result
+	}
+}
 
-	scanner := bufio.NewScanner(reader)
+func (m *FileManager) asFileRecordMap(source interface{}) map[string]interface{} {
+	if m.hasHeaderLine {
+		result, _ := source.(*DelimiteredRecord)
+		return result.Record
+	}
+	result, _ := source.(*map[string]interface{})
+	return *result
+}
 
+func (m *FileManager) readHeaderIfNeeded(scanner *bufio.Scanner) []string {
+	if ! m.hasHeaderLine {
+		return []string{}
+	}
 	var headers []string
 	if m.hasHeaderLine && scanner.Scan() {
 		headerLine := scanner.Text()
 		for _, column := range strings.Split(headerLine, m.delimiter) {
-			headers = append(headers, strings.Trim(column, " "))
+			headers = append(headers, strings.Trim(column, "\" "))
 		}
 	}
+	return headers
+}
+
+func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
+	tableURL := getTableURL(m, table)
+
+	reader, err := m.getReaderForURL(tableURL)
+	if reader == nil {
+		return err
+	}
+	defer reader.Close()
+
+	scanner := bufio.NewScanner(reader)
+	headers := m.readHeaderIfNeeded(scanner)
+	var recordProvider = m.getRecordProvider(headers...)
 	for scanner.Scan() {
 		line := scanner.Text()
-		decoder := m.decoderFactory.Create(strings.NewReader(line))
-		record := make(map[string]interface{})
-
-		if m.hasHeaderLine {
-			delimiteredRecord := &DelimiteredRecord{
-				Delimiter: m.delimiter,
-				Record:    record,
-				Columns:   headers,
-			}
-			err := decoder.Decode(delimiteredRecord)
-			if err != nil {
-				return fmt.Errorf("failed to decode record from %v due to %v \n%v\n", table, err, line)
-			}
-		} else {
-
-			err := decoder.Decode(&record)
-			if err != nil {
-				return fmt.Errorf("failed to decode record from %v due to %v \n%v\n", table, err, line)
-			}
+			if line == "" {
+			continue
 		}
+
+		decoder := m.decoderFactory.Create(strings.NewReader(line))
+		var err error
+		record := recordProvider()
+		err = decoder.Decode(record)
+		if err != nil {
+			return fmt.Errorf("failed to decode record from %v due to %v, line: %v", table, err, line)
+		}
+		recordMap := m.asFileRecordMap(record)
 		matched := true
 		if predicate != nil {
-			matched = predicate.Apply(record)
+			matched = predicate.Apply(recordMap)
 		}
-		toContinue, err := recordHandler(record, matched)
+		toContinue, err := recordHandler(recordMap, matched)
 		if err != nil {
 			return fmt.Errorf("failed to fetch records due to %v", err)
 		}
@@ -363,23 +404,26 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 	return nil
 }
 
+
+
 func (m *FileManager) readWithPredicate(connection Connection, statement *QueryStatement, sqlParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error), predicate toolbox.Predicate) error {
+	var columns = make([]string, 0)
+	if statement.Columns != nil && len(statement.Columns) > 0 {
+		for _, column := range statement.Columns {
+			columns = append(columns, column.Name)
+		}
+	}
+	fileScanner := NewFileScanner(m.config, columns)
 	err := m.fetchRecords(statement.Table, predicate, func(record map[string]interface{}, matched bool) (bool, error) {
 		if !matched {
 			return true, nil
 		}
-		var columns = make([]string, 0)
-		if statement.Columns != nil && len(statement.Columns) > 0 {
-			for _, column := range statement.Columns {
-				columns = append(columns, column.Name)
-			}
-		} else {
+		if len(columns) == 0 {
 			columns = toolbox.MapKeysToStringSlice(record)
+			fileScanner.columns = columns
 		}
-		fileScanner := NewFileScanner(m.config, columns)
 		fileScanner.Values = record
-		var scanner Scanner = fileScanner
-		toContinue, err := readingHandler(scanner)
+		toContinue, err := readingHandler(fileScanner)
 		if err != nil {
 			return false, fmt.Errorf("failed to read data on statement %v, due to\n\t%v", statement.SQL, err)
 		}
@@ -413,7 +457,7 @@ func (m *FileManager) ReadAllOnWithHandlerOnConnection(connection Connection, qu
 }
 
 //NewFileManager creates a new file manager.
-func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbox.DecoderFactory, valuesDelimiter string) *FileManager {
+func NewFileManager(encoderFactory toolbox.EncoderFactory, decoderFactory toolbox.DecoderFactory, valuesDelimiter string, config *Config) *FileManager {
 	result := &FileManager{
 		service:        storage.NewService(),
 		delimiter:      valuesDelimiter,
@@ -449,10 +493,14 @@ func (d *delimiterDecoder) Decode(target interface{}) error {
 	}
 	encoded := string(payload)
 	for i := 0; i < len(encoded); i++ {
-		aChar := string(encoded[i : i+1])
+		if index >= len(delimiteredRecord.Columns) {
+			break
+		}
+
+		aChar := string(encoded[i: i+1])
 		//escape " only if value is already inside "s
 		if isInDoubleQuote && aChar == "\\" {
-			nextChar := encoded[i+1 : i+2]
+			nextChar := encoded[i+1: i+2]
 			if nextChar == "\"" {
 				i++
 				value = value + nextChar
@@ -484,4 +532,59 @@ type delimiterDecoderFactory struct{}
 
 func (f *delimiterDecoderFactory) Create(reader io.Reader) toolbox.Decoder {
 	return &delimiterDecoder{reader: reader}
+}
+
+type delimiterEncoderFactory struct {
+	delimiter string
+}
+
+func (f *delimiterEncoderFactory) Create(writer io.Writer) toolbox.Encoder {
+	return &delimiterEncoder{writer: writer}
+}
+
+type delimiterEncoder struct {
+	writer    io.Writer
+	delimiter string
+	columns   []string
+}
+
+func (e *delimiterEncoder) Encode(object interface{}) error {
+	if len(e.columns) == 0 {
+		var ok bool
+		e.columns, ok = object.([]string)
+		if ! ok {
+			return fmt.Errorf("expected columns")
+		}
+		return nil
+	}
+
+	var objectMap = toolbox.AsMap(object)
+	var values = make([]string, 0)
+	for _, column := range e.columns {
+		candidate := objectMap[column]
+		var value string
+		escapeValue := true
+		if toolbox.IsMap(candidate) || toolbox.IsSlice(candidate) {
+			var valueBuffer = new(bytes.Buffer)
+			err := toolbox.NewJSONEncoderFactory().Create(valueBuffer).Encode(candidate)
+			if err != nil {
+				return err
+			}
+			value = valueBuffer.String()
+			value = strings.Replace(value, "\n", "", len(value))
+		} else if toolbox.IsInt(candidate) || toolbox.IsFloat(candidate) {
+			escapeValue = false
+			value = toolbox.AsString(candidate)
+		} else {
+			value = toolbox.AsString(candidate)
+		}
+		if escapeValue {
+			if strings.Contains(value, ",") || strings.Contains(value, "\"") {
+				value = "\"" + strings.Replace(value, "\"", "\\\"", len(value)) + "\""
+			}
+		}
+		values = append(values, value)
+	}
+	e.writer.Write([]byte(strings.Join(values, ",")))
+	return nil
 }

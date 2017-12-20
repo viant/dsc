@@ -76,14 +76,16 @@ func buildAssignValueSQL(columns []string, separator string) string {
 
 func buildInsertSQL(descriptor *TableDescriptor, columns []string, nonPkColumns []string) string {
 	var insertColumns []string
+	var inserValues = make([]string, len(columns))
+	for i := range inserValues {
+		inserValues[i] = "?"
+	}
 	if descriptor.Autoincrement {
 		insertColumns = nonPkColumns
 	} else {
 		insertColumns = columns
 	}
-	insertValues := strings.Repeat("?,", len(insertColumns))
-	insertValues = insertValues[0 : len(insertValues)-1] //removes last coma
-	return fmt.Sprintf(insertSQLTemplate, descriptor.Table, strings.Join(insertColumns, ","), insertValues)
+	return fmt.Sprintf(insertSQLTemplate, descriptor.Table, strings.Join(insertColumns, ","), strings.Join(inserValues, ","))
 }
 
 func buildUpdateSQL(descriptor *TableDescriptor, nonPkColumns []string) string {

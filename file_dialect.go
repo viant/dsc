@@ -15,7 +15,7 @@ type fileDialect struct {
 func (d fileDialect) DropTable(manager Manager, datastore string, table string) error {
 	fileManager, ok := manager.(*FileManager)
 	if !ok {
-		return fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
+		return fmt.Errorf("invalid store manager: %T, expected %T", &FileManager{}, manager)
 	}
 	tableURL := getTableURL(manager, table)
 	exists, err := fileManager.service.Exists(tableURL)

@@ -7,13 +7,15 @@ import (
 type jsonFileManagerFactory struct{}
 
 func (f *jsonFileManagerFactory) Create(config *Config) (Manager, error) {
-
-
 	var connectionProvider = newFileConnectionProvider(config)
-	fileManager := NewFileManager(toolbox.NewJSONEncoderFactory(), toolbox.NewJSONDecoderFactory(), "")
+	fileManager := NewFileManager(toolbox.NewJSONEncoderFactory(), toolbox.NewJSONDecoderFactory(), "", config)
 	super := NewAbstractManager(config, connectionProvider, fileManager)
 	fileManager.AbstractManager = super
-	return fileManager, fileManager.Init()
+	err := fileManager.Init()
+	if err != nil {
+		return nil, err
+	}
+	return fileManager, nil
 }
 
 func (f jsonFileManagerFactory) CreateFromURL(url string) (Manager, error) {
@@ -32,7 +34,7 @@ type delimiteredFileManagerFactory struct {
 
 func (f *delimiteredFileManagerFactory) Create(config *Config) (Manager, error) {
 	var connectionProvider = newFileConnectionProvider(config)
-	fileManager := NewFileManager(nil, &delimiterDecoderFactory{}, f.delimiter)
+	fileManager := NewFileManager(&delimiterEncoderFactory{delimiter:f.delimiter}, &delimiterDecoderFactory{}, f.delimiter, config)
 	super := NewAbstractManager(config, connectionProvider, fileManager)
 	fileManager.AbstractManager = super
 	return fileManager, nil
