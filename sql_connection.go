@@ -88,7 +88,7 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 		return nil, err
 	}
 
-	if result.LastUsed() != nil && (time.Now().Sub(*result.LastUsed()) > 60 * time.Second) {
+	if result.LastUsed() != nil && (time.Now().Sub(*result.LastUsed()) > 60*time.Second) {
 		err = db.Ping()
 	}
 

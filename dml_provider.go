@@ -112,13 +112,9 @@ func NewKeyGetterIfNeeded(keyGetter KeyGetter, table string, targetType reflect.
 	return newMetaDmlProvider(table, targetType)
 }
 
-
-
-
-
 type mapDmlProvider struct {
 	tableDescriptor *TableDescriptor
-	dmlBuilder *DmlBuilder
+	dmlBuilder      *DmlBuilder
 }
 
 func (p *mapDmlProvider) Key(instance interface{}) []interface{} {
@@ -144,8 +140,8 @@ func (p *mapDmlProvider) Get(sqlType int, instance interface{}) *ParametrizedSQL
 
 func NewMapDmlProvider(descriptor *TableDescriptor) DmlProvider {
 	var result = &mapDmlProvider{
-		tableDescriptor:descriptor,
-		dmlBuilder:NewDmlBuilder(descriptor),
+		tableDescriptor: descriptor,
+		dmlBuilder:      NewDmlBuilder(descriptor),
 	}
 	return result
 }

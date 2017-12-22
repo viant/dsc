@@ -227,7 +227,7 @@ func (am *AbstractManager) RegisterDescriptorIfNeeded(table string, instance int
 		}
 		am.tableDescriptorRegistry.Register(descriptor)
 	}
-	var result =  am.tableDescriptorRegistry.Get(table)
+	var result = am.tableDescriptorRegistry.Get(table)
 	if result != nil {
 		return result, nil
 	}

@@ -15,8 +15,6 @@ func init() {
 	RegisterManagerFactory("tsv", &delimiteredFileManagerFactory{"\t"})
 }
 
-
-
 //RegisterManagerFactory registers manager factory for passed in driver.
 func RegisterManagerFactory(driver string, factory ManagerFactory) {
 	managerFactories[driver] = factory

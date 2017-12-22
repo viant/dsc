@@ -2,15 +2,15 @@ package dsc
 
 import (
 	"errors"
-	"os"
 	"fmt"
 	"github.com/viant/toolbox"
+	"os"
 )
 
 type fileConnection struct {
 	*AbstractConnection
-	URL          string
-	ext          string
+	URL   string
+	ext   string
 	files map[string]*os.File
 }
 
@@ -22,16 +22,16 @@ func (fc *fileConnection) Close() error {
 }
 
 func getFile(filename string, connection Connection) (*os.File, error) {
-	 fileConn, ok := connection.(*fileConnection);
-	 if ! ok {
-		 return nil, fmt.Errorf("invalid connection type")
+	fileConn, ok := connection.(*fileConnection)
+	if !ok {
+		return nil, fmt.Errorf("invalid connection type")
 	}
 	var err error
-	if _, ok := fileConn.files[filename];! ok {
+	if _, ok := fileConn.files[filename]; !ok {
 		if len(fileConn.files) == 0 {
 			fileConn.files = make(map[string]*os.File)
 		}
-		if ! toolbox.FileExists(filename) {
+		if !toolbox.FileExists(filename) {
 			fileConn.files[filename], err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
 		} else {
 			fileConn.files[filename], err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
@@ -62,7 +62,6 @@ func (cp *fileConnectionProvider) NewConnection() (Connection, error) {
 	fileConnection.AbstractConnection = super
 	return connection, nil
 }
-
 
 func newFileConnectionProvider(config *Config) ConnectionProvider {
 	if config.MaxPoolSize == 0 {

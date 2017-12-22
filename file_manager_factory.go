@@ -34,7 +34,7 @@ type delimiteredFileManagerFactory struct {
 
 func (f *delimiteredFileManagerFactory) Create(config *Config) (Manager, error) {
 	var connectionProvider = newFileConnectionProvider(config)
-	fileManager := NewFileManager(&delimiterEncoderFactory{delimiter:f.delimiter}, &delimiterDecoderFactory{}, f.delimiter, config)
+	fileManager := NewFileManager(&delimiterEncoderFactory{delimiter: f.delimiter}, &delimiterDecoderFactory{}, f.delimiter, config)
 	super := NewAbstractManager(config, connectionProvider, fileManager)
 	fileManager.AbstractManager = super
 	return fileManager, nil

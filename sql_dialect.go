@@ -265,7 +265,7 @@ func (d sqlLiteDialect) GetSequence(manager Manager, name string) (int64, error)
 			return 0, err
 		}
 		if len(result) == 1 {
-			return int64(toolbox.AsInt(result[0])+ 1), nil
+			return int64(toolbox.AsInt(result[0]) + 1), nil
 		}
 	}
 	return 0, sequenceError

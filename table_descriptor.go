@@ -69,13 +69,10 @@ func newTableDescriptorRegistry() *commonTableDescriptorRegistry {
 	return &commonTableDescriptorRegistry{registry: make(map[string]*TableDescriptor)}
 }
 
-
 //newTableDescriptorRegistry returns a new newTableDescriptorRegistry
 func NewTableDescriptorRegistry() TableDescriptorRegistry {
 	return newTableDescriptorRegistry()
 }
-
-
 
 //HasSchema check if table desciptor has defined schema.
 func (d *TableDescriptor) HasSchema() bool {
@@ -132,5 +129,5 @@ func NewTableDescriptor(table string, instance interface{}) (*TableDescriptor, e
 		Autoincrement: autoincrement,
 		Columns:       columns,
 		PkColumns:     pkColumns,
-	},nil
+	}, nil
 }

@@ -21,10 +21,10 @@ func (s *FileScanner) Columns() ([]string, error) {
 //Scan reads file record values to assign it to passed in destinations.
 func (s *FileScanner) Scan(destinations ...interface{}) (err error) {
 	if len(destinations) == 1 {
-		if toolbox.IsMap(destinations[0]){
+		if toolbox.IsMap(destinations[0]) {
 			var record = toolbox.AsMap(destinations[0])
 			for k, v := range s.Values {
-				record[k]=v
+				record[k] = v
 			}
 			return nil
 		}

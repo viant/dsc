@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/viant/toolbox"
+	"time"
 )
 
 //Config represent datastore config.
@@ -21,7 +22,47 @@ func (c *Config) Get(name string) string {
 	if result, ok := c.Parameters[name]; ok {
 		return result
 	}
-	return "";
+	return ""
+}
+
+//GetInt returns value for passed in parameter name or defaultValue
+func (c *Config) GetInt(name string, defaultValue int) int {
+	if result, ok := c.Parameters[name]; ok {
+		return toolbox.AsInt(result)
+	}
+	return defaultValue
+}
+
+//GetFloat returns value for passed in parameter name or defaultValue
+func (c *Config) GetFloat(name string, defaultValue float64) float64 {
+	if result, ok := c.Parameters[name]; ok {
+		return toolbox.AsFloat(result)
+	}
+	return defaultValue
+}
+
+//GetDuration returns value for passed in parameter name or defaultValue
+func (c *Config) GetDuration(name string, multiplier time.Duration, defaultValue time.Duration) time.Duration {
+	if result, ok := c.Parameters[name]; ok {
+		return time.Duration(toolbox.AsInt(result)) * multiplier
+	}
+	return defaultValue
+}
+
+//GetString returns value for passed in parameter name or defaultValue
+func (c *Config) GetString(name string, defaultValue string) string {
+	if result, ok := c.Parameters[name]; ok {
+		return result
+	}
+	return defaultValue
+}
+
+//GetBoolean returns value for passed in parameter name or defaultValue
+func (c *Config) GetBoolean(name string, defaultValue bool) bool {
+	if result, ok := c.Parameters[name]; ok {
+		return toolbox.AsBoolean(result)
+	}
+	return defaultValue
 }
 
 //HasDateLayout returns true if config has date layout, it checks dateLayout or dateFormat parameter names.

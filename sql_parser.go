@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
-
 )
 
 //SQLColumn represents a sql column

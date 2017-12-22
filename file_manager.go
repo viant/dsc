@@ -49,7 +49,7 @@ func (m *FileManager) Init() error {
 		fallthrough
 	case "s3":
 
-		credential:= m.Config().Get("credential")
+		credential := m.Config().Get("credential")
 		service, err := storage.NewServiceForURL(baseUrl, credential)
 		if err != nil {
 			return err
@@ -64,16 +64,11 @@ func (m *FileManager) Init() error {
 }
 
 func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
-	sourceValue := reflect.ValueOf(source)
-	if sourceValue.Kind() == reflect.Ptr {
-		sourceValue = sourceValue.Elem()
-	}
-
 	if toolbox.IsTime(source) {
 		dateLayout := m.config.GetDateLayout()
 		return toolbox.AsTime(source, dateLayout).Format(dateLayout)
 	}
-
+	sourceValue := reflect.ValueOf(toolbox.DereferenceValue(source))
 	switch sourceValue.Kind() {
 
 	case reflect.Slice:
@@ -99,6 +94,9 @@ func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
 				}
 				values[column] = m.convertIfNeeded(value)
 			})
+		if len(values) == 0 {
+			return toolbox.AsString(source)
+		}
 		return values
 	}
 	return source
@@ -160,7 +158,7 @@ func (m *FileManager) insertRecord(connection Connection, tableURL string, state
 		return err
 	}
 
-	if parsedURL.Scheme == "file" && !  m.useGzipCompressions {
+	if parsedURL.Scheme == "file" && !m.useGzipCompressions {
 		writer, err := getFile(parsedURL.Path, connection)
 		if err != nil {
 			return err
@@ -265,6 +263,7 @@ func (m *FileManager) deleteRecords(tableURL string, statement *DmlStatement, pa
 //ExecuteOnConnection executs passed in sql on connection. It takes connection, sql and sql parameters. It returns number of rows affected, or error.
 //This method support basic insert, updated and delete operations.
 func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sqlParameters []interface{}) (sql.Result, error) {
+
 	parser := NewDmlParser()
 	statement, err := parser.Parse(sql)
 	if err != nil {
@@ -322,7 +321,7 @@ func (m *FileManager) getReaderForURL(tableURL string) (io.ReadCloser, error) {
 	return reader, nil
 }
 
-func (m *FileManager) getRecordProvider(columns ... string) func() interface{} {
+func (m *FileManager) getRecordProvider(columns ...string) func() interface{} {
 	if m.hasHeaderLine {
 		return func() interface{} {
 			record := make(map[string]interface{})
@@ -350,7 +349,7 @@ func (m *FileManager) asFileRecordMap(source interface{}) map[string]interface{}
 }
 
 func (m *FileManager) readHeaderIfNeeded(scanner *bufio.Scanner) []string {
-	if ! m.hasHeaderLine {
+	if !m.hasHeaderLine {
 		return []string{}
 	}
 	var headers []string
@@ -377,7 +376,7 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 	var recordProvider = m.getRecordProvider(headers...)
 	for scanner.Scan() {
 		line := scanner.Text()
-			if line == "" {
+		if line == "" {
 			continue
 		}
 
@@ -403,8 +402,6 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 	}
 	return nil
 }
-
-
 
 func (m *FileManager) readWithPredicate(connection Connection, statement *QueryStatement, sqlParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error), predicate toolbox.Predicate) error {
 	var columns = make([]string, 0)
@@ -497,10 +494,10 @@ func (d *delimiterDecoder) Decode(target interface{}) error {
 			break
 		}
 
-		aChar := string(encoded[i: i+1])
+		aChar := string(encoded[i : i+1])
 		//escape " only if value is already inside "s
 		if isInDoubleQuote && aChar == "\\" {
-			nextChar := encoded[i+1: i+2]
+			nextChar := encoded[i+1 : i+2]
 			if nextChar == "\"" {
 				i++
 				value = value + nextChar
@@ -552,7 +549,7 @@ func (e *delimiterEncoder) Encode(object interface{}) error {
 	if len(e.columns) == 0 {
 		var ok bool
 		e.columns, ok = object.([]string)
-		if ! ok {
+		if !ok {
 			return fmt.Errorf("expected columns")
 		}
 		return nil

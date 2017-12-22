@@ -23,19 +23,15 @@ func (ac *AbstractConnection) ConnectionPool() chan Connection {
 	return ac.connectionPool
 }
 
-
 //LastUsed returns a last used time
 func (ac *AbstractConnection) LastUsed() *time.Time {
 	return ac.lastUsed
 }
 
-
 //SetLastUsed sets last used time
 func (ac *AbstractConnection) SetLastUsed(ts *time.Time) {
 	ac.lastUsed = ts
 }
-
-
 
 //Close closes connection if pool is full or send it back to the pool
 func (ac *AbstractConnection) Close() error {
