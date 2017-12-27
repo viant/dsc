@@ -137,6 +137,9 @@ type DatastoreDialect interface {
 	//GetKeyName returns a name of column name that is a key, or coma separated list if complex key
 	GetKeyName(manager Manager, datastore, table string) string
 
+	//Returns columns name
+	GetColumns(manager Manager, datastore, table string) []string
+
 	//IsAutoincrement returns true if autoicrement
 	IsAutoincrement(manager Manager, datastore, table string) bool
 

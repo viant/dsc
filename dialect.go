@@ -26,6 +26,10 @@ func (d DefaultDialect) CanCreateDatastore(manager Manager) bool {
 	return false
 }
 
+func (d DefaultDialect) GetColumns(manager Manager, datastore, table string) []string {
+	return []string{}
+}
+
 func (d DefaultDialect) CreateDatastore(manager Manager, datastore string) error {
 	return errUnsupportedOperation
 }

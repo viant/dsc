@@ -85,6 +85,16 @@ func (d sqlDatastoreDialect) CreateTable(manager Manager, datastore string, tabl
 	return err
 }
 
+func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, table string) []string {
+	var result = make([]string, 0)
+	var record = make(map[string]interface{})
+	manager.ReadSingle(&record, "SELECT * FROM "+table+" WHERE LIMIT 1", []interface{}{}, nil)
+	for k := range record {
+		result = append(result, k)
+	}
+	return result
+}
+
 //GetTables return tables names for passed in datastore managed by manager.
 func (d sqlDatastoreDialect) GetTables(manager Manager, datastore string) ([]string, error) {
 	var rows = make([]nameRecord, 0)
