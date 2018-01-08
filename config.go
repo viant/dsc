@@ -2,7 +2,6 @@ package dsc
 
 import (
 	"strings"
-
 	"github.com/viant/toolbox"
 	"time"
 )
@@ -116,6 +115,19 @@ func NewConfig(driverName string, descriptor string, encodedParameters string) *
 	result.Init()
 	return result
 }
+
+
+//NewConfigWithParameters creates a new config with parameters
+func NewConfigWithParameters(driverName string, descriptor string, parameters map[string]string) (*Config, error) {
+	result :=  &Config{
+		DriverName:driverName,
+		Descriptor:descriptor,
+		Parameters:parameters,
+	}
+	err := result.Init()
+	return result, err
+}
+
 
 //NewConfigFromUrl returns new config from url
 func NewConfigFromUrl(url string) (*Config, error) {
