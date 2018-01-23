@@ -28,8 +28,11 @@ func (r *commonTableDescriptorRegistry) getDescriptor(table string) *TableDescri
 	datastore, _ := dialect.GetCurrentDatastore(r.manager)
 	key := dialect.GetKeyName(r.manager, datastore, table)
 	descriptor := &TableDescriptor{
-		Table:     table,
-		PkColumns: strings.Split(key, ","),
+		Table: table,
+		PkColumns:[]string{},
+	}
+	if key != "" {
+		descriptor.PkColumns = strings.Split(key, ",")
 	}
 	return descriptor
 }
@@ -46,13 +49,24 @@ func (r *commonTableDescriptorRegistry) Get(table string) *TableDescriptor {
 	return result
 }
 
-func (r *commonTableDescriptorRegistry) Register(descriptor *TableDescriptor) {
+func (r *commonTableDescriptorRegistry) Register(descriptor *TableDescriptor) error {
 	if descriptor.Table == "" {
-		panic(fmt.Sprintf("Table name was not set %v", descriptor))
+		return fmt.Errorf("table name was not set %v", descriptor)
+	}
+	for i, column := range descriptor.Columns {
+		if column == "" {
+			return fmt.Errorf("columns[%d] was empty %v %v", i, descriptor.Table, descriptor.Columns)
+		}
+	}
+	for i, column := range descriptor.PkColumns {
+		if column == "" {
+			return fmt.Errorf("pkColumns[%d] was empty %v %v", i, descriptor.Table, descriptor.Columns)
+		}
 	}
 	r.RLock()
 	defer r.RUnlock()
 	r.registry[descriptor.Table] = descriptor
+	return nil
 }
 
 func (r *commonTableDescriptorRegistry) Tables() []string {

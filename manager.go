@@ -393,10 +393,8 @@ func (am *AbstractManager) fetchExistingData(connection Connection, table string
 	descriptor := am.tableDescriptorRegistry.Get(table)
 
 	if len(pkValues) > 0 {
-
 		descriptor := TableDescriptor{Table: table, PkColumns: descriptor.PkColumns}
 		sqlBuilder := NewQueryBuilder(&descriptor, "")
-
 		sqlWithArguments := sqlBuilder.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, batchSize)
 
 		var mapper = NewColumnarRecordMapper(false, reflect.TypeOf(rows))

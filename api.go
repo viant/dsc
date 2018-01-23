@@ -250,7 +250,7 @@ type TableDescriptorRegistry interface {
 	Get(table string) *TableDescriptor
 
 	//Register registers a table descriptor.
-	Register(descriptor *TableDescriptor)
+	Register(descriptor *TableDescriptor) error
 
 	//Tables returns all registered tables.
 	Tables() []string
