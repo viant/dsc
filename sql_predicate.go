@@ -3,176 +3,9 @@ package dsc
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
-
 	"github.com/viant/toolbox"
 )
-
-var trueProvider = func(input interface{}) bool {
-	return true
-}
-
-type betweenPredicate struct {
-	from float64
-	to   float64
-}
-
-func (p *betweenPredicate) Apply(value interface{}) bool {
-	floatValue := toolbox.AsFloat(value)
-	return floatValue >= p.from && floatValue <= p.to
-}
-
-func (p *betweenPredicate) String() string {
-	return fmt.Sprintf("x BETWEEN %v AND %v", p.from, p.to)
-}
-
-//NewBetweenPredicate creates a new sql BETWEEN predicate, it takes from and expected as number parameters.
-func NewBetweenPredicate(from, to interface{}) toolbox.Predicate {
-	var result toolbox.Predicate = &betweenPredicate{
-		from: toolbox.AsFloat(from),
-		to:   toolbox.AsFloat(to),
-	}
-	return result
-}
-
-type inPredicate struct {
-	predicate toolbox.Predicate
-}
-
-func (p *inPredicate) Apply(value interface{}) bool {
-	return p.predicate.Apply(value)
-}
-
-//NewInPredicate creates a new sql IN predicate
-func NewInPredicate(values ...interface{}) toolbox.Predicate {
-	converted, kind := toolbox.DiscoverCollectionValuesAndKind(values)
-	switch kind {
-	case reflect.Int:
-		predicate := inIntPredicate{values: make(map[int]bool)}
-		toolbox.SliceToMap(converted, predicate.values, func(item interface{}) int {
-			return toolbox.AsInt(item)
-		}, trueProvider)
-		return &predicate
-	case reflect.Float64:
-		predicate := inFloatPredicate{values: make(map[float64]bool)}
-		toolbox.SliceToMap(converted, predicate.values, func(item interface{}) float64 {
-			return toolbox.AsFloat(item)
-		}, trueProvider)
-		return &predicate
-	default:
-		predicate := inStringPredicate{values: make(map[string]bool)}
-		toolbox.SliceToMap(converted, predicate.values, func(item interface{}) string {
-			return toolbox.AsString(item)
-		}, trueProvider)
-		return &predicate
-	}
-}
-
-type inFloatPredicate struct {
-	values map[float64]bool
-}
-
-func (p *inFloatPredicate) Apply(value interface{}) bool {
-	candidate := toolbox.AsFloat(value)
-	return p.values[candidate]
-}
-
-type inIntPredicate struct {
-	values map[int]bool
-}
-
-func (p *inIntPredicate) Apply(value interface{}) bool {
-	candidate := toolbox.AsInt(value)
-	return p.values[int(candidate)]
-}
-
-type inStringPredicate struct {
-	values map[string]bool
-}
-
-func (p *inStringPredicate) Apply(value interface{}) bool {
-	candidate := toolbox.AsString(value)
-	return p.values[candidate]
-}
-
-type numericComparablePredicate struct {
-	rightOperand float64
-	operator     string
-}
-
-func (p *numericComparablePredicate) Apply(value interface{}) bool {
-	leftOperand := toolbox.AsFloat(value)
-	switch p.operator {
-	case ">":
-		return leftOperand > p.rightOperand
-	case ">=":
-		return leftOperand >= p.rightOperand
-	case "<":
-		return leftOperand < p.rightOperand
-	case "<=":
-		return leftOperand <= p.rightOperand
-	case "=":
-		return leftOperand == p.rightOperand
-	case "!=":
-		return leftOperand != p.rightOperand
-	}
-	return false
-}
-
-type stringComparablePredicate struct {
-	rightOperand string
-	operator     string
-}
-
-func (p *stringComparablePredicate) Apply(value interface{}) bool {
-	leftOperand := toolbox.AsString(value)
-
-	switch p.operator {
-	case "=":
-		return leftOperand == p.rightOperand
-	case "!=":
-		return leftOperand != p.rightOperand
-	}
-	return false
-}
-
-//NewComparablePredicate create a new comparable predicate for =, !=, >=, <=
-func NewComparablePredicate(operator string, leftOperand interface{}) toolbox.Predicate {
-	if toolbox.CanConvertToFloat(leftOperand) {
-		return &numericComparablePredicate{toolbox.AsFloat(leftOperand), operator}
-	}
-	return &stringComparablePredicate{toolbox.AsString(leftOperand), operator}
-}
-
-type nilPredicate struct{}
-
-func (p *nilPredicate) Apply(value interface{}) bool {
-	return value == nil || reflect.ValueOf(value).IsNil()
-}
-
-type likePredicate struct {
-	matchingFragments []string
-}
-
-func (p *likePredicate) Apply(value interface{}) bool {
-	textValue := strings.ToLower(toolbox.AsString(value))
-	for _, matchingFragment := range p.matchingFragments {
-		matchingIndex := strings.Index(textValue, matchingFragment)
-		if matchingIndex == -1 {
-			return false
-		}
-		if matchingIndex < len(textValue) {
-			textValue = textValue[matchingIndex:]
-		}
-	}
-	return true
-}
-
-//NewLikePredicate create a new like predicate
-func NewLikePredicate(matching string) toolbox.Predicate {
-	return &likePredicate{matchingFragments: strings.Split(strings.ToLower(matching), "%")}
-}
 
 func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interface{}, error) {
 	if operand != "?" {
@@ -180,7 +13,7 @@ func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interfac
 	}
 	var values = make([]interface{}, 1)
 	if !parameters.HasNext() {
-		return "", errors.New("Unable to expand ? - not more parameters")
+		return "", fmt.Errorf("missing binding parameters ?, %v", parameters)
 	}
 	err := parameters.Next(&values[0])
 	if err != nil {
@@ -188,6 +21,7 @@ func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interfac
 	}
 	return values[0], nil
 }
+
 
 func getOperandValues(operands []interface{}, parameters toolbox.Iterator) ([]interface{}, error) {
 	var result = make([]interface{}, 0)
@@ -210,29 +44,29 @@ func NewSQLCriterionPredicate(criterion *SQLCriterion, parameters toolbox.Iterat
 	case "in":
 		operands, err := getOperandValues(criterion.RightOperands, parameters)
 		if err != nil {
-			return nil, fmt.Errorf("Not enough binding parameters for %v", criterion)
+			return nil, fmt.Errorf("missing binding parameters for %v", criterion)
 		}
-		return NewInPredicate(operands...), nil
+		return toolbox.NewInPredicate(operands...), nil
 	case "like":
 		operand, err := getOperandValue(criterion.RightOperand, parameters)
 		if err != nil {
-			return nil, fmt.Errorf("Not enough binding parameters for %v", criterion)
+			return nil, fmt.Errorf("missing binding parameters for %v", criterion)
 		}
-		return NewLikePredicate(toolbox.AsString(operand)), nil
+		return toolbox.NewLikePredicate(toolbox.AsString(operand)), nil
 	case "between":
 		operands, err := getOperandValues(criterion.RightOperands, parameters)
 		if err != nil || len(operands) != 2 {
-			return nil, fmt.Errorf("Not enough binding parameters for %v", criterion)
+			return nil, fmt.Errorf("missing binding parameters for %v", criterion)
 		}
-		return NewBetweenPredicate(operands[0], operands[1]), nil
+		return toolbox.NewBetweenPredicate(operands[0], operands[1]), nil
 	case "is":
-		return &nilPredicate{}, nil
+		return toolbox.NewNilPredicate(), nil
 	default:
 		operand, err := getOperandValue(criterion.RightOperand, parameters)
 		if err != nil {
-			return nil, fmt.Errorf("Not enough binding parameters for %v", criterion)
+			return nil, fmt.Errorf("missing binding parameters for %v", criterion)
 		}
-		return NewComparablePredicate(criterion.Operator, operand), nil
+		return toolbox.NewComparablePredicate(criterion.Operator, operand), nil
 	}
 }
 

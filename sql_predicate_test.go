@@ -8,63 +8,6 @@ import (
 	"github.com/viant/toolbox"
 )
 
-func TestBetweenPredicate(t *testing.T) {
-
-	predicate := dsc.NewBetweenPredicate(10, 20)
-
-	assert.False(t, predicate.Apply(9))
-	assert.True(t, predicate.Apply(10))
-	assert.True(t, predicate.Apply(11))
-	assert.False(t, predicate.Apply(21))
-
-}
-
-func TestInPredicate(t *testing.T) {
-
-	{
-		predicate := dsc.NewInPredicate("10", 20, "a")
-		assert.False(t, predicate.Apply(9))
-		assert.True(t, predicate.Apply(10))
-		assert.False(t, predicate.Apply(15))
-		assert.True(t, predicate.Apply("a"))
-		assert.True(t, predicate.Apply(20))
-		assert.False(t, predicate.Apply(21))
-	}
-}
-
-func TestComparablePredicate(t *testing.T) {
-	{
-		predicate := dsc.NewComparablePredicate(">", "1")
-		assert.True(t, predicate.Apply(3))
-		assert.False(t, predicate.Apply(1))
-	}
-	{
-		predicate := dsc.NewComparablePredicate("<", "1")
-		assert.True(t, predicate.Apply(0))
-		assert.False(t, predicate.Apply(3))
-	}
-	{
-		predicate := dsc.NewComparablePredicate("!=", "1")
-		assert.True(t, predicate.Apply(0))
-		assert.False(t, predicate.Apply(1))
-	}
-
-}
-
-func TestNewLikePredicate(t *testing.T) {
-	{
-		predicate := dsc.NewLikePredicate("abc%efg")
-		assert.False(t, predicate.Apply("abefg"))
-		assert.True(t, predicate.Apply("abcefg"))
-
-	}
-	{
-		predicate := dsc.NewLikePredicate("abc%")
-		assert.True(t, predicate.Apply("abcfg"))
-
-	}
-}
-
 func TestNewCriterionPredicate(t *testing.T) {
 	{ //Like case
 		parameters := toolbox.NewSliceIterator([]string{"abc%"})
@@ -145,37 +88,4 @@ func TestNewCriteriaPredicate(t *testing.T) {
 			},
 		))
 	}
-}
-
-func TestNewComparablePredicate(t *testing.T) {
-
-	{
-		predicate := dsc.NewComparablePredicate("=", "abc")
-		assert.True(t, predicate.Apply("abc"))
-		assert.False(t, predicate.Apply("abdc"))
-	}
-	{
-		predicate := dsc.NewComparablePredicate("!=", "abc")
-		assert.True(t, predicate.Apply("abcc"))
-		assert.False(t, predicate.Apply("abc"))
-	}
-
-	{
-		predicate := dsc.NewComparablePredicate(">=", 3)
-		assert.True(t, predicate.Apply(10))
-		assert.False(t, predicate.Apply(1))
-	}
-
-	{
-		predicate := dsc.NewComparablePredicate("<=", 3)
-		assert.True(t, predicate.Apply(1))
-		assert.False(t, predicate.Apply(10))
-	}
-
-}
-
-func TestNewInPredicate(t *testing.T) {
-	predicate := dsc.NewInPredicate(1.2, 1.5)
-	assert.True(t, predicate.Apply("1.2"))
-	assert.False(t, predicate.Apply("1.1"))
 }
