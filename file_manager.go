@@ -86,13 +86,14 @@ func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
 		fieldsMappingByField := toolbox.NewFieldSettingByKey(source, "fieldName")
 
 		toolbox.ProcessStruct(source,
-			func(filed reflect.StructField, value interface{}) {
+			func(filed reflect.StructField, value reflect.Value) error {
 				mapping := fieldsMappingByField[filed.Name]
 				column, found := mapping["column"]
 				if !found {
 					column = filed.Name
 				}
-				values[column] = m.convertIfNeeded(value)
+				values[column] = m.convertIfNeeded(value.Interface())
+				return nil
 			})
 		if len(values) == 0 {
 			return toolbox.AsString(source)
