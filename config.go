@@ -4,6 +4,7 @@ import (
 	"strings"
 	"github.com/viant/toolbox"
 	"time"
+	"github.com/viant/toolbox/cred"
 )
 
 //Config represent datastore config.
@@ -13,8 +14,10 @@ type Config struct {
 	MaxPoolSize         int
 	Descriptor          string
 	Parameters          map[string]string
-	SecretParametersURL string //url to JSON object, to delegate credential or secret out of dev
+	CredentialsFile     string
 }
+
+
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
@@ -84,20 +87,13 @@ func (c *Config) Has(name string) bool {
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
-	if c.SecretParametersURL != "" {
-		var secretParameters = make(map[string]string)
-		reader, _, err := toolbox.OpenReaderFromURL(c.SecretParametersURL)
+	if c.CredentialsFile != "" {
+		config, err := cred.NewConfig(c.CredentialsFile)
 		if err != nil {
 			return err
 		}
-		err = toolbox.NewJSONDecoderFactory().Create(reader).Decode(secretParameters)
-		if err != nil {
-			return err
-		}
-		for key, value := range secretParameters {
-			macro := "[" + key + "]"
-			c.Descriptor = strings.Replace(c.Descriptor, macro, value, 1)
-		}
+		c.Descriptor = strings.Replace(c.Descriptor, "[username]", config.Username, 1)
+		c.Descriptor = strings.Replace(c.Descriptor, "[password]", config.Password, 1)
 	}
 	for key, value := range c.Parameters {
 		macro := "[" + key + "]"
@@ -116,18 +112,16 @@ func NewConfig(driverName string, descriptor string, encodedParameters string) *
 	return result
 }
 
-
 //NewConfigWithParameters creates a new config with parameters
 func NewConfigWithParameters(driverName string, descriptor string, parameters map[string]string) (*Config, error) {
-	result :=  &Config{
-		DriverName:driverName,
-		Descriptor:descriptor,
-		Parameters:parameters,
+	result := &Config{
+		DriverName: driverName,
+		Descriptor: descriptor,
+		Parameters: parameters,
 	}
 	err := result.Init()
 	return result, err
 }
-
 
 //NewConfigFromUrl returns new config from url
 func NewConfigFromUrl(url string) (*Config, error) {

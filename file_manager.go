@@ -44,11 +44,9 @@ func (m *FileManager) Init() error {
 	m.useGzipCompressions = extension == "gzip"
 	switch parsedUrl.Scheme {
 	case "file":
-
 	case "gs":
 		fallthrough
 	case "s3":
-
 		credential := m.Config().Get("credential")
 		service, err := storage.NewServiceForURL(baseUrl, credential)
 		if err != nil {
@@ -64,9 +62,19 @@ func (m *FileManager) Init() error {
 }
 
 func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
+	if source == nil {
+		return nil
+	}
 	if toolbox.IsTime(source) {
 		dateLayout := m.config.GetDateLayout()
-		return toolbox.AsTime(source, dateLayout).Format(dateLayout)
+		if dateLayout == "" {
+			dateLayout = toolbox.DefaultDateLayout
+		}
+		var converted = toolbox.AsTime(source, dateLayout)
+		if converted == nil {
+			return nil
+		}
+		return converted.Format(dateLayout)
 	}
 	sourceValue := reflect.ValueOf(toolbox.DereferenceValue(source))
 	switch sourceValue.Kind() {

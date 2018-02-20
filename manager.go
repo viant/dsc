@@ -372,7 +372,7 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 	return processed, nil
 }
 
-func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {
+func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []*ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {
 	var rows = make([][]interface{}, 0)
 	for _, sqlWihtArguments := range sqlsWihtArguments {
 
