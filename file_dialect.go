@@ -17,7 +17,8 @@ func (d fileDialect) DropTable(manager Manager, datastore string, table string) 
 	if !ok {
 		return fmt.Errorf("invalid store manager: %T, expected %T", &FileManager{}, manager)
 	}
-	tableURL := getTableURL(manager, table)
+
+	tableURL := fileManager.getTableURL(manager, table)
 	exists, err := fileManager.service.Exists(tableURL)
 	if err != nil {
 		return err
@@ -42,9 +43,9 @@ func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, err
 	if !ok {
 		return nil, fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
 	}
-	baseURL := manager.Config().Get("url")
 
-	exists, err := fileManager.service.Exists(baseURL)
+
+	exists, err := fileManager.service.Exists(fileManager.baseURL.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, err
 		return []string{}, nil
 	}
 
-	objects, err := fileManager.service.List(baseURL)
+	objects, err := fileManager.service.List(fileManager.baseURL.URL)
 	ext := "." + manager.Config().Get("ext")
 	var result = make([]string, 0)
 	for _, object := range objects {

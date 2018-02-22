@@ -3,10 +3,10 @@ package dsc_test
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
-	"github.com/viant/dsunit"
 	"os"
 	"testing"
 	"time"
+	"github.com/viant/toolbox/url"
 )
 
 type MostLikedCity struct {
@@ -28,7 +28,7 @@ type Traveler struct {
 }
 
 func TestInsert(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:/test/")
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 	for i := 0; i < 10; i++ {
@@ -41,15 +41,15 @@ func TestInsert(t *testing.T) {
 }
 
 func TestPersist(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:test/")
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 	dialect := dsc.GetDatastoreDialect("ndjson")
 	datastore, err := dialect.GetCurrentDatastore(manager)
 	assert.Nil(t, err)
 
-	filePath := dsunit.ExpandTestProtocolAsPathIfNeeded("test:///test/travelers2.json")
-	os.Create(filePath)
+	filePath := url.NewResource("test/travelers2.json")
+	os.Create(filePath.ParsedURL.Path)
 
 	err = dialect.DropTable(manager, datastore, "travelers2")
 	assert.Nil(t, err)
@@ -90,7 +90,7 @@ func TestPersist(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:"+dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"))
+	config := dsc.NewConfig("ndjson", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:json,url:test/")
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 
@@ -170,7 +170,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadCsv(t *testing.T) {
-	config := dsc.NewConfig("csv", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:csv,url:"+dsunit.ExpandTestProtocolAsURLIfNeeded("test:///test/"))
+	config := dsc.NewConfig("csv", "[url]", "dateFormat:yyyy-MM-dd hh:mm:ss,ext:csv,url:test/")
 	manager, err := dsc.NewManagerFactory().Create(config)
 	assert.Nil(t, err)
 

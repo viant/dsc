@@ -10,11 +10,11 @@ import (
 	"github.com/viant/toolbox/storage"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path"
 	"reflect"
 	"strings"
+	"github.com/viant/toolbox/url"
 )
 
 var defaultPermission os.FileMode = 0644
@@ -25,6 +25,7 @@ var defaultPermission os.FileMode = 0644
 // Idea behind is to be able to load data log and test it.
 // You can easily add other managers providing your custom encoder and decoder factories i.e. protobuf, avro.
 type FileManager struct {
+	baseURL *url.Resource
 	*AbstractManager
 	service             storage.Service
 	useGzipCompressions bool
@@ -35,29 +36,12 @@ type FileManager struct {
 }
 
 func (m *FileManager) Init() error {
-	var baseUrl = m.Config().Get("url")
-	parsedUrl, err := url.Parse(baseUrl)
-	if err != nil {
-		return err
-	}
+	m.baseURL = url.NewResource(m.Config().Get("url"))
+	var err error
+	m.service, err = storage.NewServiceForURL(m.baseURL.URL, m.config.Credential)
 	extension := m.Config().Get("ext")
 	m.useGzipCompressions = extension == "gzip"
-	switch parsedUrl.Scheme {
-	case "file":
-	case "gs":
-		fallthrough
-	case "s3":
-		credential := m.Config().Get("credential")
-		service, err := storage.NewServiceForURL(baseUrl, credential)
-		if err != nil {
-			return err
-		}
-		m.service.Register(parsedUrl.Scheme, service)
-
-	default:
-		return fmt.Errorf("unsupported scheme: %v", parsedUrl.Scheme)
-	}
-	return nil
+	return err
 
 }
 
@@ -111,9 +95,12 @@ func (m *FileManager) convertIfNeeded(source interface{}) interface{} {
 	return source
 }
 
-func getTableURL(manager Manager, table string) string {
+func (m *FileManager) getTableURL(manager Manager, table string) string {
 	tableFile := table + "." + path.Join(manager.Config().Get("ext"))
-	return path.Join(manager.Config().Get("url"), tableFile)
+	if m.baseURL == nil {
+		m.baseURL = url.NewResource(m.Config().Get("url"))
+	}
+	return toolbox.URLPathJoin(m.baseURL.URL, tableFile)
 }
 
 func (m *FileManager) encodeRecord(record map[string]interface{}, table string) (string, error) {
@@ -152,7 +139,7 @@ func (m *FileManager) getRecord(statement *DmlStatement, parameters toolbox.Iter
 }
 
 func (m *FileManager) insertRecord(connection Connection, tableURL string, statement *DmlStatement, parameters toolbox.Iterator) error {
-	parsedURL, _ := url.Parse(tableURL)
+
 	recordBuffer := new(bytes.Buffer)
 	record, err := m.getRecord(statement, parameters)
 	if err != nil {
@@ -165,17 +152,6 @@ func (m *FileManager) insertRecord(connection Connection, tableURL string, state
 	_, err = recordBuffer.Write(([]byte)(encodedRecord))
 	if err != nil {
 		return err
-	}
-
-	if parsedURL.Scheme == "file" && !m.useGzipCompressions {
-		writer, err := getFile(parsedURL.Path, connection)
-		if err != nil {
-			return err
-		}
-		if _, err = writer.Write(recordBuffer.Bytes()); err != nil {
-			return err
-		}
-		return nil
 	}
 
 	buf := new(bytes.Buffer)
@@ -279,7 +255,7 @@ func (m *FileManager) ExecuteOnConnection(connection Connection, sql string, sql
 		return nil, fmt.Errorf("failed to parse sql: %v, %v", sql, err)
 
 	}
-	tableURL := getTableURL(m, statement.Table)
+	tableURL := m.getTableURL(m, statement.Table)
 
 	var count = 0
 	parameters := toolbox.NewSliceIterator(sqlParameters)
@@ -372,9 +348,8 @@ func (m *FileManager) readHeaderIfNeeded(scanner *bufio.Scanner) []string {
 }
 
 func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
-	tableURL := getTableURL(m, table)
-
-	reader, err := m.getReaderForURL(tableURL)
+	tableURL := m.getTableURL(m, table)
+reader, err := m.getReaderForURL(tableURL)
 	if reader == nil {
 		return err
 	}
