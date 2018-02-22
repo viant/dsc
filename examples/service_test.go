@@ -14,6 +14,15 @@ import (
 )
 
 
+//
+//func init() {
+//	go func() {
+//		resource := url.NewResource("test/config/store.json")
+//		examples.StartServer(resource.URL, "8084")
+//	}()
+//	time.Sleep(2 * time.Second)
+//}
+
 
 func getServices() ([]examples.InterestService, error) {
 
@@ -23,8 +32,11 @@ func getServices() ([]examples.InterestService, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := examples.NewInterestServiceClient("127.0.0.1:8084")
-	return []examples.InterestService{local, client}, nil
+
+	return []examples.InterestService{local}, nil
+
+	//client := examples.NewInterestServiceClient("127.0.0.1:8084")
+	//return []examples.InterestService{local, client}, nil
 
 }
 
@@ -101,11 +113,9 @@ func TestPersistAll(t *testing.T) {
 		t.Errorf("failed to get services %v", err)
 	}
 
-
-
 	service := services[0]
 	var interests = make([]*examples.Interest, 0)
-	for i := 1; i <= 100000; i++ {
+	for i := 1; i <= 1000; i++ {
 		var status = true
 		interests = append(interests, &examples.Interest{
 			Name: fmt.Sprintf("Name %v", i),
