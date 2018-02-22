@@ -42,7 +42,7 @@ func (am *AbstractManager) Execute(sql string, sqlParameters ...interface{}) (re
 	return am.Manager.ExecuteOnConnection(connection, sql, sqlParameters)
 }
 
-//ExecuteAll passed in SQLs. It returns sql result, or an error.
+//ExecuteAll passed in SQL. It returns sql result, or an error.
 func (am *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 	connection, err := am.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -52,7 +52,7 @@ func (am *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 	return am.Manager.ExecuteAllOnConnection(connection, sqls)
 }
 
-//ExecuteAllOnConnection executes passed in SQLs on connection. It returns sql result, or an error.
+//ExecuteAllOnConnection executes passed in SQL on connection. It returns sql result, or an error.
 func (am *AbstractManager) ExecuteAllOnConnection(connection Connection, sqls []string) ([]sql.Result, error) {
 
 	var result = make([]sql.Result, len(sqls))

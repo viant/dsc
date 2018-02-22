@@ -4,6 +4,8 @@ import (
 	"github.com/viant/toolbox"
 )
 
+
+
 type jsonFileManagerFactory struct{}
 
 func (f *jsonFileManagerFactory) Create(config *Config) (Manager, error) {
@@ -18,13 +20,11 @@ func (f *jsonFileManagerFactory) Create(config *Config) (Manager, error) {
 	return fileManager, nil
 }
 
-func (f jsonFileManagerFactory) CreateFromURL(url string) (Manager, error) {
-	reader, _, err := toolbox.OpenReaderFromURL(url)
+func (f jsonFileManagerFactory) CreateFromURL(URL string) (Manager, error) {
+	config, err := NewConfigFromURL(URL);
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
-	config := &Config{}
 	return f.Create(config)
 }
 
@@ -40,12 +40,10 @@ func (f *delimiteredFileManagerFactory) Create(config *Config) (Manager, error) 
 	return fileManager, nil
 }
 
-func (f delimiteredFileManagerFactory) CreateFromURL(url string) (Manager, error) {
-	reader, _, err := toolbox.OpenReaderFromURL(url)
+func (f delimiteredFileManagerFactory) CreateFromURL(URL string) (Manager, error) {
+	config, err := NewConfigFromURL(URL);
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
-	config := &Config{}
 	return f.Create(config)
 }

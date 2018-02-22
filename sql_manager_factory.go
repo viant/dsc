@@ -1,6 +1,5 @@
 package dsc
 
-import "github.com/viant/toolbox"
 
 type sqlManagerFactory struct{}
 
@@ -13,17 +12,10 @@ func (mf *sqlManagerFactory) Create(config *Config) (Manager, error) {
 	return self, nil
 }
 
-func (mf sqlManagerFactory) CreateFromURL(url string) (Manager, error) {
-	reader, _, err := toolbox.OpenReaderFromURL(url)
+func (mf sqlManagerFactory) CreateFromURL(URL string) (Manager, error) {
+	config, err := NewConfigFromURL(URL)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
-	config := &Config{}
-	err = toolbox.NewJSONDecoderFactory().Create(reader).Decode(&config)
-	if err != nil {
-		return nil, err
-	}
-	config.Init()
 	return mf.Create(config)
 }

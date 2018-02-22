@@ -5,19 +5,18 @@ import (
 	"github.com/viant/toolbox"
 	"time"
 	"github.com/viant/toolbox/cred"
+	"github.com/viant/toolbox/url"
 )
 
 //Config represent datastore config.
 type Config struct {
-	DriverName          string
-	PoolSize            int
-	MaxPoolSize         int
-	Descriptor          string
-	Parameters          map[string]string
-	CredentialsFile     string
+	DriverName  string
+	PoolSize    int
+	MaxPoolSize int
+	Descriptor  string
+	Parameters  map[string]string
+	Credential  string
 }
-
-
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
@@ -87,8 +86,8 @@ func (c *Config) Has(name string) bool {
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
-	if c.CredentialsFile != "" {
-		config, err := cred.NewConfig(c.CredentialsFile)
+	if c.Credential != "" {
+		config, err := cred.NewConfig(c.Credential)
 		if err != nil {
 			return err
 		}
@@ -124,12 +123,12 @@ func NewConfigWithParameters(driverName string, descriptor string, parameters ma
 }
 
 //NewConfigFromUrl returns new config from url
-func NewConfigFromUrl(url string) (*Config, error) {
+func NewConfigFromURL(URL string) (*Config, error) {
 	result := &Config{}
-	err := toolbox.LoadConfigFromUrl(url, result)
-	if err != nil {
-		return nil, err
+	var resource = url.NewResource()
+	err := resource.JSONDecode(result)
+	if err == nil {
+		err = result.Init()
 	}
-	result.Init()
-	return result, nil
+	return result, err
 }

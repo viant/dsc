@@ -141,6 +141,9 @@ func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 	var rows = make([][]interface{}, 0)
 	err := manager.ReadAll(&rows, d.allSchemaSQL, nil, nil)
 	if err != nil {
+		if strings.Contains(err.Error(),"unable to open database") {
+			return []string{}, nil
+		}
 		return nil, err
 	}
 	var result = make([]string, 0)
