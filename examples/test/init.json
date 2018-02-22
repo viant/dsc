@@ -1,0 +1,10 @@
+{
+  "Datastore": "mytestdb",
+  "ConfigURL": "test/config/store.json",
+  "Admin":{
+    "Datastore":"mysql",
+    "ConfigURL":"test/config/admin.json"
+  },
+  "Scripts":[{"URL":"test/script/database.sql"}]
+}
+
