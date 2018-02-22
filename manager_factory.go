@@ -1,10 +1,7 @@
 package dsc
 
 import (
-	"encoding/json"
 	"fmt"
-
-	"github.com/viant/toolbox"
 )
 
 type managerFactoryProxy struct{}
@@ -23,23 +20,16 @@ func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
 }
 
 //CreateFromURL create a new manager from URL, url resource should be a JSON Config
-func (f managerFactoryProxy) CreateFromURL(url string) (Manager, error) {
-	reader, _, err := toolbox.OpenReaderFromURL(url)
+func (f managerFactoryProxy) CreateFromURL(URL string) (Manager, error) {
+	config, err := NewConfigFromURL(URL)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
-	config := &Config{}
-	err = json.NewDecoder(reader).Decode(config)
-	if err != nil {
-		return nil, err
-	}
-	config.Init()
 	factory, err := GetManagerFactory(config.DriverName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup manager factory for `%v`, make sure you have imported required implmentation", config.DriverName)
 	}
-	return factory.CreateFromURL(url)
+	return factory.Create(config)
 }
 
 //NewManagerFactory create a new manager factory.

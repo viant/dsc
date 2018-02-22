@@ -71,11 +71,11 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 }
 
 //BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
-func (qb *QueryBuilder) BuildBatchedQueryOnPk(columns []string, pkRowValues [][]interface{}, batchSize int) []ParametrizedSQL {
-	var result = make([]ParametrizedSQL, 0)
+func (qb *QueryBuilder) BuildBatchedQueryOnPk(columns []string, pkRowValues [][]interface{}, batchSize int) []*ParametrizedSQL {
+	var result = make([]*ParametrizedSQL, 0)
 	toolbox.Process2DSliceInBatches(pkRowValues, batchSize, func(batch [][]interface{}) {
 		sqlWithArguments := qb.BuildQueryOnPk(columns, batch)
-		result = append(result, *sqlWithArguments)
+		result = append(result, sqlWithArguments)
 	})
 	return result
 }
