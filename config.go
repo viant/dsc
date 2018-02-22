@@ -125,7 +125,7 @@ func NewConfigWithParameters(driverName string, descriptor string, parameters ma
 //NewConfigFromUrl returns new config from url
 func NewConfigFromURL(URL string) (*Config, error) {
 	result := &Config{}
-	var resource = url.NewResource()
+	var resource = url.NewResource(URL)
 	err := resource.JSONDecode(result)
 	if err == nil {
 		err = result.Init()

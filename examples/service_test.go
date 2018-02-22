@@ -10,17 +10,16 @@ import (
 	"github.com/viant/dsc/examples"
 	"github.com/viant/dsunit"
 	"fmt"
+	"github.com/viant/toolbox/url"
 )
 
-func init() {
-	go func() {
-		examples.StartServer(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/vertica_store.json"), "8084")
-	}()
-	time.Sleep(2 * time.Second)
-}
+
 
 func getServices() ([]examples.InterestService, error) {
-	local, err := examples.NewInterestService(dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/config/vertica_store.json"))
+
+
+	resource := url.NewResource("test/config/store.json")
+	local, err := examples.NewInterestService(resource.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -30,10 +29,9 @@ func getServices() ([]examples.InterestService, error) {
 }
 
 func TestRead(t *testing.T) {
-	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
+	dsunit.InitFromURL(t, "test/init.json")
 
-	dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Read")
+	dsunit.PrepareDatastoreFor(t, "mytestdb", "test/", "Read")
 	services, err := getServices()
 	if err != nil {
 		t.Errorf("failed to get services %v", err)
@@ -62,7 +60,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestPersist(t *testing.T) {
-	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
+
 
 	services, err := getServices()
 	if err != nil {
@@ -72,8 +70,8 @@ func TestPersist(t *testing.T) {
 	for _, service := range services {
 		{
 			falseValue := false
-			dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
-			dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Persist")
+			dsunit.InitFromURL(t, "test/init.json")
+			dsunit.PrepareDatastoreFor(t, "mytestdb", "test/", "Persist")
 			response := service.GetByID(1)
 			assert.Equal(t, "ok", response.Status, response.Message)
 
@@ -89,14 +87,14 @@ func TestPersist(t *testing.T) {
 
 			assert.NotNil(t, persistResponse.Result)
 			assert.Equal(t, 2, len(persistResponse.Result))
-			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test://test/", "Persist")
+			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test/", "Persist")
 		}
 	}
 
 }
 
 func TestPersistAll(t *testing.T) {
-	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
+	dsunit.InitFromURL(t, "test/init.json")
 
 	services, err := getServices()
 	if err != nil {
@@ -104,7 +102,7 @@ func TestPersistAll(t *testing.T) {
 	}
 
 
-	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
+
 	service := services[0]
 	var interests = make([]*examples.Interest, 0)
 	for i := 1; i <= 100000; i++ {
@@ -127,21 +125,20 @@ func TestPersistAll(t *testing.T) {
 
 
 func TestDelete(t *testing.T) {
-	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	services, err := getServices()
 	if err != nil {
 		t.Errorf("failed to get services %v", err)
 	}
 	for _, service := range services {
 		{
-			dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
-			dsunit.PrepareDatastoreFor(t, "mytestdb", "test://test/", "Delete")
+			dsunit.InitFromURL(t, "test/init.json")
+			dsunit.PrepareDatastoreFor(t, "mytestdb", "test/", "Delete")
 
 			deleteResponse := service.DeleteByID(1)
 			assert.NotNil(t, deleteResponse)
 			assert.Equal(t, "ok", deleteResponse.Status, deleteResponse.Message)
 
-			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test://test/", "Delete")
+			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test/", "Delete")
 		}
 	}
 }

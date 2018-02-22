@@ -1,5 +1,0 @@
-{
-  "Scripts": [
-    { "Datastore": "mytestdb", "Url": "test://test/script/database.sql"}
-  ]
-}
