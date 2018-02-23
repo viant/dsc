@@ -10,12 +10,13 @@ import (
 
 //Config represent datastore config.
 type Config struct {
-	DriverName  string
-	PoolSize    int
-	MaxPoolSize int
-	Descriptor  string
-	Parameters  map[string]string
-	Credential  string
+	DriverName       string
+	PoolSize         int
+	MaxPoolSize      int
+	Descriptor       string
+	SecureDescriptor string
+	Parameters       map[string]string
+	Credential       string
 }
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
@@ -91,15 +92,22 @@ func (c *Config) Init() error {
 		if err != nil {
 			return err
 		}
+		c.SecureDescriptor = c.Descriptor
 		c.Descriptor = strings.Replace(c.Descriptor, "[username]", config.Username, 1)
 		c.Descriptor = strings.Replace(c.Descriptor, "[password]", config.Password, 1)
+		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, "[username]", config.Username, 1)
+		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, "[password]", "***", 1)
 	}
+
 	for key, value := range c.Parameters {
 		macro := "[" + key + "]"
 		c.Descriptor = strings.Replace(c.Descriptor, macro, value, 1)
+		c.SecureDescriptor =  strings.Replace(c.SecureDescriptor, macro, value, 1)
 	}
 	return nil
 }
+
+
 
 //NewConfig creates new Config, it takes the following parameters
 // descriptor - optional datastore connection string with macros that will be looked epxanded from for instance [user]:[password]@[url]

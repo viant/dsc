@@ -57,6 +57,9 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	if args == nil {
 		args = make([]interface{}, 0)
 	}
+
+	//fmt.Printf("SQL: %v\n", sql)
+
 	result, err := executable.Exec(sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf(fmt.Sprintf("failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))

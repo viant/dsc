@@ -1,9 +1,14 @@
 package dsc
 
+import "fmt"
 
 type sqlManagerFactory struct{}
 
 func (mf *sqlManagerFactory) Create(config *Config) (Manager, error) {
+	if err := config.Init();err != nil {
+		return nil, err
+	}
+	fmt.Printf("D: %v\n", config.Descriptor)
 	var connectionProvider = newSQLConnectionProvider(config)
 	sqlManager := &sqlManager{}
 	var self Manager = sqlManager
