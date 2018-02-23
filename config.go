@@ -120,10 +120,11 @@ func NewConfig(driverName string, descriptor string, encodedParameters string) *
 }
 
 //NewConfigWithParameters creates a new config with parameters
-func NewConfigWithParameters(driverName string, descriptor string, parameters map[string]string) (*Config, error) {
+func NewConfigWithParameters(driverName string, descriptor string, credential string, parameters map[string]string) (*Config, error) {
 	result := &Config{
 		DriverName: driverName,
 		Descriptor: descriptor,
+		Credential:credential,
 		Parameters: parameters,
 	}
 	err := result.Init()
