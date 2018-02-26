@@ -7,30 +7,62 @@ import (
 	"strings"
 )
 
-const defaultTableSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
-const defaultSequenceSQL = "SELECT auto_increment AS seq_value FROM information_schema.tables WHERE table_name = '%v' AND table_schema = DATABASE()"
-const defaultKeySQL = "SELECT column_name AS name FROM information_schema.key_column_usage WHERE table_name = '%v' AND table_schema = '%v' AND constraint_name='PRIMARY'"
-const defaultAutoincremetSQL = "SELECT 1 AS autoicrement FROM INFORMATION_SCHEMA.COLUMNS WHERE T TABLE_SCHEMA = '%v'  AND TABLE_NAME = '%v'  AND COLUMN_NAME = '%v'  AND EXTRA like '%auto_increment%'"
+const ansiTableListSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
+const ansiSequenceSQL = "SELECT auto_increment AS seq_value FROM information_schema.tables WHERE table_name = '%v' AND table_schema = DATABASE()"
+const ansiPrimaryKeySQL = "SELECT column_name AS name FROM information_schema.key_column_usage WHERE table_name = '%v' AND table_schema = '%v' AND constraint_name='PRIMARY'"
+const defaultAutoincremetSQL = "SELECT 1 AS autoicrement FROM information_schema.COLUMNS WHERE T TABLE_SCHEMA = '%v'  AND TABLE_NAME = '%v'  AND COLUMN_NAME = '%v'  AND EXTRA like '%auto_increment%'"
 
 const defaultSchemaSQL = "SELECT DATABASE() AS name"
-const defaultAllSchemaSQL = "SELECT schema_name AS name FROM  information_schema.schemata"
+const ansiSchemaListSQL = "SELECT schema_name AS name FROM  information_schema.schemata"
 
 const mysqlDisableForeignCheck = "SET FOREIGN_KEY_CHECKS=0"
 const mysqlEnableForeignCheck = "SET FOREIGN_KEY_CHECKS=1"
 
-const schemaSQL = "SELECT current_schema() AS name"
 
 const sqlLightTableSQL = "SELECT name FROM SQLITE_MASTER WHERE type='table' AND name NOT IN('sqlite_sequence') AND LENGTH(?) > 0"
 const sqlLightSequenceSQL = "SELECT COALESCE(MAX(name), 0) + 1   FROM (SELECT seq AS name FROM SQLITE_SEQUENCE WHERE name = '%v')"
 const sqlLightSchemaSQL = "PRAGMA database_list"
 const sqlLightPkSQL = "pragma table_info(%v);"
 
-const pgSequenceSQL = "SELECT currval(%v) + 1 AS seq_value"
 
-const oraTableSQL = "SELECT table_name AS name  FROM all_tables WHERE owner = ?"
-const oraSchemaSQL = "SELECT sys_context( 'userenv', 'current_schema' ) AS name FROM dual"
-const oraSequenceSQL = "SELECT %v.nextval AS name from dual"
-const oraAllSchemaSQL = "SELECT schema_name AS name FROM all_tables GROUP BY 1"
+const pgCurrentSchemaSQL = "SELECT current_database() AS name"
+const pgSchemaListSQL = "SELECT datname AS name FROM pg_catalog.pg_database"
+
+
+const pgTableListSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_catalog = ? AND table_schema = 'public' "
+
+const pgPrimaryKeySQL = `SELECT c.column_name AS name FROM information_schema.key_column_usage u
+JOIN information_schema.columns c ON u.column_name = c.column_name AND u.table_name = c.table_name AND u.constraint_catalog = c.table_catalog  
+JOIN information_schema.table_constraints tc ON tc.constraint_name = u.constraint_name AND tc.table_name = c.table_name AND tc.constraint_catalog = c.table_catalog  
+WHERE u.table_name = 'users' 
+	AND tc.constraint_type = 'PRIMARY KEY'
+	AND c.table_name = '%v'    
+	AND c.table_catalog = '%v'
+ORDER BY u.ordinal_position
+`
+
+const pgAutoincrementSQL = `SELECT LIKE(column_default, 'nextval(%v') AS is_autoincrement FROM information_schema.key_column_usage u
+JOIN information_schema.columns c ON u.column_name = c.column_name AND u.table_name = c.table_name AND u.constraint_catalog = c.table_catalog  
+JOIN information_schema.table_constraints tc ON tc.constraint_name = u.constraint_name AND tc.table_name = c.table_name AND tc.constraint_catalog = c.table_catalog  
+WHERE u.table_name = 'users' 
+	AND tc.constraint_type = 'PRIMARY KEY'
+	AND c.table_name = '%v'    
+	AND c.table_catalog = '%v'
+`
+
+
+const oraTableSQL = `SELECT table_name AS "name" FROM all_tables WHERE owner = ?`
+const oraSchemaSQL = `SELECT sys_context( 'userenv', 'current_schema' ) AS "name" FROM dual`
+const oraSchemaListSQL = `SELECT USERNAME AS "name"  FROM ALL_USERS`
+
+const oraPrimaryKeySQL = `SELECT c.column_name AS "name"
+FROM all_constraints p
+JOIN all_cons_columns c ON p.constraint_name = c.constraint_name AND p.owner = c.owner
+ WHERE c.table_name = UPPER('%v') 
+AND p.owner = UPPER('%v') 
+AND p.constraint_type = 'P'
+ORDER BY c.position`
+
 
 const msSchemaSQL = "SELECT SCHEMA_NAME() AS name"
 const msSequenceSQL = "SELECT current_value AS seq_value FROM sys.sequences WHERE  name = '%v'"
@@ -59,6 +91,28 @@ func (d sqlDatastoreDialect) CanCreateDatastore(manager Manager) bool {
 //CanDropDatastore returns true if this dialect can drop datastore
 func (d sqlDatastoreDialect) CanDropDatastore(manager Manager) bool {
 	return true
+}
+
+
+func (d sqlDatastoreDialect) Init(manager Manager, connection Connection) error {
+	return nil
+}
+
+func (d sqlDatastoreDialect) EachTable(manager Manager, handler func(table string) error) error {
+	dbname, err := d.GetCurrentDatastore(manager);
+	if err != nil {
+		return err
+	}
+	tables, err := d.GetTables(manager, dbname)
+	if err != nil {
+		return err
+	}
+	for _, table := range tables {
+		if err := handler(table);err != nil {
+			return err
+		}
+	}
+	return err
 }
 
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
@@ -124,8 +178,9 @@ func (d sqlDatastoreDialect) GetKeyName(manager Manager, datastore, table string
 	if d.keySQL == "" {
 		return ""
 	}
+	SQL := fmt.Sprintf(d.keySQL, table, datastore)
 	var records = make([]map[string]interface{}, 0)
-	err := manager.ReadAll(&records, fmt.Sprintf(d.keySQL, table, datastore), []interface{}{}, nil)
+	err := manager.ReadAll(&records, SQL, []interface{}{}, nil)
 	if err != nil {
 		return ""
 	}
@@ -136,12 +191,13 @@ func (d sqlDatastoreDialect) GetKeyName(manager Manager, datastore, table string
 	return strings.Join(result, ",")
 }
 
+
 //GetDatastores returns name of datastores, takes  manager as parameter
 func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 	var rows = make([][]interface{}, 0)
 	err := manager.ReadAll(&rows, d.allSchemaSQL, nil, nil)
 	if err != nil {
-		if strings.Contains(err.Error(),"unable to open database") {
+		if strings.Contains(err.Error(), "unable to open database") {
 			return []string{}, nil
 		}
 		return nil, err
@@ -188,11 +244,15 @@ func (d sqlDatastoreDialect) IsAutoincrement(manager Manager, datastore, table s
 //GetSequence returns sequence value or error for passed in manager and table/sequence
 func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, error) {
 	var result = make([]interface{}, 0)
-	success, sequenceError := manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
-	if success && len(result) == 1 {
-		var intResult = toolbox.AsInt(result[0])
-		if intResult > 0 {
-			return int64(intResult), nil
+	var sequenceError error
+	if d.sequenceSQL != "" {
+		var success bool
+		success, sequenceError = manager.ReadSingle(&result, fmt.Sprintf(d.sequenceSQL, name), []interface{}{}, nil)
+		if success && len(result) == 1 {
+			var intResult= toolbox.AsInt(result[0])
+			if intResult > 0 {
+				return int64(intResult), nil
+			}
 		}
 	}
 	datastore, err := d.GetCurrentDatastore(manager)
@@ -201,7 +261,7 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 	}
 	var key = d.GetKeyName(manager, datastore, name)
 	if key != "" {
-		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v)  AS seq_value FROM  %v.%v", key, datastore, name), []interface{}{}, nil)
+		success, err := manager.ReadSingle(&result, fmt.Sprintf("SELECT MAX(%v)  AS seq_value FROM  %v", key,  name), []interface{}{}, nil)
 		if err != nil || !success {
 			return 0, err
 		}
@@ -230,6 +290,10 @@ func (d sqlDatastoreDialect) EnableForeignKeyCheck(manager Manager, connection C
 	return err
 }
 
+func (d sqlDatastoreDialect) NormalizePlaceholders(SQL string) string {
+	return SQL
+}
+
 //CanPersistBatch return true if datastore can persist in batch
 func (d sqlDatastoreDialect) CanPersistBatch() bool {
 	return false
@@ -245,7 +309,7 @@ type mySQLDialect struct {
 }
 
 func newMySQLDialect() mySQLDialect {
-	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, defaultSequenceSQL, defaultSchemaSQL, defaultAllSchemaSQL, defaultKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, 0)}
+	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, 0)}
 }
 
 type sqlLiteDialect struct {
@@ -322,8 +386,61 @@ type pgDialect struct {
 }
 
 func newPgDialect() *pgDialect {
-	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, pgSequenceSQL, schemaSQL, defaultAllSchemaSQL, "", "", "", "", 0)}
+	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, 0)}
 }
+
+func (d pgDialect) NormalizePlaceholders(SQL string) string {
+	count := 1;
+	var normalizedSQL = ""
+	for _, r := range SQL {
+		aChar := string(r)
+		if aChar == "?" {
+			normalizedSQL += "$" + toolbox.AsString(count)
+			count++
+		} else {
+			normalizedSQL += aChar
+		}
+	}
+	return normalizedSQL
+}
+
+
+
+
+func (d pgDialect) IsAutoincrement(manager Manager, datastore, table string) bool {
+	datastore, err := d.GetCurrentDatastore(manager)
+	if err != nil {
+		return false
+	}
+	var SQL = fmt.Sprintf(pgAutoincrementSQL, "%",table, datastore)
+	var result = make([]interface{}, 0)
+	success, err := manager.ReadSingle(&result, SQL, nil, nil)
+	if err != nil || !success {
+		return false
+	}
+	if len(result) == 1 {
+		return toolbox.AsBoolean(result[0])
+	}
+	return false
+}
+
+
+
+func (d pgDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
+	return d.EachTable(manager, func(table string) error {
+		_, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("ALTER TABLE %v DISABLE TRIGGER ALL", table), nil)
+		return err
+	})
+}
+
+func (d pgDialect) EnableForeignKeyCheck(manager Manager, connection Connection) error {
+	return d.EachTable(manager, func(table string) error {
+		_, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("ALTER TABLE %v ENABLE TRIGGER ALL", table), nil)
+		return err
+	})
+}
+
+
 
 type oraDialect struct {
 	DatastoreDialect
@@ -331,18 +448,67 @@ type oraDialect struct {
 
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
 func (d oraDialect) CreateDatastore(manager Manager, datastore string) error {
-	_, err := manager.Execute("CREATE SCHEMA IF NOT EXISTS " + datastore)
-	return err
+	var password, ok = manager.Config().Parameters["password"]
+	if ! ok {
+		return fmt.Errorf("password was empty")
+	}
+	DCL := fmt.Sprintf("CREATE USER %v IDENTIFIED BY %v", datastore, password)
+	if _, err := manager.Execute(DCL);err != nil {
+		return err
+	}
+	DCL = fmt.Sprintf("GRANT CONNECT, RESOURCE, DBA TO %v", datastore)
+	if _, err := manager.Execute(DCL);err != nil {
+		return err
+	}
+	return nil
 }
+
 
 //DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
 func (d oraDialect) DropDatastore(manager Manager, datastore string) error {
-	_, err := manager.Execute("DROP SCHEMA " + datastore)
+	_, err := manager.Execute(fmt.Sprintf("DROP USER %v CASCADE", datastore))
 	return err
 }
 
+
+
+func (d oraDialect) NormalizePlaceholders(SQL string) string {
+	count := 1;
+	var normalizedSQL = ""
+	for _, r := range SQL {
+		aChar := string(r)
+		if aChar == "?" {
+			normalizedSQL += ":" + toolbox.AsString(count)
+			count++
+		} else {
+			normalizedSQL += aChar
+		}
+	}
+	return normalizedSQL
+}
+
+func (d oraDialect) Init(manager Manager, connection Connection) error {
+	config :=  manager.Config()
+	if _, has := config.Parameters["session"]; !has {
+		return nil
+	}
+	session :=config.GetMap("session")
+	if session == nil {
+		return nil
+	}
+
+	for k, v := range session {
+		_, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("ALTER SESSION SET %v = '%v'", k, v), nil)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
 func newOraDialect() *oraDialect {
-	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, oraSequenceSQL, oraSchemaSQL, oraAllSchemaSQL, "", "", "", "", 0)}
+	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, "", oraSchemaSQL, oraSchemaListSQL, oraPrimaryKeySQL, "", "", "", 0)}
 }
 
 type msSQLDialect struct {
@@ -350,5 +516,5 @@ type msSQLDialect struct {
 }
 
 func newMsSQLDialect() *msSQLDialect {
-	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(defaultTableSQL, msSequenceSQL, msSchemaSQL, defaultAllSchemaSQL, "", "", "", "", 0)}
+	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, "", "", "", "", 0)}
 }
