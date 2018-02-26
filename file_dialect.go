@@ -44,7 +44,6 @@ func (d fileDialect) GetTables(manager Manager, datastore string) ([]string, err
 		return nil, fmt.Errorf("Invalid store manager: %T, expected %T", &FileManager{}, manager)
 	}
 
-
 	exists, err := fileManager.service.Exists(fileManager.baseURL.URL)
 	if err != nil {
 		return nil, err

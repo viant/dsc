@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-var Logf = func(format string, args ... interface{}) {
+var Logf = func(format string, args ...interface{}) {
 
 }
 
@@ -84,7 +84,7 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	}
 
 	if sqlConnection, ok := connection.(*sqlConnection); ok {
-		if ! sqlConnection.init {
+		if !sqlConnection.init {
 
 		}
 	}

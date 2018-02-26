@@ -3,10 +3,10 @@ package dsc_test
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
+	"github.com/viant/toolbox/url"
 	"os"
 	"testing"
 	"time"
-	"github.com/viant/toolbox/url"
 )
 
 type MostLikedCity struct {
@@ -107,9 +107,7 @@ func TestRead(t *testing.T) {
 		var travelers = make([]Traveler, 0)
 		err = manager.ReadAll(&travelers, " SELECT id, name, lastVisitTime, visitedCities, achievements, mostLikedCity, LastVisitTime FROM travelers1 WHERE id IN(?, ?)", []interface{}{1, 4}, nil)
 		assert.Nil(t, err)
-		assert.Equal(t, 2, len(travelers))
-
-		{
+		if assert.Equal(t, 2, len(travelers)) {
 			traveler := travelers[0]
 			assert.Equal(t, 1, traveler.Id)
 			assert.Equal(t, "Rob", traveler.Name)

@@ -66,8 +66,6 @@ func (d DefaultDialect) Init(manager Manager, connection Connection) error {
 	return nil
 }
 
-
-
 //DisableForeignKeyCheck disables fk check
 func (d DefaultDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
 	return nil
@@ -84,7 +82,7 @@ func (d DefaultDialect) NormalizePlaceholders(SQL string) string {
 
 //EachTable iterates each datastore table
 func (d DefaultDialect) EachTable(manager Manager, handler func(table string) error) error {
-	dbname, err := d.GetCurrentDatastore(manager);
+	dbname, err := d.GetCurrentDatastore(manager)
 	if err != nil {
 		return err
 	}
@@ -93,7 +91,7 @@ func (d DefaultDialect) EachTable(manager Manager, handler func(table string) er
 		return err
 	}
 	for _, table := range tables {
-		if err := handler(table);err != nil {
+		if err := handler(table); err != nil {
 			return err
 		}
 	}

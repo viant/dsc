@@ -8,8 +8,9 @@ import (
 
 type sqlConnection struct {
 	*AbstractConnection
-	db *sql.DB
-	tx *sql.Tx
+	db   *sql.DB
+	tx   *sql.Tx
+	init bool
 }
 
 func (c *sqlConnection) CloseNow() error {
@@ -75,6 +76,7 @@ func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	var connection Connection = sqlConnection
 	var super = NewAbstractConnection(config, c.ConnectionProvider.ConnectionPool(), connection)
 	sqlConnection.AbstractConnection = super
+
 	return connection, nil
 }
 

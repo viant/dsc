@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/storage"
+	"github.com/viant/toolbox/url"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
 	"strings"
-	"github.com/viant/toolbox/url"
 )
 
 var defaultPermission os.FileMode = 0644
@@ -349,7 +349,7 @@ func (m *FileManager) readHeaderIfNeeded(scanner *bufio.Scanner) []string {
 
 func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, recordHandler func(record map[string]interface{}, matched bool) (bool, error)) error {
 	tableURL := m.getTableURL(m, table)
-reader, err := m.getReaderForURL(tableURL)
+	reader, err := m.getReaderForURL(tableURL)
 	if reader == nil {
 		return err
 	}

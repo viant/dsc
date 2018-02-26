@@ -1,11 +1,11 @@
 package dsc
 
 import (
-	"strings"
 	"github.com/viant/toolbox"
-	"time"
 	"github.com/viant/toolbox/cred"
 	"github.com/viant/toolbox/url"
+	"strings"
+	"time"
 )
 
 //Config represent datastore config.
@@ -15,16 +15,27 @@ type Config struct {
 	MaxPoolSize      int
 	Descriptor       string
 	SecureDescriptor string
-	Parameters       map[string]string
+	Parameters       map[string]interface{}
 	Credential       string
+	username         string
 }
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
 	if result, ok := c.Parameters[name]; ok {
-		return result
+		return toolbox.AsString(result)
 	}
 	return ""
+}
+
+//Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
+func (c *Config) GetMap(name string) map[string]interface{} {
+	if result, ok := c.Parameters[name]; ok {
+		if toolbox.IsMap(result) {
+			return toolbox.AsMap(result)
+		}
+	}
+	return nil
 }
 
 //GetInt returns value for passed in parameter name or defaultValue
@@ -54,7 +65,7 @@ func (c *Config) GetDuration(name string, multiplier time.Duration, defaultValue
 //GetString returns value for passed in parameter name or defaultValue
 func (c *Config) GetString(name string, defaultValue string) string {
 	if result, ok := c.Parameters[name]; ok {
-		return result
+		return toolbox.AsString(result)
 	}
 	return defaultValue
 }
@@ -92,39 +103,41 @@ func (c *Config) Init() error {
 		if err != nil {
 			return err
 		}
+		c.username = config.Username
 		c.SecureDescriptor = c.Descriptor
-		c.Descriptor = strings.Replace(c.Descriptor, "[username]", config.Username, 1)
-		c.Descriptor = strings.Replace(c.Descriptor, "[password]", config.Password, 1)
-		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, "[username]", config.Username, 1)
+		c.Parameters["username"] = config.Username
+		c.Parameters["password"] = config.Password
 		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, "[password]", "***", 1)
 	}
 
 	for key, value := range c.Parameters {
+		textValue, ok := value.(string)
+		if !ok {
+			continue
+		}
 		macro := "[" + key + "]"
-		c.Descriptor = strings.Replace(c.Descriptor, macro, value, 1)
-		c.SecureDescriptor =  strings.Replace(c.SecureDescriptor, macro, value, 1)
+		c.Descriptor = strings.Replace(c.Descriptor, macro, textValue, 1)
+		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, macro, textValue, 1)
 	}
 	return nil
 }
-
-
 
 //NewConfig creates new Config, it takes the following parameters
 // descriptor - optional datastore connection string with macros that will be looked epxanded from for instance [user]:[password]@[url]
 // encodedParameters should be in the following format:   <key1>:<value1>, ...,<keyN>:<valueN>
 func NewConfig(driverName string, descriptor string, encodedParameters string) *Config {
-	var parameters = toolbox.MakeStringMap(encodedParameters, ":", ",")
+	var parameters = toolbox.MakeMap(encodedParameters, ":", ",")
 	result := &Config{DriverName: driverName, PoolSize: 1, MaxPoolSize: 2, Descriptor: descriptor, Parameters: parameters}
 	result.Init()
 	return result
 }
 
 //NewConfigWithParameters creates a new config with parameters
-func NewConfigWithParameters(driverName string, descriptor string, credential string, parameters map[string]string) (*Config, error) {
+func NewConfigWithParameters(driverName string, descriptor string, credential string, parameters map[string]interface{}) (*Config, error) {
 	result := &Config{
 		DriverName: driverName,
 		Descriptor: descriptor,
-		Credential:credential,
+		Credential: credential,
 		Parameters: parameters,
 	}
 	err := result.Init()

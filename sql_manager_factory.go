@@ -1,10 +1,9 @@
 package dsc
 
-
 type sqlManagerFactory struct{}
 
 func (mf *sqlManagerFactory) Create(config *Config) (Manager, error) {
-	if err := config.Init();err != nil {
+	if err := config.Init(); err != nil {
 		return nil, err
 	}
 	var connectionProvider = newSQLConnectionProvider(config)

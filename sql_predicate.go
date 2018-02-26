@@ -3,8 +3,8 @@ package dsc
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/viant/toolbox"
+	"strings"
 )
 
 func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interface{}, error) {
@@ -21,7 +21,6 @@ func getOperandValue(operand interface{}, parameters toolbox.Iterator) (interfac
 	}
 	return values[0], nil
 }
-
 
 func getOperandValues(operands []interface{}, parameters toolbox.Iterator) ([]interface{}, error) {
 	var result = make([]interface{}, 0)

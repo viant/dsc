@@ -4,8 +4,6 @@ import (
 	"github.com/viant/toolbox"
 )
 
-
-
 type jsonFileManagerFactory struct{}
 
 func (f *jsonFileManagerFactory) Create(config *Config) (Manager, error) {
@@ -21,7 +19,7 @@ func (f *jsonFileManagerFactory) Create(config *Config) (Manager, error) {
 }
 
 func (f jsonFileManagerFactory) CreateFromURL(URL string) (Manager, error) {
-	config, err := NewConfigFromURL(URL);
+	config, err := NewConfigFromURL(URL)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +39,7 @@ func (f *delimiteredFileManagerFactory) Create(config *Config) (Manager, error) 
 }
 
 func (f delimiteredFileManagerFactory) CreateFromURL(URL string) (Manager, error) {
-	config, err := NewConfigFromURL(URL);
+	config, err := NewConfigFromURL(URL)
 	if err != nil {
 		return nil, err
 	}

@@ -29,9 +29,9 @@ func (r *commonTableDescriptorRegistry) getDescriptor(table string) *TableDescri
 	key := dialect.GetKeyName(r.manager, datastore, table)
 	isAutoincrement := dialect.IsAutoincrement(r.manager, datastore, table)
 	descriptor := &TableDescriptor{
-		Table: table,
-		Autoincrement:isAutoincrement,
-		PkColumns:[]string{},
+		Table:         table,
+		Autoincrement: isAutoincrement,
+		PkColumns:     []string{},
 	}
 	if key != "" {
 		descriptor.PkColumns = strings.Split(key, ",")

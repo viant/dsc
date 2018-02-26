@@ -43,7 +43,7 @@ func getServices() ([]examples.InterestService, error) {
 func TestRead(t *testing.T) {
 	dsunit.InitFromURL(t, "test/init.json")
 
-	dsunit.PrepareDatastoreFor(t, "mytestdb", "test/", "Read")
+	dsunit.PrepareFor(t, "mytestdb", "test/", "Read")
 	services, err := getServices()
 	if err != nil {
 		t.Errorf("failed to get services %v", err)
@@ -83,7 +83,7 @@ func TestPersist(t *testing.T) {
 		{
 			falseValue := false
 			dsunit.InitFromURL(t, "test/init.json")
-			dsunit.PrepareDatastoreFor(t, "mytestdb", "test/", "Persist")
+			dsunit.PrepareFor(t, "mytestdb", "test/", "Persist")
 			response := service.GetByID(1)
 			assert.Equal(t, "ok", response.Status, response.Message)
 
@@ -99,7 +99,7 @@ func TestPersist(t *testing.T) {
 
 			assert.NotNil(t, persistResponse.Result)
 			assert.Equal(t, 2, len(persistResponse.Result))
-			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test/", "Persist")
+			dsunit.ExpectFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test/", "Persist")
 		}
 	}
 
@@ -142,13 +142,13 @@ func TestDelete(t *testing.T) {
 	for _, service := range services {
 		{
 			dsunit.InitFromURL(t, "test/init.json")
-			dsunit.PrepareDatastoreFor(t, "mytestdb", "test/", "Delete")
+			dsunit.PrepareFor(t, "mytestdb", "test/", "Delete")
 
 			deleteResponse := service.DeleteByID(1)
 			assert.NotNil(t, deleteResponse)
 			assert.Equal(t, "ok", deleteResponse.Status, deleteResponse.Message)
 
-			dsunit.ExpectDatasetFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test/", "Delete")
+			dsunit.ExpectFor(t, "mytestdb", dsunit.FullTableDatasetCheckPolicy, "test/", "Delete")
 		}
 	}
 }
