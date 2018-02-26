@@ -19,6 +19,7 @@ func GetDatastoreDialect(driver string) DatastoreDialect {
 func init() {
 	RegisterDatastoreDialect("mysql", newMySQLDialect())
 	RegisterDatastoreDialect("pg", newPgDialect())
+	RegisterDatastoreDialect("postgres", newPgDialect())
 	RegisterDatastoreDialect("ora", newOraDialect())
 	RegisterDatastoreDialect("mssql", newMsSQLDialect())
 	RegisterDatastoreDialect("sqlite3", newSQLLiteDialect())

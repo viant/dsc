@@ -113,6 +113,7 @@ type Manager interface {
 
 //DatastoreDialect represents datastore dialects.
 type DatastoreDialect interface {
+
 	GetDatastores(manager Manager) ([]string, error)
 
 	GetTables(manager Manager, datastore string) ([]string, error)
@@ -151,6 +152,16 @@ type DatastoreDialect interface {
 
 	//EnableForeignKeyCheck disables fk check
 	EnableForeignKeyCheck(manager Manager, connection Connection) error
+
+	//Normalizes placeholders, by default dsc uses '?' for placeholder if some dialect use difference this method should take care of it
+	NormalizePlaceholders(SQL string) string
+
+	//EachTable iterate all current connection manager datastore tables
+	EachTable(manager Manager, handler func(table string) error) error
+
+	//Init initializes connection
+	Init(manager Manager, connection Connection) error
+
 }
 
 //TransactionManager represents a transaction manager.
