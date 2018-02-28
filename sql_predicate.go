@@ -91,7 +91,7 @@ func NewBooleanPredicate(leftOperand bool, operator string) toolbox.Predicate {
 }
 
 type sqlCriteriaPredicate struct {
-	criteria   []*SQLCriterion
+	*SQLCriteria
 	predicates []toolbox.Predicate
 }
 
@@ -103,8 +103,8 @@ func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 	result := true
 	var logicalPredicate toolbox.Predicate
 
-	for i := 0; i < len(p.criteria); i++ {
-		criterion := p.criteria[i]
+	for i := 0; i < len(p.Criteria); i++ {
+		criterion := p.Criteria[i]
 		value := sourceMap[toolbox.AsString(criterion.LeftOperand)]
 		predicate := p.predicates[i]
 		result = predicate.Apply(value)
@@ -114,27 +114,28 @@ func (p *sqlCriteriaPredicate) Apply(source interface{}) bool {
 		if logicalPredicate != nil {
 			result = logicalPredicate.Apply(result)
 		}
-		if criterion.LogicalOperator != "" {
-			if strings.ToLower(criterion.LogicalOperator) == "and" && !result {
+		if p.LogicalOperator != "" {
+			if strings.ToLower(p.LogicalOperator) == "and" && !result {
 				//shortcut
 				break
 			}
-			logicalPredicate = NewBooleanPredicate(result, criterion.LogicalOperator)
+			logicalPredicate = NewBooleanPredicate(result, p.LogicalOperator)
 		}
 	}
 	return result
 }
 
 //NewSQLCriteriaPredicate create a new sql criteria predicate, it takes binding parameters iterator, and actual criteria.
-func NewSQLCriteriaPredicate(parameters toolbox.Iterator, criteria ...*SQLCriterion) (toolbox.Predicate, error) {
+func NewSQLCriteriaPredicate(parameters toolbox.Iterator, sqlCriteria *SQLCriteria) (toolbox.Predicate, error) {
 	var predicates = make([]toolbox.Predicate, 0)
-	for i := 0; i < len(criteria); i++ {
-		criterion := criteria[i]
+
+	for i := 0; i < len(sqlCriteria.Criteria); i++ {
+		criterion := sqlCriteria.Criteria[i]
 		predicate, err := NewSQLCriterionPredicate(criterion, parameters)
 		if err != nil {
 			return nil, err
 		}
 		predicates = append(predicates, predicate)
 	}
-	return &sqlCriteriaPredicate{criteria: criteria, predicates: predicates}, nil
+	return &sqlCriteriaPredicate{SQLCriteria: sqlCriteria, predicates: predicates}, nil
 }

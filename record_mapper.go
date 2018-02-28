@@ -184,6 +184,7 @@ func (rm *mapRecordMapper) Map(scanner Scanner) (interface{}, error) {
 		return nil, err
 	}
 	columns, _ := scanner.Columns()
+
 	aMap := make(map[string]interface{})
 	for i, column := range columns {
 		aMap[column] = result[i]
@@ -221,7 +222,7 @@ func NewRecordMapper(targetType reflect.Type) RecordMapper {
 			return mapper
 		}
 	default:
-		panic("unsupported type: " + targetType.Name())
+		panic(fmt.Sprintf("unsupported type: %v ", targetType.Name()))
 	}
 	return nil
 }
@@ -237,15 +238,12 @@ func NewRecordMapperIfNeeded(mapper RecordMapper, targetType reflect.Type) Recor
 //ScanRow takes scanner to scans row.
 func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 	columns, _ := scanner.Columns()
-
 	count := len(columns)
 	var valuePointers = make([]interface{}, count)
 	var rowValues = make([]interface{}, count)
-
 	for i := range rowValues {
 		valuePointers[i] = &rowValues[i]
 	}
-
 	err := scanner.Scan(valuePointers...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to scan row due to %v", err)
@@ -262,5 +260,6 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 		}
 		rowValues[i] = value
 	}
+
 	return rowValues, columns, nil
 }

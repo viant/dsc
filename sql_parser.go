@@ -16,22 +16,56 @@ type SQLColumn struct {
 	FunctionArguments string
 }
 
+//SQLCriteria represents SQL criteria
+type SQLCriteria struct {
+	Criteria        []*SQLCriterion
+	LogicalOperator string
+}
+
+//CriteriaValues returns criteria values  extracted from binding parameters, starting from parametersOffset,
+func (s *SQLCriteria) CriteriaValues(parameters toolbox.Iterator) ([]interface{}, error) {
+	var values = make([]interface{}, 0)
+	for _, criterion := range s.Criteria {
+		if criterion.Criteria != nil && len(criterion.Criteria.Criteria) > 0 {
+			criteriaValues, err := criterion.Criteria.CriteriaValues(parameters)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, criteriaValues)
+			continue
+		}
+		var criterionValues = criterion.RightOperands
+		if len(criterionValues) == 0 {
+			criterionValues = []interface{}{criterion.RightOperand}
+		}
+		for i := range criterionValues {
+			value, err := bindValueIfNeeded(criterionValues[i], parameters)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, value)
+		}
+	}
+	return values, nil
+}
+
 //SQLCriterion represents single where clause condiction
 type SQLCriterion struct {
-	LeftOperand     interface{}
-	Operator        string
-	RightOperand    interface{}
-	RightOperands   []interface{}
-	Inverse         bool // if not operator presents
-	LogicalOperator string
+	Criteria      *SQLCriteria
+	LeftOperand   interface{}
+	Operator      string
+	RightOperand  interface{}
+	RightOperands []interface{}
+	Inverse       bool // if not operator presents
+
 }
 
 //BaseStatement represents a base query and dml statement
 type BaseStatement struct {
-	SQL      string
-	Table    string
-	Columns  []*SQLColumn
-	Criteria []*SQLCriterion
+	*SQLCriteria
+	SQL     string
+	Table   string
+	Columns []*SQLColumn
 }
 
 //ColumnNames returns a column names.
@@ -67,28 +101,9 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 	return source, nil
 }
 
-//CriteriaValues returns criteria values  extracted from binding parameters, starting from parametersOffset,
-func (bs BaseStatement) CriteriaValues(parameters toolbox.Iterator) ([]interface{}, error) {
-	var values = make([]interface{}, 0)
-	for _, criterion := range bs.Criteria {
-		var criterionValues = criterion.RightOperands
-		if len(criterionValues) == 0 {
-			criterionValues = []interface{}{criterion.RightOperand}
-		}
-		for i := range criterionValues {
-			value, err := bindValueIfNeeded(criterionValues[i], parameters)
-			if err != nil {
-				return nil, err
-			}
-			values = append(values, value)
-		}
-	}
-	return values, nil
-}
-
 //QueryStatement represents SQL query statement.
 type QueryStatement struct {
-	BaseStatement
+	*BaseStatement
 	AllField    bool
 	UnionTables []string
 	GroupBy     []*SQLColumn
@@ -96,7 +111,7 @@ type QueryStatement struct {
 
 //DmlStatement represents dml statement.
 type DmlStatement struct {
-	BaseStatement
+	*BaseStatement
 	Type   string
 	Values []interface{}
 }
@@ -319,8 +334,7 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 	return value, values, nil
 }
 
-func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *BaseStatement, token *toolbox.Token) (err error) {
-	statement.Criteria = make([]*SQLCriterion, 0)
+func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, sqlCriteria *SQLCriteria, token *toolbox.Token) (err error) {
 	for {
 		token, err = bp.expectWhitespaceFollowedBy(tokenizer, "value", sqlValue)
 		if err != nil {
@@ -330,27 +344,27 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 			return fmt.Errorf("Expected criteria at %v", tokenizer.Index)
 		}
 
-		index := len(statement.Criteria)
-		statement.Criteria = append(statement.Criteria, &SQLCriterion{LeftOperand: token.Matched})
+		index := len(sqlCriteria.Criteria)
+		sqlCriteria.Criteria = append(sqlCriteria.Criteria, &SQLCriterion{LeftOperand: token.Matched})
 
 		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", inOperatorKeyword, likeOperatorKeyword, betweenOperatorKeyword, notKeyword, isOperatorKeyword, operator, eof)
 		if err != nil {
 			return err
 		}
-		statement.Criteria[index].Operator = token.Matched
+		sqlCriteria.Criteria[index].Operator = token.Matched
 		switch token.Token {
 		case notKeyword:
-			statement.Criteria[index].Inverse = true
+			sqlCriteria.Criteria[index].Inverse = true
 			token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", inOperatorKeyword, likeOperatorKeyword)
 			if err != nil {
 				return err
 			}
-			statement.Criteria[index].Operator = token.Matched
+			sqlCriteria.Criteria[index].Operator = token.Matched
 			fallthrough
 		case inOperatorKeyword:
 			var value, values, err = bp.readInValues(tokenizer)
-			statement.Criteria[index].RightOperand = value
-			statement.Criteria[index].RightOperands = values
+			sqlCriteria.Criteria[index].RightOperand = value
+			sqlCriteria.Criteria[index].RightOperands = values
 			if err != nil {
 				return err
 			}
@@ -359,19 +373,19 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 			if err != nil {
 				return err
 			}
-			statement.Criteria[index].RightOperand = token.Matched
+			sqlCriteria.Criteria[index].RightOperand = token.Matched
 		case isOperatorKeyword:
 			token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", notKeyword, nullKeyword)
 			if err != nil {
 				return err
 			}
 			if token.Token == notKeyword {
-				statement.Criteria[index].Inverse = true
+				sqlCriteria.Criteria[index].Inverse = true
 				token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "operator", nullKeyword)
 				if err != nil {
 					return err
 				}
-				statement.Criteria[index].RightOperand = token.Matched
+				sqlCriteria.Criteria[index].RightOperand = token.Matched
 			}
 		case betweenOperatorKeyword:
 			token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "value", sqlValue)
@@ -388,7 +402,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 				return err
 			}
 			toValue := token.Matched
-			statement.Criteria[index].RightOperands = []interface{}{fromValue, toValue}
+			sqlCriteria.Criteria[index].RightOperands = []interface{}{fromValue, toValue}
 		}
 		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "or | and | eof", eof, logicalOperator, groupKeyword)
 		if err != nil {
@@ -401,7 +415,14 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, statement *Base
 			tokenizer.Index -= len(token.Matched)
 			break
 		}
-		statement.Criteria[index].LogicalOperator = token.Matched
+		if len(sqlCriteria.Criteria) == 1 {
+			sqlCriteria.LogicalOperator = token.Matched
+		} else if token.Matched == sqlCriteria.LogicalOperator {
+			continue
+		} else {
+			return fmt.Errorf("various logical operator not supported yet")
+		}
+
 	}
 	return nil
 }
@@ -500,7 +521,12 @@ outer:
 //Parse parses SQL query to build QueryStatement
 func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	tokenizer := toolbox.NewTokenizer(query, illegal, eof, sqlMatchers)
-	baseStatement := BaseStatement{SQL: query}
+	baseStatement := &BaseStatement{
+		SQL: query,
+		SQLCriteria: &SQLCriteria{
+			Criteria: make([]*SQLCriterion, 0),
+		},
+	}
 	result := &QueryStatement{BaseStatement: baseStatement}
 	var token *toolbox.Token
 
@@ -544,7 +570,7 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	}
 
 	if token.Token == whereKeyword {
-		err = qp.readCriteria(tokenizer, &result.BaseStatement, token)
+		err = qp.readCriteria(tokenizer, result.BaseStatement.SQLCriteria, token)
 		if err != nil {
 			return nil, err
 		}
@@ -724,7 +750,7 @@ func (dp *DmlParser) parseUpdate(tokenizer *toolbox.Tokenizer, statement *DmlSta
 		return nil
 	}
 
-	err = dp.readCriteria(tokenizer, &statement.BaseStatement, token)
+	err = dp.readCriteria(tokenizer, statement.BaseStatement.SQLCriteria, token)
 	if err != nil {
 		return err
 	}
@@ -750,7 +776,7 @@ func (dp *DmlParser) parseDelete(tokenizer *toolbox.Tokenizer, statement *DmlSta
 		return nil
 	}
 
-	err = dp.readCriteria(tokenizer, &statement.BaseStatement, token)
+	err = dp.readCriteria(tokenizer, statement.BaseStatement.SQLCriteria, token)
 	if err != nil {
 		return err
 	}
@@ -759,8 +785,12 @@ func (dp *DmlParser) parseDelete(tokenizer *toolbox.Tokenizer, statement *DmlSta
 
 //Parse parses input to create DmlStatement.
 func (dp *DmlParser) Parse(input string) (*DmlStatement, error) {
-	baseStatement := BaseStatement{SQL: input}
-	result := &DmlStatement{BaseStatement: baseStatement}
+	baseStatement := BaseStatement{
+		SQL: input,
+		SQLCriteria: &SQLCriteria{
+			Criteria: make([]*SQLCriterion, 0),
+		}}
+	result := &DmlStatement{BaseStatement: &baseStatement}
 	tokenizer := toolbox.NewTokenizer(input, illegal, eof, sqlMatchers)
 	token, err := dp.expectOptionalWhitespaceFollowedBy(tokenizer, "INSERT INTO | UPDATE | DELETE", insertKeyword, updateKeyword, deleteKeyword)
 	if err != nil {

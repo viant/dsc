@@ -250,7 +250,6 @@ func (am *AbstractManager) PersistAllOnConnection(connection Connection, dataPoi
 	if err != nil {
 		return 0, 0, err
 	}
-
 	var isStructPointer = structType.Kind() == reflect.Ptr
 	var insertableMapping map[int]int
 	if descriptor.Autoincrement {
@@ -375,11 +374,9 @@ func (am *AbstractManager) PersistData(connection Connection, data []interface{}
 func (am *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []*ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {
 	var rows = make([][]interface{}, 0)
 	for _, sqlWihtArguments := range sqlsWihtArguments {
-
 		if len(sqlWihtArguments.Values) == 0 {
 			break
 		}
-
 		err := am.Manager.ReadAllOnConnection(connection, &rows, sqlWihtArguments.SQL, sqlWihtArguments.Values, mapper)
 		if err != nil {
 			return nil, err
@@ -410,7 +407,7 @@ func (am *AbstractManager) fetchExistingData(connection Connection, table string
 //ClassifyDataAsInsertableOrUpdatable classifies passed in data as insertable or updatable.
 func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connection, dataPointer interface{}, table string, provider DmlProvider) ([]interface{}, []interface{}, error) {
 	if provider == nil {
-		return nil, nil, errors.New("Provider was nil")
+		return nil, nil, errors.New("provider was nil")
 	}
 
 	var rowsByKey = make(map[string]interface{}, 0)
@@ -433,6 +430,7 @@ func (am *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connec
 
 	//process existing rows and add mapped entires as updatables
 	for _, row := range rows {
+
 		key := toolbox.JoinAsString(row, "")
 		if instance, ok := rowsByKey[key]; ok {
 			updatables = append(updatables, instance)

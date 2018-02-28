@@ -194,7 +194,7 @@ func (m *FileManager) modifyRecords(tableURL string, statement *DmlStatement, pa
 	var err error
 	var predicate toolbox.Predicate
 	if len(statement.Criteria) > 0 {
-		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
+		predicate, err = NewSQLCriteriaPredicate(parameters, statement.SQLCriteria)
 		if err != nil {
 			return 0, fmt.Errorf("failed to read data from %v due to %v", statement.SQL, err)
 		}
@@ -429,7 +429,7 @@ func (m *FileManager) ReadAllOnWithHandlerOnConnection(connection Connection, qu
 	var predicate toolbox.Predicate
 	if len(statement.Criteria) > 0 {
 		parameters := toolbox.NewSliceIterator(sqlParameters)
-		predicate, err = NewSQLCriteriaPredicate(parameters, statement.Criteria...)
+		predicate, err = NewSQLCriteriaPredicate(parameters, statement.SQLCriteria)
 		if err != nil {
 			return fmt.Errorf("failed to read data from %v due to %v", query, err)
 		}

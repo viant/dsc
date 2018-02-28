@@ -122,14 +122,14 @@ func TestQueryParser(t *testing.T) {
 			assert.Equal(t, "column1", query.Criteria[0].LeftOperand)
 			assert.Equal(t, "=", query.Criteria[0].Operator)
 			assert.Equal(t, "2", query.Criteria[0].RightOperand)
-			assert.Equal(t, "AND", query.Criteria[0].LogicalOperator)
+			assert.Equal(t, "AND", query.LogicalOperator)
 
 		}
 		{
 			assert.Equal(t, "column2", query.Criteria[1].LeftOperand)
 			assert.Equal(t, "!=", query.Criteria[1].Operator)
 			assert.Equal(t, "?", query.Criteria[1].RightOperand)
-			assert.Equal(t, "", query.Criteria[1].LogicalOperator)
+			assert.Equal(t, "AND", query.LogicalOperator)
 
 		}
 

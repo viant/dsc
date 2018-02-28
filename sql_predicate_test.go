@@ -64,8 +64,13 @@ func TestNewCriteriaPredicate(t *testing.T) {
 	parameters := []interface{}{"abc%", 123}
 	iterator := toolbox.NewSliceIterator(parameters)
 	predicate, err := dsc.NewSQLCriteriaPredicate(iterator,
-		&dsc.SQLCriterion{LeftOperand: "column1", Operator: "Like", RightOperand: "?", LogicalOperator: "or"},
-		&dsc.SQLCriterion{LeftOperand: "column2", Operator: "=", RightOperand: "?"},
+		&dsc.SQLCriteria{
+			LogicalOperator: "or",
+			Criteria: []*dsc.SQLCriterion{
+				{LeftOperand: "column1", Operator: "Like", RightOperand: "?"},
+				{LeftOperand: "column2", Operator: "=", RightOperand: "?"},
+			},
+		},
 	)
 	assert.Nil(t, err)
 	{

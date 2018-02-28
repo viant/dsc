@@ -29,7 +29,6 @@ func (s *FileScanner) Scan(destinations ...interface{}) (err error) {
 			return nil
 		}
 	}
-
 	var columns, _ = s.Columns()
 	for i, dest := range destinations {
 		if value, found := s.Values[columns[i]]; found {

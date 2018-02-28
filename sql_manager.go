@@ -6,10 +6,6 @@ import (
 	"reflect"
 )
 
-var Logf = func(format string, args ...interface{}) {
-
-}
-
 func asSQLDb(wrapped interface{}) (*sql.DB, error) {
 	if result, ok := wrapped.(*sql.DB); ok {
 		return result, nil
