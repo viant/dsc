@@ -38,7 +38,6 @@ func (s *SQLScanner) Scan(destinations ...interface{}) error {
 	return nil
 }
 
-
 func NewSQLScanner(query *QueryStatement, config *Config, columns []string) *SQLScanner {
 	converter := *toolbox.NewColumnConverter(config.GetDateLayout())
 	if len(columns) == 0 {
@@ -50,4 +49,3 @@ func NewSQLScanner(query *QueryStatement, config *Config, columns []string) *SQL
 		converter: converter,
 	}
 }
-

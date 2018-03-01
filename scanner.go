@@ -1,5 +1,7 @@
 package dsc
 
+import "github.com/viant/toolbox"
+
 type scanner struct {
 	scanner Scanner
 }
@@ -9,27 +11,15 @@ func (s *scanner) Columns() ([]string, error) {
 }
 
 func (s *scanner) Scan(destinations ...interface{}) error {
-
 	if len(destinations) == 1 {
-
-		if aMap, ok := destinations[0].(map[string]interface{}); ok {
+		if toolbox.IsMap(destinations[0]) {
+			aMap := toolbox.AsMap(destinations[0])
 			values, columns, err := ScanRow(s)
 			if err != nil {
 				return err
 			}
 			for i, column := range columns {
 				aMap[column] = values[i]
-			}
-			return nil
-
-		}
-		if aMap, ok := destinations[0].(*map[string]interface{}); ok {
-			values, columns, err := ScanRow(s)
-			if err != nil {
-				return err
-			}
-			for i, column := range columns {
-				(*aMap)[column] = values[i]
 			}
 			return nil
 		}
