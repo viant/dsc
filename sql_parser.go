@@ -57,8 +57,9 @@ type SQLCriterion struct {
 	RightOperand  interface{}
 	RightOperands []interface{}
 	Inverse       bool // if not operator presents
-
 }
+
+
 
 //BaseStatement represents a base query and dml statement
 type BaseStatement struct {
@@ -67,6 +68,8 @@ type BaseStatement struct {
 	Table   string
 	Columns []*SQLColumn
 }
+
+
 
 //ColumnNames returns a column names.
 func (bs BaseStatement) ColumnNames() []string {
@@ -81,7 +84,7 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 	textOperand := toolbox.AsString(source)
 	if textOperand == "?" {
 		if !parameters.HasNext() {
-			return nil, errors.New("Unable to bind value - not enough parameters")
+			return nil, errors.New("unable to bind value - not enough parameters")
 		}
 		var values = make([]interface{}, 1)
 		err := parameters.Next(&values[0])
