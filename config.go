@@ -103,6 +103,9 @@ func (c *Config) Init() error {
 		if err != nil {
 			return err
 		}
+		if len(c.Parameters) == 0 {
+			c.Parameters = make(map[string]interface{})
+		}
 		c.username = config.Username
 		c.SecureDescriptor = c.Descriptor
 		c.Parameters["username"] = config.Username
