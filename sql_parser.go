@@ -59,8 +59,6 @@ type SQLCriterion struct {
 	Inverse       bool // if not operator presents
 }
 
-
-
 //BaseStatement represents a base query and dml statement
 type BaseStatement struct {
 	*SQLCriteria
@@ -68,8 +66,6 @@ type BaseStatement struct {
 	Table   string
 	Columns []*SQLColumn
 }
-
-
 
 //ColumnNames returns a column names.
 func (bs BaseStatement) ColumnNames() []string {
