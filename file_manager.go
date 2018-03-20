@@ -38,7 +38,7 @@ type FileManager struct {
 func (m *FileManager) Init() error {
 	m.baseURL = url.NewResource(m.Config().Get("url"))
 	var err error
-	m.service, err = storage.NewServiceForURL(m.baseURL.URL, m.config.Credential)
+	m.service, err = storage.NewServiceForURL(m.baseURL.URL, m.config.Credentials)
 	extension := m.Config().Get("ext")
 	m.useGzipCompressions = extension == "gzip"
 	return err

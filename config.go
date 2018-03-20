@@ -2,10 +2,10 @@ package dsc
 
 import (
 	"github.com/viant/toolbox"
-	"github.com/viant/toolbox/cred"
 	"github.com/viant/toolbox/url"
 	"strings"
 	"time"
+	"github.com/viant/toolbox/secret"
 )
 
 //Config represent datastore config.
@@ -16,7 +16,7 @@ type Config struct {
 	Descriptor       string
 	SecureDescriptor string
 	Parameters       map[string]interface{}
-	Credential       string
+	Credentials      string
 	username         string
 }
 
@@ -98,8 +98,9 @@ func (c *Config) Has(name string) bool {
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
-	if c.Credential != "" {
-		config, err := cred.NewConfig(c.Credential)
+	if c.Credentials != "" {
+		secrets := secret.New("", false)
+		config, err := secrets.GetCredentials(c.Credentials)
 		if err != nil {
 			return err
 		}
@@ -138,10 +139,10 @@ func NewConfig(driverName string, descriptor string, encodedParameters string) *
 //NewConfigWithParameters creates a new config with parameters
 func NewConfigWithParameters(driverName string, descriptor string, credential string, parameters map[string]interface{}) (*Config, error) {
 	result := &Config{
-		DriverName: driverName,
-		Descriptor: descriptor,
-		Credential: credential,
-		Parameters: parameters,
+		DriverName:  driverName,
+		Descriptor:  descriptor,
+		Credentials: credential,
+		Parameters:  parameters,
 	}
 	err := result.Init()
 	return result, err
@@ -151,7 +152,7 @@ func NewConfigWithParameters(driverName string, descriptor string, credential st
 func NewConfigFromURL(URL string) (*Config, error) {
 	result := &Config{}
 	var resource = url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	if err == nil {
 		err = result.Init()
 	}
