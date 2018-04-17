@@ -545,7 +545,7 @@ func (am *AbstractManager) DeleteSingle(dataPointer interface{}, table string, k
 
 func convertToTypesSlice(dataPointer interface{}) interface{} {
 	toolbox.AssertPointerKind(dataPointer, reflect.Struct, "slicePointer")
-	sliceValue := reflect.ValueOf(dataPointer).Elem()
+	sliceValue := reflect.ValueOf(toolbox.DereferenceValue(dataPointer))
 	sliceType := reflect.SliceOf(sliceValue.Type())
 	slicePointer := reflect.New(sliceType)
 	slice := slicePointer.Elem()
