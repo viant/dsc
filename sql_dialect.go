@@ -31,7 +31,7 @@ const pgTableListSQL = "SELECT table_name AS name FROM  information_schema.table
 const pgPrimaryKeySQL = `SELECT c.column_name AS name FROM information_schema.key_column_usage u
 JOIN information_schema.columns c ON u.column_name = c.column_name AND u.table_name = c.table_name AND u.constraint_catalog = c.table_catalog  
 JOIN information_schema.table_constraints tc ON tc.constraint_name = u.constraint_name AND tc.table_name = c.table_name AND tc.constraint_catalog = c.table_catalog  
-WHERE u.table_name = 'users' 
+WHERE u.table_name = c.table_name 
 	AND tc.constraint_type = 'PRIMARY KEY'
 	AND c.table_name = '%v'    
 	AND c.table_catalog = '%v'
@@ -41,7 +41,7 @@ ORDER BY u.ordinal_position
 const pgAutoincrementSQL = `SELECT LIKE(column_default, 'nextval(%v') AS is_autoincrement FROM information_schema.key_column_usage u
 JOIN information_schema.columns c ON u.column_name = c.column_name AND u.table_name = c.table_name AND u.constraint_catalog = c.table_catalog  
 JOIN information_schema.table_constraints tc ON tc.constraint_name = u.constraint_name AND tc.table_name = c.table_name AND tc.constraint_catalog = c.table_catalog  
-WHERE u.table_name = 'users' 
+WHERE u.table_name =  c.table_name
 	AND tc.constraint_type = 'PRIMARY KEY'
 	AND c.table_name = '%v'    
 	AND c.table_catalog = '%v'
