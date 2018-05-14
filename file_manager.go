@@ -364,18 +364,23 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 			continue
 		}
 
+
 		decoder := m.decoderFactory.Create(strings.NewReader(line))
 		var err error
 		record := recordProvider()
 		err = decoder.Decode(record)
+
 		if err != nil {
 			return fmt.Errorf("failed to decode record from %v due to %v, line: %v", table, err, line)
 		}
 		recordMap := m.asFileRecordMap(record)
 		matched := true
+
+
 		if predicate != nil {
 			matched = predicate.Apply(recordMap)
 		}
+
 		toContinue, err := recordHandler(recordMap, matched)
 		if err != nil {
 			return fmt.Errorf("failed to fetch records due to %v", err)

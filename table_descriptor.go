@@ -92,7 +92,7 @@ func NewTableDescriptorRegistry() TableDescriptorRegistry {
 
 //HasSchema check if table desciptor has defined schema.
 func (d *TableDescriptor) HasSchema() bool {
-	return len(d.SchemaUrl) > 0 || d.Schema != nil
+	return len(d.SchemaURL) > 0 || d.Schema != nil
 }
 
 //NewTableDescriptor creates a new table descriptor for passed in instance, it can use the following tags:"column", "dateLayout","dateFormat", "autoincrement", "primaryKey", "sequence", "transient"

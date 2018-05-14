@@ -10,6 +10,7 @@ import (
 
 //Config represent datastore config.
 type Config struct {
+	URL string
 	DriverName       string
 	PoolSize         int
 	MaxPoolSize      int
@@ -98,6 +99,12 @@ func (c *Config) Has(name string) bool {
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
+	if c.URL != "" && c.DriverName == "" {
+		resource := url.NewResource(c.URL)
+		if err := resource.Decode(c);err != nil {
+			return err
+		}
+	}
 	if c.Credentials != "" {
 		secrets := secret.New("", false)
 		config, err := secrets.GetCredentials(c.Credentials)

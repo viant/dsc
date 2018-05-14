@@ -137,7 +137,7 @@ type DatastoreDialect interface {
 	//GetKeyName returns a name of column name that is a key, or coma separated list if complex key
 	GetKeyName(manager Manager, datastore, table string) string
 
-	//Returns columns name
+	//GetColumns returns column names
 	GetColumns(manager Manager, datastore, table string) []string
 
 	//IsAutoincrement returns true if autoicrement
@@ -245,7 +245,7 @@ type TableDescriptor struct {
 	Columns       []string
 	OrderColumns  []string
 	Schema        []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
-	SchemaUrl     string                   //url with JSON to the TableDescriptor.Schema.
+	SchemaURL     string                   //url with JSON to the TableDescriptor.Schema.
 	FromQuery     string                   //If table is query base then specify FromQuery
 }
 
