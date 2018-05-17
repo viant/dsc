@@ -26,13 +26,19 @@ func NewMetaRecordMapped(targetType interface{}, usePointer bool) RecordMapper {
 		converter:        *toolbox.NewColumnConverter(""),
 		structType:       structType,
 		usePointer:       usePointer,
-		columnToFieldMap: toolbox.NewFieldSettingByKey(targetType, "column")}
+		columnToFieldMap: toolbox.NewFieldSettingByKey(targetType, "TableColumn")}
+}
+
+func normalizeColumnKey(column string) string {
+	var result = strings.ToLower(column)
+	result  = strings.Replace(result, "_", "", len(result))
+	return result
 }
 
 func (rm *metaRecordMapper) getValueMappingCount(columns []string) int {
 	result := 0
 	for _, key := range columns {
-		if mapping, ok := rm.columnToFieldMap[strings.ToLower(key)]; ok {
+		if mapping, ok := rm.columnToFieldMap[normalizeColumnKey(key)]; ok {
 			if _, found := mapping["valueMap"]; found {
 				result++
 			}
@@ -47,7 +53,7 @@ func (rm *metaRecordMapper) allocateValueMapByKey(columns []string) map[string]i
 	index := 0
 	var result = make(map[string]interface{})
 	for _, key := range columns {
-		if mapping, ok := rm.columnToFieldMap[strings.ToLower(key)]; ok {
+		if mapping, ok := rm.columnToFieldMap[normalizeColumnKey(key)]; ok {
 			if _, found := mapping["valueMap"]; found {
 				result[key] = &valuesPointers[index]
 				index++
@@ -60,7 +66,7 @@ func (rm *metaRecordMapper) allocateValueMapByKey(columns []string) map[string]i
 func (rm *metaRecordMapper) applyFieldMapValuesIfNeeded(fieldsValueMap map[string]interface{}, structPointer reflect.Value) error {
 	for key, rawValue := range fieldsValueMap {
 
-		valueMapping := rm.columnToFieldMap[strings.ToLower(key)]
+		valueMapping := rm.columnToFieldMap[normalizeColumnKey(key)]
 		fieldName := valueMapping["fieldName"]
 		field := structPointer.Elem().FieldByName(fieldName)
 		unwrappedValue := reflect.ValueOf(rawValue).Elem()
@@ -109,8 +115,8 @@ func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err e
 		fieldsValueMap = rm.allocateValueMapByKey(columns)
 	}
 	for i, key := range columns {
-
-		if fieldMapping, ok := rm.columnToFieldMap[strings.ToLower(key)]; ok {
+		lowerKey := normalizeColumnKey(key)
+		if fieldMapping, ok := rm.columnToFieldMap[lowerKey]; ok {
 			fieldName := fieldMapping["fieldName"]
 			field := resultStruct.FieldByName(fieldName)
 
@@ -118,11 +124,10 @@ func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err e
 				fieldValuePointers[i] = fieldsValueMap[key]
 				continue
 			}
-
 			fieldValuePointers[i] = field.Addr().Interface()
 
 		} else {
-			return nil, fmt.Errorf("unable to map column %v to the result", key)
+			return nil, fmt.Errorf("unable to map column %v to %v, avaialble: %v", lowerKey, rm.columnToFieldMap[lowerKey], rm.columnToFieldMap)
 		}
 	}
 	err = scanner.Scan(fieldValuePointers...)
