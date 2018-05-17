@@ -1,6 +1,8 @@
 package dsc
 
-import "errors"
+import (
+	"errors"
+)
 
 var errUnsupportedOperation = errors.New("unsupported operation")
 
@@ -22,13 +24,16 @@ func (d DefaultDialect) CreateTable(manager Manager, datastore string, table str
 	return nil
 }
 
+
+
 func (d DefaultDialect) CanCreateDatastore(manager Manager) bool {
 	return false
 }
 
-func (d DefaultDialect) GetColumns(manager Manager, datastore, table string) []string {
-	return []string{}
+func (d DefaultDialect) GetColumns(manager Manager, datastore, table string) ([]Column, error) {
+	return []Column{}, nil
 }
+
 
 func (d DefaultDialect) CreateDatastore(manager Manager, datastore string) error {
 	return errUnsupportedOperation

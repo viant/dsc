@@ -3,12 +3,12 @@ package dsc
 import (
 	"database/sql"
 	"time"
+	"reflect"
 )
 
 //Scanner represents a datastore data scanner. This abstraction provides the ability to convert and assign datastore record of data to provided destination
 type Scanner interface {
-
-	//Returns all column specified in select statement.
+	//Returns all columns specified in select statement.
 	Columns() ([]string, error)
 
 	//Scans datastore record data to convert and assign it to provided destinations, a destination needs to be pointer.
@@ -17,7 +17,6 @@ type Scanner interface {
 
 //RecordMapper represents a datastore record mapper, it is responsible for mapping data record into application abstraction.
 type RecordMapper interface {
-
 	//Maps data record by passing to the scanner references to the application abstraction
 	Map(scanner Scanner) (interface{}, error)
 }
@@ -113,6 +112,7 @@ type Manager interface {
 
 //DatastoreDialect represents datastore dialects.
 type DatastoreDialect interface {
+
 	GetDatastores(manager Manager) ([]string, error)
 
 	GetTables(manager Manager, datastore string) ([]string, error)
@@ -134,11 +134,12 @@ type DatastoreDialect interface {
 	//GetSequence returns a sequence number
 	GetSequence(manager Manager, name string) (int64, error)
 
-	//GetKeyName returns a name of column name that is a key, or coma separated list if complex key
+	//GetKeyName returns a name of TableColumn name that is a key, or coma separated list if complex key
 	GetKeyName(manager Manager, datastore, table string) string
 
-	//GetColumns returns column names
-	GetColumns(manager Manager, datastore, table string) []string
+
+	//GetColumns returns TableColumn info
+	GetColumns(manager Manager, datastore, table string) ([]Column, error)
 
 	//IsAutoincrement returns true if autoicrement
 	IsAutoincrement(manager Manager, datastore, table string) bool
@@ -160,7 +161,45 @@ type DatastoreDialect interface {
 
 	//Init initializes connection
 	Init(manager Manager, connection Connection) error
+
 }
+
+
+//Column represents TableColumn type interface (compabible with *sql.ColumnType
+type Column interface {
+	// Name returns the name or alias of the TableColumn.
+	Name() string
+
+	// Length returns the TableColumn type length for variable length TableColumn types such
+	// as text and binary field types. If the type length is unbounded the value will
+	// be math.MaxInt64 (any database limits will still apply).
+	// If the TableColumn type is not variable length, such as an int, or if not supported
+	// by the driver ok is false.
+	Length() (length int64, ok bool)
+
+	// DecimalSize returns the scale and precision of a decimal type.
+	// If not applicable or if not supported ok is false.
+	DecimalSize() (precision, scale int64, ok bool)
+
+	// ScanType returns a Go type suitable for scanning into using Rows.Scan.
+	// If a driver does not support this property ScanType will return
+	// the type of an empty interface.
+	ScanType() reflect.Type
+
+	// Nullable returns whether the TableColumn may be null.
+	// If a driver does not support this property ok will be false.
+	Nullable() (nullable, ok bool)
+
+	// DatabaseTypeName returns the database system name of the TableColumn type. If an empty
+	// string is returned the driver type name is not supported.
+	// Consult your driver documentation for a list of driver data types. Length specifiers
+	// are not included.
+	// Common type include "VARCHAR", "TEXT", "NVARCHAR", "DECIMAL", "BOOL", "INT", "BIGINT".
+	DatabaseTypeName() string
+}
+
+
+
 
 //TransactionManager represents a transaction manager.
 type TransactionManager interface {
@@ -208,7 +247,6 @@ type ConnectionProvider interface {
 
 //ManagerFactory represents a manager factory.
 type ManagerFactory interface {
-
 	//Creates manager, takes config pointer.
 	Create(config *Config) (Manager, error)
 
@@ -225,14 +263,12 @@ type ManagerRegistry interface {
 
 //KeySetter represents id/key mutator.
 type KeySetter interface {
-
 	//SetKey sets autoincrement/sql value to the application domain instance.
 	SetKey(instance interface{}, seq int64)
 }
 
 //KeyGetter represents id/key accessor.
 type KeyGetter interface {
-
 	//Key returns key/id for the the application domain instance.
 	Key(instance interface{}) []interface{}
 }
@@ -251,7 +287,6 @@ type TableDescriptor struct {
 
 //TableDescriptorRegistry represents a registry to store table descriptors by table name.
 type TableDescriptorRegistry interface {
-
 	//Has checks if descriptor is defined for the table.
 	Has(table string) bool
 
