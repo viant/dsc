@@ -15,7 +15,6 @@ import (
 	"path"
 	"reflect"
 	"strings"
-	"github.com/viant/t/data"
 )
 
 var defaultPermission os.FileMode = 0644
