@@ -364,7 +364,6 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 			continue
 		}
 
-
 		decoder := m.decoderFactory.Create(strings.NewReader(line))
 		var err error
 		record := recordProvider()
@@ -375,7 +374,6 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 		}
 		recordMap := m.asFileRecordMap(record)
 		matched := true
-
 
 		if predicate != nil {
 			matched = predicate.Apply(recordMap)

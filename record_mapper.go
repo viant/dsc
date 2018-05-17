@@ -31,7 +31,7 @@ func NewMetaRecordMapped(targetType interface{}, usePointer bool) RecordMapper {
 
 func normalizeColumnKey(column string) string {
 	var result = strings.ToLower(column)
-	result  = strings.Replace(result, "_", "", len(result))
+	result = strings.Replace(result, "_", "", len(result))
 	return result
 }
 

@@ -10,7 +10,7 @@ import (
 
 //Config represent datastore config.
 type Config struct {
-	URL string
+	URL              string
 	DriverName       string
 	PoolSize         int
 	MaxPoolSize      int
@@ -101,7 +101,7 @@ func (c *Config) Has(name string) bool {
 func (c *Config) Init() error {
 	if c.URL != "" && c.DriverName == "" {
 		resource := url.NewResource(c.URL)
-		if err := resource.Decode(c);err != nil {
+		if err := resource.Decode(c); err != nil {
 			return err
 		}
 	}

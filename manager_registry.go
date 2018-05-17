@@ -6,7 +6,7 @@ import (
 )
 
 type commonManagerRegistry struct {
-	mux *sync.RWMutex
+	mux      *sync.RWMutex
 	registry map[string](Manager)
 }
 
@@ -21,7 +21,7 @@ func (r commonManagerRegistry) Register(name string, manager Manager) {
 
 func (r commonManagerRegistry) Get(name string) Manager {
 	r.mux.RLock()
-	result, ok := r.registry[name];
+	result, ok := r.registry[name]
 	r.mux.RUnlock()
 	if ok {
 		return result
@@ -35,12 +35,11 @@ func (r commonManagerRegistry) Names() []string {
 	return toolbox.MapKeysToStringSlice(r.registry)
 }
 
-
 //NewManagerRegistry create a new ManagerRegistry
 func NewManagerRegistry() ManagerRegistry {
 	var result = &commonManagerRegistry{
 		registry: make(map[string](Manager)),
-		mux: &sync.RWMutex{},
+		mux:      &sync.RWMutex{},
 	}
 	return result
 }

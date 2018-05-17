@@ -1,11 +1,11 @@
 package dsc
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/viant/toolbox"
 	"path"
 	"strings"
-	"database/sql"
 )
 
 const ansiTableListSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
@@ -83,7 +83,6 @@ FROM information_schema.columns
 WHERE table_schema = ? AND table_name = ? 
 ORDER BY ordinal_position`
 
-
 type nameRecord struct {
 	Name string `TableColumn:"name"`
 }
@@ -115,7 +114,6 @@ func (d sqlDatastoreDialect) Init(manager Manager, connection Connection) error 
 	return nil
 }
 
-
 func hasColumnType(columns []*sql.ColumnType) bool {
 	if len(columns) == 0 {
 		return false
@@ -135,7 +133,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 	if err != nil {
 		return nil, err
 	}
-	rows, err := dbConnection.Query("SELECT * FROM " + datastore + "." +tableName + " WHERE 1 = 0")
+	rows, err := dbConnection.Query("SELECT * FROM " + datastore + "." + tableName + " WHERE 1 = 0")
 	if err != nil {
 		return nil, err
 	}
@@ -144,12 +142,12 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		return nil, err
 	}
 	var result = make([]Column, 0)
-	if ! hasColumnType(columns) {
+	if !hasColumnType(columns) {
 		var tableColumns = []*TableColumn{}
-		err := manager.ReadAll(&tableColumns, 	d.tableInfoSQL, []interface{}{datastore, tableName},nil)
+		err := manager.ReadAll(&tableColumns, d.tableInfoSQL, []interface{}{datastore, tableName}, nil)
 		if err == nil {
 			for _, column := range tableColumns {
-				if index := strings.Index(column.DataType, "(");index != -1 {
+				if index := strings.Index(column.DataType, "("); index != -1 {
 					column.DataType = string(column.DataType[:index])
 				}
 				column.DataType = strings.ToUpper(column.DataType)
@@ -159,12 +157,10 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		}
 	}
 	for _, column := range columns {
-		result = append(result,column)
+		result = append(result, column)
 	}
 	return result, nil
 }
-
-
 
 func (d sqlDatastoreDialect) EachTable(manager Manager, handler func(table string) error) error {
 	dbname, err := d.GetCurrentDatastore(manager)
@@ -206,7 +202,6 @@ func (d sqlDatastoreDialect) CreateTable(manager Manager, datastore string, tabl
 	_, err := manager.Execute("CREATE TABLE " + table + "(" + specification + ")")
 	return err
 }
-
 
 //GetTables return tables names for passed in datastore managed by manager.
 func (d sqlDatastoreDialect) GetTables(manager Manager, datastore string) ([]string, error) {
@@ -330,8 +325,6 @@ func (d sqlDatastoreDialect) GetSequence(manager Manager, name string) (int64, e
 	return 0, sequenceError
 }
 
-
-
 //DisableForeignKeyCheck disables fk check
 func (d sqlDatastoreDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
 	if d.disableForeignKeyCheck == "" {
@@ -369,7 +362,7 @@ type mySQLDialect struct {
 }
 
 func newMySQLDialect() mySQLDialect {
-	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, ansiTableInfo,0)}
+	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, ansiTableInfo, 0)}
 }
 
 type sqlLiteDialect struct {
@@ -438,7 +431,7 @@ func (d sqlLiteDialect) GetKeyName(manager Manager, datastore, table string) str
 }
 
 func newSQLLiteDialect() *sqlLiteDialect {
-	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "", ansiTableInfo,2)}
+	return &sqlLiteDialect{DatastoreDialect: NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "", ansiTableInfo, 2)}
 }
 
 type pgDialect struct {
@@ -446,7 +439,7 @@ type pgDialect struct {
 }
 
 func newPgDialect() *pgDialect {
-	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, ansiTableInfo,0)}
+	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, ansiTableInfo, 0)}
 }
 
 func (d pgDialect) NormalizePlaceholders(SQL string) string {
@@ -556,27 +549,22 @@ func (d oraDialect) Init(manager Manager, connection Connection) error {
 	return nil
 }
 
-
 func newOraDialect() *oraDialect {
-	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, "", oraSchemaSQL, oraSchemaListSQL, oraPrimaryKeySQL, "", "", "", ansiTableInfo,0)}
+	return &oraDialect{DatastoreDialect: NewSQLDatastoreDialect(oraTableSQL, "", oraSchemaSQL, oraSchemaListSQL, oraPrimaryKeySQL, "", "", "", ansiTableInfo, 0)}
 }
-
-
 
 type odbcDialect struct {
 	DatastoreDialect
 }
 
-
 func newOdbcDialect() *odbcDialect {
-	return &odbcDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo,0)}
+	return &odbcDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo, 0)}
 }
-
 
 type msSQLDialect struct {
 	DatastoreDialect
 }
 
 func newMsSQLDialect() *msSQLDialect {
-	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, "", "", "", "", ansiTableInfo,0)}
+	return &msSQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, "", "", "", "", ansiTableInfo, 0)}
 }

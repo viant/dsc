@@ -2,8 +2,8 @@ package dsc
 
 import (
 	"database/sql"
-	"time"
 	"reflect"
+	"time"
 )
 
 //Scanner represents a datastore data scanner. This abstraction provides the ability to convert and assign datastore record of data to provided destination
@@ -112,7 +112,6 @@ type Manager interface {
 
 //DatastoreDialect represents datastore dialects.
 type DatastoreDialect interface {
-
 	GetDatastores(manager Manager) ([]string, error)
 
 	GetTables(manager Manager, datastore string) ([]string, error)
@@ -137,7 +136,6 @@ type DatastoreDialect interface {
 	//GetKeyName returns a name of TableColumn name that is a key, or coma separated list if complex key
 	GetKeyName(manager Manager, datastore, table string) string
 
-
 	//GetColumns returns TableColumn info
 	GetColumns(manager Manager, datastore, table string) ([]Column, error)
 
@@ -161,9 +159,7 @@ type DatastoreDialect interface {
 
 	//Init initializes connection
 	Init(manager Manager, connection Connection) error
-
 }
-
 
 //Column represents TableColumn type interface (compabible with *sql.ColumnType
 type Column interface {
@@ -197,9 +193,6 @@ type Column interface {
 	// Common type include "VARCHAR", "TEXT", "NVARCHAR", "DECIMAL", "BOOL", "INT", "BIGINT".
 	DatabaseTypeName() string
 }
-
-
-
 
 //TransactionManager represents a transaction manager.
 type TransactionManager interface {
