@@ -15,6 +15,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"github.com/viant/toolbox/data"
 )
 
 var defaultPermission os.FileMode = 0644
@@ -392,21 +393,36 @@ func (m *FileManager) fetchRecords(table string, predicate toolbox.Predicate, re
 
 func (m *FileManager) readWithPredicate(connection Connection, statement *QueryStatement, sqlParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error), predicate toolbox.Predicate) error {
 	var columns = make([]string, 0)
+	var aliases = make([]string, 0)
 	if statement.Columns != nil && len(statement.Columns) > 0 {
 		for _, column := range statement.Columns {
+			var alias = column.Alias
+			if alias == "" {
+				alias = column.Name
+			}
+			aliases = append(aliases, alias)
 			columns = append(columns, column.Name)
 		}
 	}
 	fileScanner := NewFileScanner(m.config, columns)
 	err := m.fetchRecords(statement.Table, predicate, func(record map[string]interface{}, matched bool) (bool, error) {
+
 		if !matched {
 			return true, nil
 		}
+
+		fileScanner.columns  = aliases
 		if len(columns) == 0 {
 			columns = toolbox.MapKeysToStringSlice(record)
 			fileScanner.columns = columns
 		}
-		fileScanner.Values = record
+		var recordMap = data.Map(record)
+		var mappedRecord = map[string]interface{}{}
+		for i, column := range statement.Columns  {
+			value, _ := recordMap.GetValue(column.Name)
+			mappedRecord[aliases[i]] = value
+		}
+		fileScanner.Values = mappedRecord
 		toContinue, err := readingHandler(fileScanner)
 		if err != nil {
 			return false, fmt.Errorf("failed to read data on statement %v, due to\n\t%v", statement.SQL, err)
