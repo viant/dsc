@@ -47,17 +47,20 @@ func (b *DmlBuilder) GetParametrizedSQL(sqlType int, valueProvider func(column s
 		return &ParametrizedSQL{
 			SQL:    b.InsertSQL,
 			Values: b.readInsertValues(valueProvider),
+			Type:   SQLTypeInsert,
 		}
 
 	case SQLTypeUpdate:
 		return &ParametrizedSQL{
 			SQL:    b.UpdateSQL,
 			Values: b.readValues(*b.Columns, valueProvider),
+			Type:   SQLTypeUpdate,
 		}
 	case SQLTypeDelete:
 		return &ParametrizedSQL{
 			SQL:    b.DeleteSQL,
 			Values: b.readValues(b.TableDescriptor.PkColumns, valueProvider),
+			Type:   SQLTypeDelete,
 		}
 	}
 	panic(fmt.Sprintf("Unsupprted sqltype:%v", sqlType))

@@ -361,6 +361,10 @@ type mySQLDialect struct {
 	DatastoreDialect
 }
 
+func (d mySQLDialect) CanPersistBatch() bool {
+	return true
+}
+
 func newMySQLDialect() mySQLDialect {
 	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, ansiTableInfo, 0)}
 }
@@ -438,6 +442,10 @@ type pgDialect struct {
 	DatastoreDialect
 }
 
+func (d pgDialect) CanPersistBatch() bool {
+	return true
+}
+
 func newPgDialect() *pgDialect {
 	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, ansiTableInfo, 0)}
 }
@@ -490,6 +498,10 @@ func (d pgDialect) EnableForeignKeyCheck(manager Manager, connection Connection)
 
 type oraDialect struct {
 	DatastoreDialect
+}
+
+func (d oraDialect) CanPersistBatch() bool {
+	return true
 }
 
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore

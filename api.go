@@ -25,6 +25,7 @@ type RecordMapper interface {
 type ParametrizedSQL struct {
 	SQL    string        //Sql
 	Values []interface{} //binding parameter values
+	Type   int
 }
 
 //DmlProvider represents dml generator, which is responsible for providing parametrized sql, it takes operation type:
