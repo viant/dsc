@@ -21,7 +21,7 @@ func TestAggregationQueryParser(t *testing.T) {
 
 		assert.Equal(t, "col1", query.Columns[0].Name)
 
-		assert.Equal(t, "SUM (col2)", query.Columns[1].Expression)
+		assert.Equal(t, "SUM(col2)", query.Columns[1].Expression)
 
 		assert.Equal(t, "SUM", query.Columns[1].Function)
 		assert.Equal(t, "col2", query.Columns[1].FunctionArguments)
@@ -43,7 +43,7 @@ func TestAggregationQueryParser(t *testing.T) {
 		assert.Equal(t, 2, len(query.Columns))
 
 		assert.Equal(t, "col1", query.Columns[0].Name)
-		assert.Equal(t, "SUM (col2)", query.Columns[1].Expression)
+		assert.Equal(t, "SUM(col2)", query.Columns[1].Expression)
 		assert.Equal(t, "SUM", query.Columns[1].Function)
 		assert.Equal(t, "col2", query.Columns[1].FunctionArguments)
 		assert.Equal(t, "f1", query.Columns[1].Alias)

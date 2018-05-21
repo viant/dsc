@@ -467,7 +467,7 @@ outer:
 			return fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
 
 		case expression:
-			column.Expression = column.Name + " " + token.Matched
+			column.Expression = column.Name + "" + token.Matched
 			column.Function = column.Name
 			if len(token.Matched) > 2 {
 				column.FunctionArguments = string(token.Matched[1 : len(token.Matched)-1])
