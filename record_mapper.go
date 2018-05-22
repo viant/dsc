@@ -264,7 +264,6 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 
 	provider, ok := scanner.(ColumnValueProvider)
 	if ok {
-
 		if values, err := provider.ColumnValues(); err == nil {
 			if err = scanner.Scan(values...); err != nil {
 				return nil, nil, fmt.Errorf("failed to scan row due to %v", err)
@@ -273,7 +272,7 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 				if v == nil {
 					continue
 				}
-				rowValues[i] = reflect.ValueOf(v).Elem().Interface()
+				rowValues[i] = toolbox.DereferenceValue(v)
 			}
 			return rowValues, columns, nil
 		}
