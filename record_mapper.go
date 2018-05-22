@@ -22,7 +22,7 @@ func NewMetaRecordMapped(targetType interface{}, usePointer bool) RecordMapper {
 		var originalType = targetType.(reflect.Type).Elem()
 		structType = originalType
 	}
-	var result =  &metaRecordMapper{
+	var result = &metaRecordMapper{
 		converter:        *toolbox.NewColumnConverter(""),
 		structType:       structType,
 		usePointer:       usePointer,
@@ -40,10 +40,10 @@ func (rm *metaRecordMapper) getValueMappingCount(columns []string) int {
 	result := 0
 	for _, key := range columns {
 		mapping, ok := rm.columnToFieldMap[key]
-		if ! ok {
+		if !ok {
 			mapping, ok = rm.columnToFieldMap[normalizeColumnKey(key)]
 		}
-		if  ok {
+		if ok {
 			if _, found := mapping["valueMap"]; found {
 				result++
 			}
@@ -58,10 +58,10 @@ func (rm *metaRecordMapper) allocateValueMapByKey(columns []string) map[string]i
 	var result = make(map[string]interface{})
 	for _, key := range columns {
 		mapping, ok := rm.columnToFieldMap[key]
-		if ! ok {
+		if !ok {
 			mapping, ok = rm.columnToFieldMap[normalizeColumnKey(key)]
 		}
-		if  ok {
+		if ok {
 			if _, found := mapping["valueMap"]; found {
 				result[key] = &valuesPointers[index]
 				index++
@@ -74,7 +74,7 @@ func (rm *metaRecordMapper) allocateValueMapByKey(columns []string) map[string]i
 func (rm *metaRecordMapper) applyFieldMapValuesIfNeeded(fieldsValueMap map[string]interface{}, structPointer reflect.Value) error {
 	for key, rawValue := range fieldsValueMap {
 		valueMapping, ok := rm.columnToFieldMap[key]
-		if ! ok {
+		if !ok {
 			valueMapping, ok = rm.columnToFieldMap[normalizeColumnKey(key)]
 		}
 		fieldName := valueMapping["fieldName"]
@@ -127,10 +127,10 @@ func (rm *metaRecordMapper) scanData(scanner Scanner) (result interface{}, err e
 	for i, key := range columns {
 
 		fieldMapping, ok := rm.columnToFieldMap[key]
-		if ! ok {
+		if !ok {
 			fieldMapping, ok = rm.columnToFieldMap[normalizeColumnKey(key)]
 		}
-		if  ok {
+		if ok {
 			fieldName := fieldMapping["fieldName"]
 			field := resultStruct.FieldByName(fieldName)
 
@@ -258,12 +258,33 @@ func NewRecordMapperIfNeeded(mapper RecordMapper, targetType reflect.Type) Recor
 func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 	columns, _ := scanner.Columns()
 	count := len(columns)
-	var valuePointers = make([]interface{}, count)
+
+	var err error
 	var rowValues = make([]interface{}, count)
+
+	provider, ok := scanner.(ColumnValueProvider)
+	if ok {
+
+		if values, err := provider.ColumnValues(); err == nil {
+			if err = scanner.Scan(values...); err != nil {
+				return nil, nil, fmt.Errorf("failed to scan row due to %v", err)
+			}
+			for i, v := range values {
+				if v == nil {
+					continue
+				}
+				rowValues[i] = reflect.ValueOf(v).Elem().Interface()
+			}
+			return rowValues, columns, nil
+		}
+	}
+
+	var valuePointers = make([]interface{}, count)
 	for i := range rowValues {
 		valuePointers[i] = &rowValues[i]
 	}
-	err := scanner.Scan(valuePointers...)
+
+	err = scanner.Scan(valuePointers...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to scan row due to %v", err)
 	}

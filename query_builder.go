@@ -20,7 +20,7 @@ func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
 	table := qb.TableDescriptor.Table
 	if len(qb.TableDescriptor.FromQuery) > 0 {
-		table = "(" + qb.TableDescriptor.FromQuery + ")"
+		table = "(" + qb.TableDescriptor.FromQuery + ")" + qb.TableDescriptor.FromQueryAlias
 	}
 
 	return &ParametrizedSQL{

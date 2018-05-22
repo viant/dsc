@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/data"
 	"github.com/viant/toolbox/storage"
 	"github.com/viant/toolbox/url"
 	"io"
@@ -15,7 +16,6 @@ import (
 	"path"
 	"reflect"
 	"strings"
-	"github.com/viant/toolbox/data"
 )
 
 var defaultPermission os.FileMode = 0644
@@ -411,14 +411,14 @@ func (m *FileManager) readWithPredicate(connection Connection, statement *QueryS
 			return true, nil
 		}
 
-		fileScanner.columns  = aliases
+		fileScanner.columns = aliases
 		if len(columns) == 0 {
 			columns = toolbox.MapKeysToStringSlice(record)
 			fileScanner.columns = columns
 		}
 		var recordMap = data.Map(record)
 		var mappedRecord = map[string]interface{}{}
-		for i, column := range statement.Columns  {
+		for i, column := range statement.Columns {
 			value, _ := recordMap.GetValue(column.Name)
 			mappedRecord[aliases[i]] = value
 		}

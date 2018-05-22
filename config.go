@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+//BatchSizeKey represents a config batch size parameter
+const BatchSizeKey = "batchSize"
+
 //Config represent datastore config.
 type Config struct {
 	URL              string

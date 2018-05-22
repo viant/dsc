@@ -10,7 +10,7 @@ import (
 	"github.com/viant/toolbox"
 )
 
-var batchSize = 200
+var defaultBatchSize = 512
 
 //AbstractManager represent general abstraction for datastore implementation.
 // Note that ExecuteOnConnection,  ReadAllOnWithHandlerOnConnection may need to be implemented for particular datastore.
@@ -324,20 +324,47 @@ func (m *AbstractManager) PersistSingleOnConnection(connection Connection, dataP
 	return m.Manager.PersistAllOnConnection(connection, &slice, table, provider)
 }
 
+type batchControl struct {
+	sql         string
+	values      []interface{}
+	dataIndexes []int
+	firstSeq    int64
+	manager     Manager
+}
+
+func (c *batchControl) Flush(connection Connection, updateId func(index int, seq int64)) (int, error) {
+	if c.sql == "" {
+		return 0, nil
+	}
+	var dataIndexes = c.dataIndexes
+	c.dataIndexes = []int{}
+	result, err := c.manager.ExecuteOnConnection(connection, c.sql, c.values)
+	c.sql = ""
+	c.values = []interface{}{}
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	for _, i := range dataIndexes {
+		c.firstSeq++
+		updateId(i, c.firstSeq)
+	}
+	c.firstSeq = 0
+	return int(affected), nil
+}
+
 //PersistData persist data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
 func (m *AbstractManager) PersistData(connection Connection, data []interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
 	var processed = 0
 	dialect := GetDatastoreDialect(m.config.DriverName)
 	canUseBatch := dialect != nil && dialect.CanPersistBatch()
-
-	var batchControl = struct {
-		sql         string
-		values      []interface{}
-		firstSeq    int64
-		dataIndexes []int
-	}{
+	var batchControl = &batchControl{
 		values:      []interface{}{},
 		dataIndexes: []int{},
+		manager:     m.Manager,
 	}
 
 	var updateId = func(index int, seq int64) {
@@ -365,6 +392,7 @@ func (m *AbstractManager) PersistData(connection Connection, data []interface{},
 		}
 	}
 
+	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
 	for i, item := range data {
 		parametrizedSQL := sqlProvider(item)
 		if len(parametrizedSQL.Values) == 1 && parametrizedSQL.Type == SQLTypeUpdate {
@@ -373,6 +401,11 @@ func (m *AbstractManager) PersistData(connection Connection, data []interface{},
 		}
 
 		if parametrizedSQL.Type == SQLTypeInsert && canUseBatch && batchControl.firstSeq > 0 {
+
+			if len(batchControl.dataIndexes) > batchSize {
+				batchControl.Flush(connection, updateId)
+			}
+
 			batchControl.dataIndexes = append(batchControl.dataIndexes, i)
 			if len(batchControl.sql) == 0 {
 				batchControl.sql = parametrizedSQL.SQL
@@ -404,22 +437,9 @@ func (m *AbstractManager) PersistData(connection Connection, data []interface{},
 		updateId(i, seq)
 	}
 
-	if batchControl.sql != "" {
-		result, err := m.Manager.ExecuteOnConnection(connection, batchControl.sql, batchControl.values)
-		if err != nil {
-			return 0, err
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return 0, err
-		}
-		processed += int(affected)
-		for _, i := range batchControl.dataIndexes {
-			batchControl.firstSeq++
-			updateId(i, batchControl.firstSeq)
-		}
+	if batchControl != nil {
+		batchControl.Flush(connection, updateId)
 	}
-
 	return processed, nil
 }
 
@@ -444,7 +464,7 @@ func (m *AbstractManager) fetchExistingData(connection Connection, table string,
 	if len(pkValues) > 0 {
 		descriptor := TableDescriptor{Table: table, PkColumns: descriptor.PkColumns}
 		sqlBuilder := NewQueryBuilder(&descriptor, "")
-		sqlWithArguments := sqlBuilder.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, batchSize)
+		sqlWithArguments := sqlBuilder.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, defaultBatchSize)
 
 		var mapper = NewColumnarRecordMapper(false, reflect.TypeOf(rows))
 		batched, err := m.fetchDataInBatches(connection, sqlWithArguments, mapper)

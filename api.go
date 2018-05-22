@@ -15,6 +15,11 @@ type Scanner interface {
 	Scan(dest ...interface{}) error
 }
 
+//ColumnValueProvider provides column values
+type ColumnValueProvider interface {
+	ColumnValues() ([]interface{}, error)
+}
+
 //RecordMapper represents a datastore record mapper, it is responsible for mapping data record into application abstraction.
 type RecordMapper interface {
 	//Maps data record by passing to the scanner references to the application abstraction
@@ -269,14 +274,15 @@ type KeyGetter interface {
 
 //TableDescriptor represents a table details.
 type TableDescriptor struct {
-	Table         string
-	Autoincrement bool
-	PkColumns     []string
-	Columns       []string
-	OrderColumns  []string
-	Schema        []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
-	SchemaURL     string                   //url with JSON to the TableDescriptor.Schema.
-	FromQuery     string                   //If table is query base then specify FromQuery
+	Table          string
+	Autoincrement  bool
+	PkColumns      []string
+	Columns        []string
+	OrderColumns   []string
+	Schema         []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
+	SchemaURL      string                   //url with JSON to the TableDescriptor.Schema.
+	FromQuery      string                   //If table is query base then specify FromQuery
+	FromQueryAlias string
 }
 
 //TableDescriptorRegistry represents a registry to store table descriptors by table name.
