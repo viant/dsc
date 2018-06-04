@@ -569,6 +569,18 @@ type odbcDialect struct {
 	DatastoreDialect
 }
 
+func (d *odbcDialect) Init(manager Manager, connection Connection) error {
+	searchPath := manager.Config().Get("SEARCH_PATH")
+	if searchPath != "" {
+		if _, err := manager.Execute(fmt.Sprintf("SET SEARCH_PATH=%v" ,searchPath));err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
+
 func newOdbcDialect() *odbcDialect {
 	return &odbcDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo, 0)}
 }
