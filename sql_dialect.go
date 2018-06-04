@@ -572,7 +572,9 @@ type odbcDialect struct {
 func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
-		if _, err := manager.Execute(fmt.Sprintf("SET SEARCH_PATH=%v" ,searchPath));err != nil {
+
+		var SQL = fmt.Sprintf("SET SEARCH_PATH=%v" ,searchPath)
+		if _, err := manager.ExecuteOnConnection(connection, SQL, nil);err != nil {
 			return err
 		}
 	}
