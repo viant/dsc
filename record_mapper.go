@@ -274,15 +274,15 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 				}
 				valuePtr := reflect.ValueOf(v).Elem()
 				pointer := v
-				if valuePtr.Kind() ==  reflect.Ptr {
+				if valuePtr.Kind() == reflect.Ptr {
 					pointer = valuePtr.Elem().Interface()
 				}
 				if pointer == nil {
 					continue
 				}
 				value := pointer
-				valuePtr =  reflect.ValueOf(pointer)
-				if valuePtr.Kind() ==  reflect.Ptr {
+				valuePtr = reflect.ValueOf(pointer)
+				if valuePtr.Kind() == reflect.Ptr {
 					value = valuePtr.Elem().Interface()
 				}
 				rowValues[i] = value

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-
 )
 
 func asSQLDb(wrapped interface{}) (*sql.DB, error) {
