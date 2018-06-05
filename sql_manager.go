@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+
 )
 
 func asSQLDb(wrapped interface{}) (*sql.DB, error) {
@@ -86,7 +87,6 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	}
 
 	result, err := executable.Exec(sql, args...)
-
 	Logf("[%v]:%v %v", m.config.username, sql, args)
 	if err != nil {
 		return nil, fmt.Errorf(fmt.Sprintf("failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))
@@ -118,6 +118,7 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 	if queryError != nil {
 		return fmt.Errorf(fmt.Sprintf("failed to execute sql: %v with %v due to:%v\n\t", query, args, queryError.Error()))
 	}
+
 	defer rows.Close()
 	for rows.Next() {
 		scanner, _ := asScanner(rows)

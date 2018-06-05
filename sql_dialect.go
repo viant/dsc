@@ -6,6 +6,7 @@ import (
 	"github.com/viant/toolbox"
 	"path"
 	"strings"
+	"time"
 )
 
 const ansiTableListSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
@@ -569,13 +570,30 @@ type odbcDialect struct {
 	DatastoreDialect
 }
 
+
+
+
+
 func (d *odbcDialect) Init(manager Manager, connection Connection) error {
+
+
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
 
 		var SQL = fmt.Sprintf("SET SEARCH_PATH=%v" ,searchPath)
 		if _, err := manager.ExecuteOnConnection(connection, SQL, nil);err != nil {
 			return err
+		}
+	}
+	timezone := manager.Config().Get("TIMEZONE")
+	if timezone != "" {
+		var SQL = fmt.Sprintf("SET TIMEZONE TO '%v'" ,timezone)
+		if _, err := manager.ExecuteOnConnection(connection, SQL, nil);err != nil {
+			return err
+		}
+		//ODBC driver harcoding issue
+		if location, err := time.LoadLocation(timezone);err == nil {
+			time.Local = location
 		}
 	}
 	return nil
