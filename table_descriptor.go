@@ -65,8 +65,8 @@ func (r *commonTableDescriptorRegistry) Register(descriptor *TableDescriptor) er
 			return fmt.Errorf("pkColumns[%d] was empty %v %v", i, descriptor.Table, descriptor.Columns)
 		}
 	}
-	r.RLock()
-	defer r.RUnlock()
+	r.Lock()
+	defer r.Unlock()
 	r.registry[descriptor.Table] = descriptor
 	return nil
 }
