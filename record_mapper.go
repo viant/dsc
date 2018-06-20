@@ -272,20 +272,21 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 				if v == nil {
 					continue
 				}
-				valuePtr := reflect.ValueOf(v).Elem()
-				pointer := v
-				if valuePtr.Kind() == reflect.Ptr {
-					pointer = valuePtr.Elem().Interface()
+				for i:=0;i<2;i++ {
+					valuePtr := reflect.ValueOf(v)
+					if valuePtr.Kind() != reflect.Ptr {
+						break
+					}
+					v = valuePtr.Interface()
+					if v == nil {
+						break
+					}
+					v = valuePtr.Elem().Interface()
 				}
-				if pointer == nil {
+				if v == nil {
 					continue
 				}
-				value := pointer
-				valuePtr = reflect.ValueOf(pointer)
-				if valuePtr.Kind() == reflect.Ptr {
-					value = valuePtr.Elem().Interface()
-				}
-				rowValues[i] = value
+				rowValues[i] = v
 			}
 			return rowValues, columns, nil
 		}
