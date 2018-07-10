@@ -189,11 +189,8 @@ func (m *AbstractManager) ReadSingleOnConnection(connection Connection, resultPo
 
 //PersistAll persists all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
 //If driver allows this operation is executed in one transaction.
-func (m *AbstractManager) PersistAll(dataPoiner interface{}, table string, provider DmlProvider) (int, int, error) {
+func (m *AbstractManager) PersistAll(dataPointer interface{}, table string, provider DmlProvider) (int, int, error) {
 	connection, err := m.Manager.ConnectionProvider().Get()
-	if err != nil {
-		return 0, 0, err
-	}
 	if err != nil {
 		return 0, 0, err
 	}
@@ -203,7 +200,7 @@ func (m *AbstractManager) PersistAll(dataPoiner interface{}, table string, provi
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", m.config.Descriptor, err)
 	}
-	inserted, updated, err := m.Manager.PersistAllOnConnection(connection, dataPoiner, table, provider)
+	inserted, updated, err := m.Manager.PersistAllOnConnection(connection, dataPointer, table, provider)
 	if err == nil {
 		commitErr := connection.Commit()
 		if commitErr != nil {
@@ -357,7 +354,7 @@ func (c *batchControl) Flush(connection Connection, updateId func(index int, seq
 }
 
 //PersistData persist data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
-func (m *AbstractManager) PersistData(connection Connection, data []interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
+func (m *AbstractManager) PersistData(connection Connection, data interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
 	var processed = 0
 	dialect := GetDatastoreDialect(m.config.DriverName)
 	canUseBatch := dialect != nil && dialect.CanPersistBatch()
@@ -366,14 +363,14 @@ func (m *AbstractManager) PersistData(connection Connection, data []interface{},
 		dataIndexes: []int{},
 		manager:     m.Manager,
 	}
-
+	collection := toolbox.AsSlice(data)
 	var updateId = func(index int, seq int64) {
 		if seq == 0 {
 			return
 		}
 		var ptrType = false
-		dataType := reflect.TypeOf(data[index])
-		itemValue := reflect.ValueOf(data[index])
+		dataType := reflect.TypeOf(collection[index])
+		itemValue := reflect.ValueOf(collection[index])
 		if dataType.Kind() == reflect.Ptr {
 			dataType = dataType.Elem()
 			ptrType = true
@@ -386,14 +383,14 @@ func (m *AbstractManager) PersistData(connection Connection, data []interface{},
 		reflect.Indirect(structPointerValue).Set(itemValue)
 		keySetter.SetKey(structPointerValue.Interface(), seq)
 		if ptrType {
-			data[index] = structPointerValue.Interface()
+			collection[index] = structPointerValue.Interface()
 		} else {
-			data[index] = structPointerValue.Elem().Interface()
+			collection[index] = structPointerValue.Elem().Interface()
 		}
 	}
 
 	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
-	for i, item := range data {
+	for i, item := range collection {
 		parametrizedSQL := sqlProvider(item)
 		if len(parametrizedSQL.Values) == 1 && parametrizedSQL.Type == SQLTypeUpdate {
 			//nothing to udpate, one parameter is ID=? without values to update
@@ -527,6 +524,7 @@ func (m *AbstractManager) DeleteAll(dataPointer interface{}, table string, keyPr
 	if err != nil {
 		return 0, err
 	}
+	defer connection.Close()
 	err = connection.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start transaction on %v due to %v", m.config.Descriptor, err)
@@ -566,7 +564,7 @@ func (m *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoint
 		where := strings.Join(descriptor.PkColumns, ",")
 		if len(descriptor.PkColumns) > 1 {
 			values := strings.Repeat("?,", len(descriptor.PkColumns))
-			values = values[0 : len(values)-1]
+			values = values[0: len(values)-1]
 			where = where + " IN (" + values + ")"
 		} else {
 			where = where + " = ?"
@@ -596,6 +594,7 @@ func (m *AbstractManager) DeleteSingle(dataPointer interface{}, table string, ke
 	if err != nil {
 		return false, err
 	}
+	defer connection.Close()
 	err = connection.Begin()
 	if err != nil {
 		return false, fmt.Errorf("failed to start transaction on %v due to %v", m.config.Descriptor, err)
@@ -639,9 +638,13 @@ func (m *AbstractManager) DeleteSingleOnConnection(connection Connection, dataPo
 //ExpandSQL expands sql with passed in arguments
 func (m *AbstractManager) ExpandSQL(sql string, arguments []interface{}) string {
 	for _, arg := range arguments {
-		var stringArg = toolbox.AsString(arg)
-		if toolbox.IsString(arg) || toolbox.CanConvertToString(arg) {
-			stringArg = "'" + stringArg + "'"
+		stringArg := toolbox.AsString(arg)
+		if arg == nil {
+			stringArg = "NULL"
+		} else {
+			if toolbox.IsString(arg) || toolbox.CanConvertToString(arg) {
+				stringArg = "'" + stringArg + "'"
+			}
 		}
 		sql = strings.Replace(sql, "?", stringArg, 1)
 	}

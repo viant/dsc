@@ -95,7 +95,7 @@ type Manager interface {
 	PersistSingleOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error)
 
 	//connection persists all all row of data to passed in table, it uses key setter to optionally set back autoincrement value, and func to generate parametrized sql for the row.
-	PersistData(connection Connection, data []interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error)
+	PersistData(connection Connection, data interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error)
 
 	//DeleteAll deletes all record for passed in slice pointer from table, it uses key provider to take id/key for the record.
 	DeleteAll(slicePointer interface{}, table string, keyProvider KeyGetter) (deleted int, err error)
@@ -299,3 +299,5 @@ type TableDescriptorRegistry interface {
 	//Tables returns all registered tables.
 	Tables() []string
 }
+
+

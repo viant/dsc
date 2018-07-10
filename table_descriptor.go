@@ -32,12 +32,18 @@ func (r *commonTableDescriptorRegistry) getDescriptor(table string) *TableDescri
 		Table:         table,
 		Autoincrement: isAutoincrement,
 		PkColumns:     []string{},
+		Columns:[]string{},
 	}
 	if key != "" {
 		descriptor.PkColumns = strings.Split(key, ",")
 	}
+	columns, _ := dialect.GetColumns(r.manager, datastore, table)
+	for _, column := range columns {
+		descriptor.Columns  = append(descriptor.Columns, column.Name())
+	}
 	return descriptor
 }
+
 
 func (r *commonTableDescriptorRegistry) Get(table string) *TableDescriptor {
 	r.RLock()

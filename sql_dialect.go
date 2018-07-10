@@ -111,6 +111,7 @@ func (d sqlDatastoreDialect) CanDropDatastore(manager Manager) bool {
 	return true
 }
 
+
 func (d sqlDatastoreDialect) Init(manager Manager, connection Connection) error {
 	return nil
 }
@@ -265,7 +266,6 @@ func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 
 //GetCurrentDatastore returns name of current schema
 func (d sqlDatastoreDialect) GetCurrentDatastore(manager Manager) (string, error) {
-
 	var result = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&result, d.schemaSQL, nil, nil)
 	if err != nil || !success {
