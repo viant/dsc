@@ -118,6 +118,7 @@ type Manager interface {
 
 //DatastoreDialect represents datastore dialects.
 type DatastoreDialect interface {
+
 	GetDatastores(manager Manager) ([]string, error)
 
 	GetTables(manager Manager, datastore string) ([]string, error)
@@ -166,6 +167,8 @@ type DatastoreDialect interface {
 	//Init initializes connection
 	Init(manager Manager, connection Connection) error
 }
+
+
 
 //Column represents TableColumn type interface (compabible with *sql.ColumnType
 type Column interface {

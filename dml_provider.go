@@ -80,7 +80,7 @@ func (p *metaDmlProvider) Get(sqlType int, instance interface{}) *ParametrizedSQ
 	if reflectable.Kind() == reflect.Ptr {
 		reflectable = reflectable.Elem()
 	}
-	//toolbox.AssertKind(instance, reflect.Struct, "instance")
+	//toolbox.AssertKind(instance, reflect.Type, "instance")
 	return p.dmlBuilder.GetParametrizedSQL(sqlType, func(column string) interface{} {
 		return p.readValue(reflectable, column)
 	})
