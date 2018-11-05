@@ -82,6 +82,10 @@ func (d DefaultDialect) NormalizePlaceholders(SQL string) string {
 	return SQL
 }
 
+func (d DefaultDialect) ShowCreateTable(manager Manager, table string) (string, error) {
+	return "", errors.New("unsupported")
+}
+
 //EachTable iterates each datastore table
 func (d DefaultDialect) EachTable(manager Manager, handler func(table string) error) error {
 	dbname, err := d.GetCurrentDatastore(manager)

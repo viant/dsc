@@ -101,6 +101,39 @@ type sqlDatastoreDialect struct {
 	schemaResultsetIndex   int
 }
 
+//ShowCreateTable returns basic table DDL (this implementation does not check unique and fk constrains)
+func (d sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (string, error) {
+	datastore, err := d.GetCurrentDatastore(manager)
+	if err != nil {
+		return "", err
+	}
+	columns, err := d.GetColumns(manager, datastore, table)
+	if err != nil {
+		return "", fmt.Errorf("unable to get columns for %v.%v, %v", datastore, table, err)
+	}
+	pkcolumns := d.GetKeyName(manager, datastore, table)
+	if err != nil {
+		return "", fmt.Errorf("unable to get pk key for %v.%v, %v", datastore, table, err)
+	}
+	var indexPk = map[string]bool{}
+	for _, key := range strings.Split(pkcolumns, ",") {
+		indexPk[key] = true
+	}
+	var projection = make([]string, 0)
+	for _, column := range columns {
+		var dataType = column.DatabaseTypeName()
+		ddlColumn := fmt.Sprintf("%v %v", column.Name(), dataType)
+		if nullable, ok := column.Nullable(); ok && !nullable {
+			ddlColumn += " NOT NULL "
+		}
+		if indexPk[column.Name()] {
+			ddlColumn += " PRIMARY KEY "
+		}
+		projection = append(projection, ddlColumn)
+	}
+	return fmt.Sprintf("CREATE TABLE %v(\n\t%v);", table, strings.Join(projection, ",\n\t")), nil
+}
+
 //CanDropDatastore returns true if this dialect can create datastore
 func (d sqlDatastoreDialect) CanCreateDatastore(manager Manager) bool {
 	return true
@@ -110,7 +143,6 @@ func (d sqlDatastoreDialect) CanCreateDatastore(manager Manager) bool {
 func (d sqlDatastoreDialect) CanDropDatastore(manager Manager) bool {
 	return true
 }
-
 
 func (d sqlDatastoreDialect) Init(manager Manager, connection Connection) error {
 	return nil
@@ -135,9 +167,18 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 	if err != nil {
 		return nil, err
 	}
-	rows, err := dbConnection.Query("SELECT * FROM " + datastore + "." + tableName + " WHERE 1 = 0")
+	currentDb, err := d.GetCurrentDatastore(manager)
 	if err != nil {
 		return nil, err
+	}
+	var source = datastore + "." + tableName
+	if currentDb == datastore {
+		source = tableName
+	}
+	var query = "SELECT * FROM " + source + " WHERE 1 = 0"
+	rows, err := dbConnection.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v, %v", query, err)
 	}
 	columns, err := rows.ColumnTypes()
 	if err != nil {
@@ -229,19 +270,26 @@ func normalizeName(name string) string {
 	return file
 }
 
-//GetKeyName returns key name
+//GetKeyName returns key/PK columns
 func (d sqlDatastoreDialect) GetKeyName(manager Manager, datastore, table string) string {
 	if d.keySQL == "" {
 		return ""
 	}
 	SQL := fmt.Sprintf(d.keySQL, table, datastore)
 	var records = make([]map[string]interface{}, 0)
+
 	err := manager.ReadAll(&records, SQL, []interface{}{}, nil)
 	if err != nil {
 		return ""
 	}
 	var result = make([]string, 0)
 	for _, item := range records {
+		if pk, ok := item["pk"]; ok {
+			if toolbox.AsBoolean(pk) {
+				result = append(result, toolbox.AsString(item["name"]))
+			}
+			continue
+		}
 		result = append(result, toolbox.AsString(item["name"]))
 	}
 	return strings.Join(result, ",")
@@ -571,7 +619,6 @@ type odbcDialect struct {
 }
 
 func (d *odbcDialect) Init(manager Manager, connection Connection) error {
-
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
 

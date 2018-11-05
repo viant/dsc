@@ -6,13 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc/examples"
 	"github.com/viant/dsunit"
-	"fmt"
 	"github.com/viant/toolbox/url"
 )
-
 
 //
 //func init() {
@@ -23,9 +22,7 @@ import (
 //	time.Sleep(2 * time.Second)
 //}
 
-
 func getServices() ([]examples.InterestService, error) {
-
 
 	resource := url.NewResource("test/config/store.json")
 	local, err := examples.NewInterestService(resource.URL)
@@ -73,7 +70,6 @@ func TestRead(t *testing.T) {
 
 func TestPersist(t *testing.T) {
 
-
 	services, err := getServices()
 	if err != nil {
 		t.Errorf("failed to get services %v", err)
@@ -118,21 +114,19 @@ func TestPersistAll(t *testing.T) {
 	for i := 1; i <= 1000; i++ {
 		var status = true
 		interests = append(interests, &examples.Interest{
-			Name: fmt.Sprintf("Name %v", i),
-			Category:"cat",
-			Status  :&status,
-			GroupName:"abc",
+			Name:      fmt.Sprintf("Name %v", i),
+			Category:  "cat",
+			Status:    &status,
+			GroupName: "abc",
 		})
 	}
 	startTime := time.Now().Unix()
 	persistResponse := service.Persist(interests)
 	assert.Equal(t, "ok", persistResponse.Status)
 	endTime := time.Now().Unix()
-	var elapsed  = endTime - startTime
-	assert.True(t, elapsed < 60)//elapsed should 100k should be under 30 sec
+	var elapsed = endTime - startTime
+	assert.True(t, elapsed < 60) //elapsed should 100k should be under 30 sec
 }
-
-
 
 func TestDelete(t *testing.T) {
 	services, err := getServices()

@@ -5,9 +5,9 @@ import (
 	"github.com/viant/toolbox/secret"
 	"github.com/viant/toolbox/url"
 	"strings"
-	"time"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 //BatchSizeKey represents a config batch size parameter
@@ -37,7 +37,6 @@ func (c *Config) Get(name string) string {
 	}
 	return ""
 }
-
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) GetMap(name string) map[string]interface{} {
@@ -124,8 +123,6 @@ func (c *Config) Has(name string) bool {
 	}
 	return false
 }
-
-
 
 func (c *Config) initMutextIfNeeed() {
 	if c.lock == nil {

@@ -19,8 +19,6 @@ func (r commonManagerRegistry) Register(name string, manager Manager) {
 	r.registry[name] = manager
 }
 
-
-
 func (r commonManagerRegistry) Get(name string) Manager {
 	r.mux.RLock()
 	result, ok := r.registry[name]

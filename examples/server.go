@@ -2,9 +2,9 @@ package examples
 
 import (
 	"fmt"
+	"github.com/viant/toolbox"
 	"log"
 	"net/http"
-	"github.com/viant/toolbox"
 )
 
 var version = "/v1/"

@@ -8,7 +8,6 @@ import (
 	"github.com/viant/toolbox"
 )
 
-
 type metaRecordMapper struct {
 	converter        toolbox.Converter
 	structType       interface{}
@@ -274,19 +273,17 @@ func ScanRow(scanner Scanner) ([]interface{}, []string, error) {
 					continue
 				}
 
-
-				for i:=0;i<2;i++ {
+				for i := 0; i < 2; i++ {
 					valuePtr := reflect.ValueOf(v)
 					if valuePtr.Kind() != reflect.Ptr {
 						break
 					}
 					v = valuePtr.Interface()
-					if v == nil || valuePtr.IsNil(){
+					if v == nil || valuePtr.IsNil() {
 						break
 					}
 					v = valuePtr.Elem().Interface()
 				}
-
 
 				if v == nil {
 					continue

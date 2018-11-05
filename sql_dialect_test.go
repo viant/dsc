@@ -35,10 +35,27 @@ func TestSqlDialect(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, seq)
 
+	columns, err := dialect.GetColumns(manager, "bar.db", "table1")
+	assert.Nil(t, err)
+	assert.EqualValues(t, 6, len(columns))
+
+	pk := dialect.GetKeyName(manager, "bar.db", "table1")
+	assert.Nil(t, err)
+	assert.EqualValues(t, "id", pk)
+
+	ddl, err := dialect.ShowCreateTable(manager, "table1")
+	assert.Nil(t, err)
+
+	assert.EqualValues(t, `CREATE TABLE table1(
+	id INTEGER PRIMARY KEY ,
+	username varchar(255),
+	active tinyint(1),
+	salary decimal(7,2),
+	comments text,
+	last_access_time timestamp);`, ddl)
+
 	assert.Nil(t, dialect.DropTable(manager, "bar", "table1"))
-
 	assert.False(t, dialect.CanPersistBatch())
-
 	datastore, err := dialect.GetCurrentDatastore(manager)
 	assert.Equal(t, "bar.db", datastore)
 	datastores, err := dialect.GetDatastores(manager)

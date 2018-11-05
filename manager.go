@@ -564,7 +564,7 @@ func (m *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoint
 		where := strings.Join(descriptor.PkColumns, ",")
 		if len(descriptor.PkColumns) > 1 {
 			values := strings.Repeat("?,", len(descriptor.PkColumns))
-			values = values[0: len(values)-1]
+			values = values[0 : len(values)-1]
 			where = where + " IN (" + values + ")"
 		} else {
 			where = where + " = ?"
