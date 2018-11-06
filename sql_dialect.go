@@ -167,14 +167,13 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 	if err != nil {
 		return nil, err
 	}
-	currentDb, err := d.GetCurrentDatastore(manager)
-	if err != nil {
-		return nil, err
-	}
 	var source = datastore + "." + tableName
-	if currentDb == datastore {
+	currentDb, err := d.GetCurrentDatastore(manager)
+	if err == nil && currentDb == datastore {
 		source = tableName
 	}
+
+
 	var query = "SELECT * FROM " + source + " WHERE 1 = 0"
 	rows, err := dbConnection.Query(query)
 	if err != nil {
