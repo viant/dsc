@@ -7,6 +7,7 @@ import (
 )
 
 type sqlConnection struct {
+	canHandleTransaction bool
 	*AbstractConnection
 	db   *sql.DB
 	tx   *sql.Tx
@@ -22,6 +23,9 @@ func (c *sqlConnection) CloseNow() error {
 }
 
 func (c *sqlConnection) Begin() error {
+	if !c.canHandleTransaction {
+		return nil
+	}
 	db, err := asSQLDb(c.db)
 	if err != nil {
 		return err
@@ -45,8 +49,11 @@ func (c *sqlConnection) Unwrap(target interface{}) interface{} {
 }
 
 func (c *sqlConnection) Commit() error {
+	if !c.canHandleTransaction {
+		return nil
+	}
 	if c.tx == nil {
-		return fmt.Errorf("No active transaction")
+		return fmt.Errorf("no active transaction")
 	}
 	err := c.tx.Commit()
 	c.tx = nil
@@ -54,8 +61,11 @@ func (c *sqlConnection) Commit() error {
 }
 
 func (c *sqlConnection) Rollback() error {
+	if !c.canHandleTransaction {
+		return nil
+	}
 	if c.tx == nil {
-		return fmt.Errorf("No active transaction")
+		return fmt.Errorf("no active transaction")
 	}
 	err := c.tx.Rollback()
 	c.tx = nil
@@ -72,7 +82,8 @@ func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
 	}
-	var sqlConnection = &sqlConnection{db: db}
+	dialect := GetDatastoreDialect(config.DriverName)
+	var sqlConnection = &sqlConnection{db: db, canHandleTransaction: dialect.CanHandleTransaction()}
 	var connection Connection = sqlConnection
 	var super = NewAbstractConnection(config, c.ConnectionProvider.ConnectionPool(), connection)
 	sqlConnection.AbstractConnection = super

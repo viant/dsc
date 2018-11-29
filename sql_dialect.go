@@ -17,6 +17,23 @@ const defaultAutoincremetSQL = "SELECT 1 AS autoicrement FROM information_schema
 const defaultSchemaSQL = "SELECT DATABASE() AS name"
 const ansiSchemaListSQL = "SELECT schema_name AS name FROM  information_schema.schemata"
 
+const ansiTableInfo = ` SELECT 
+	column_name,
+	data_type,
+	character_maximum_length AS data_type_length,
+	numeric_precision,
+	numeric_scale,
+	is_nullable
+FROM information_schema.columns
+WHERE table_schema = ? AND table_name = ? 
+ORDER BY ordinal_position`
+
+const casandraVersion = "SELECT cql_version AS version from system.local"
+const casandraSchemaListSQL = "SELECT keyspace_name as name FROM system_schema.keyspaces"
+const casandraTableListSQL = "SELECT table_name AS name  FROM system_schema.tables WHERE keyspace_name = ? ALLOW FILTERING"
+const casandraPrimaryKeySQL = "SELECT column_name AS name FROM system_schema.columns WHERE table_name = '%v' AND keyspace_name = '%v' AND kind='partition_key' ALLOW FILTERING"
+const casandraTableInfo = ` SELECT column_name, type AS data_type, position  FROM system_schema.columns WHERE table_name = '%v' AND keyspace_name = '%v' ALLOW FILTERING`
+
 const mysqlDisableForeignCheck = "SET FOREIGN_KEY_CHECKS=0"
 const mysqlEnableForeignCheck = "SET FOREIGN_KEY_CHECKS=1"
 
@@ -73,17 +90,6 @@ FROM v_catalog.columns
 WHERE table_schema = ? AND table_name = ? 
 ORDER BY ordinal_position`
 
-const ansiTableInfo = ` SELECT 
-	column_name,
-	data_type,
-	character_maximum_length AS data_type_length,
-	numeric_precision,
-	numeric_scale,
-	is_nullable
-FROM information_schema.columns
-WHERE table_schema = ? AND table_name = ? 
-ORDER BY ordinal_position`
-
 type nameRecord struct {
 	Name string `TableColumn:"name"`
 }
@@ -134,6 +140,10 @@ func (d sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (str
 	return fmt.Sprintf("CREATE TABLE %v(\n\t%v);", table, strings.Join(projection, ",\n\t")), nil
 }
 
+func (d sqlDatastoreDialect) CanHandleTransaction() bool {
+	return true
+}
+
 //CanDropDatastore returns true if this dialect can create datastore
 func (d sqlDatastoreDialect) CanCreateDatastore(manager Manager) bool {
 	return true
@@ -173,7 +183,6 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		source = tableName
 	}
 
-
 	var query = "SELECT * FROM " + source + " WHERE 1 = 0"
 	rows, err := dbConnection.Query(query)
 	if err != nil {
@@ -185,8 +194,9 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 	}
 	var result = make([]Column, 0)
 	if !hasColumnType(columns) {
+		tableInfoSQL := fmt.Sprintf(d.tableInfoSQL, tableName, datastore)
 		var tableColumns = []*TableColumn{}
-		err := manager.ReadAll(&tableColumns, d.tableInfoSQL, []interface{}{datastore, tableName}, nil)
+		err := manager.ReadAll(&tableColumns, tableInfoSQL, []interface{}{datastore, tableName}, nil)
 		if err == nil {
 			for _, column := range tableColumns {
 				if index := strings.Index(column.DataType, "("); index != -1 {
@@ -313,6 +323,9 @@ func (d sqlDatastoreDialect) GetDatastores(manager Manager) ([]string, error) {
 
 //GetCurrentDatastore returns name of current schema
 func (d sqlDatastoreDialect) GetCurrentDatastore(manager Manager) (string, error) {
+	if d.schemaSQL == "" {
+		return "", nil
+	}
 	var result = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&result, d.schemaSQL, nil, nil)
 	if err != nil || !success {
@@ -391,7 +404,7 @@ func (d sqlDatastoreDialect) EnableForeignKeyCheck(manager Manager, connection C
 	return err
 }
 
-func (d sqlDatastoreDialect) NormalizePlaceholders(SQL string) string {
+func (d sqlDatastoreDialect) NormalizeSQL(SQL string) string {
 	return SQL
 }
 
@@ -401,7 +414,7 @@ func (d sqlDatastoreDialect) CanPersistBatch() bool {
 }
 
 //NewSQLDatastoreDialect creates a new default sql dialect
-func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL, tableInfoSQL string, schmeaIndex int) DatastoreDialect {
+func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL, tableInfoSQL string, schmeaIndex int) *sqlDatastoreDialect {
 	return &sqlDatastoreDialect{tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL, tableInfoSQL, schmeaIndex}
 }
 
@@ -415,6 +428,118 @@ func (d mySQLDialect) CanPersistBatch() bool {
 
 func newMySQLDialect() mySQLDialect {
 	return mySQLDialect{DatastoreDialect: NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, ansiTableInfo, 0)}
+}
+
+type casandraSQLDialect struct {
+	*sqlDatastoreDialect
+}
+
+func (d casandraSQLDialect) getCQLVersion(manager Manager) (string, error) {
+	version := struct{ Version string }{}
+	if ok, err := manager.ReadSingle(&version, casandraVersion, nil, nil); ok {
+		fragments := strings.Split(version.Version, ".")
+		if len(fragments) == 0 {
+			return version.Version, err
+		}
+		return fragments[0], nil
+	}
+	return "", fmt.Errorf("unable to determine version")
+}
+
+func (d casandraSQLDialect) CanPersistBatch() bool {
+	return false
+}
+
+func (d casandraSQLDialect) NormalizeSQL(SQL string) string {
+	SQL = strings.TrimSpace(SQL)
+	upperSQL := strings.ToUpper(SQL)
+	if strings.HasPrefix(upperSQL, "DELETE") && (!strings.Contains(upperSQL, "WHERE")) {
+		if fromIndex := strings.Index(upperSQL, "FROM"); fromIndex != -1 {
+			SQL = "TRUNCATE " + string(SQL[fromIndex+5:])
+		}
+	}
+	return SQL
+}
+
+func (d casandraSQLDialect) CreateDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("CREATE KEYSPACE IF NOT EXISTS " + datastore + ` WITH REPLICATION = { 
+   'class' : 'SimpleStrategy', 
+   'replication_factor' : 1 
+  }`)
+	if err == nil {
+		_, _ = manager.Execute("USE " + datastore)
+	}
+	return err
+}
+
+func (d casandraSQLDialect) CanHandleTransaction() bool {
+	return false
+}
+
+//GetDatastores returns name of datastores, takes  manager as parameter
+func (d casandraSQLDialect) GetDatastores(manager Manager) ([]string, error) {
+
+	/*
+		TODO add version support
+		version, err := d.getCQLVersion(manager)
+		if err != nil {
+			return nil,err
+		}
+	*/
+	var SQL = casandraSchemaListSQL
+	var rows = make([][]interface{}, 0)
+	err := manager.ReadAll(&rows, SQL, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	var result = make([]string, 0)
+	for _, row := range rows {
+		result = append(result, normalizeName(toolbox.AsString(row[d.schemaResultsetIndex])))
+	}
+	return result, nil
+}
+
+//DropTable drops a table in datastore managed by manager.
+func (d casandraSQLDialect) DropTable(manager Manager, datastore string, table string) error {
+	datastore, err := d.GetCurrentDatastore(manager)
+	if err != nil {
+		return err
+	}
+	_, err = manager.Execute("DROP TABLE " + datastore + "." + table)
+	return err
+}
+
+//GetTables return tables names for passed in datastore managed by manager.
+func (d casandraSQLDialect) GetTables(manager Manager, datastore string) ([]string, error) {
+	var rows = make([]nameRecord, 0)
+	err := manager.ReadAll(&rows, d.tablesSQL, []interface{}{datastore}, nil)
+	if err != nil {
+		return nil, err
+	}
+	var result = make([]string, 0)
+	for _, row := range rows {
+		if len(row.Name) > 0 {
+			result = append(result, row.Name)
+		}
+	}
+	return result, nil
+}
+
+func (d casandraSQLDialect) DropDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("DROP KEYSPACE IF EXISTS " + datastore)
+	return err
+}
+
+func (d casandraSQLDialect) GetCurrentDatastore(manager Manager) (string, error) {
+	keySpace := manager.Config().GetString("keyspace", "")
+	if keySpace == "" {
+		keySpace = manager.Config().GetString("dbname", "")
+	}
+	return keySpace, nil
+}
+
+func newCasandraDialect() *casandraSQLDialect {
+	return &casandraSQLDialect{sqlDatastoreDialect: NewSQLDatastoreDialect(casandraTableListSQL, ansiSequenceSQL, "", casandraSchemaListSQL, casandraPrimaryKeySQL, "", "", "", casandraTableInfo, 0)}
 }
 
 type sqlLiteDialect struct {
@@ -498,7 +623,7 @@ func newPgDialect() *pgDialect {
 	return &pgDialect{DatastoreDialect: NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, ansiTableInfo, 0)}
 }
 
-func (d pgDialect) NormalizePlaceholders(SQL string) string {
+func (d pgDialect) NormalizeSQL(SQL string) string {
 	count := 1
 	var normalizedSQL = ""
 	for _, r := range SQL {
@@ -575,7 +700,7 @@ func (d oraDialect) DropDatastore(manager Manager, datastore string) error {
 	return err
 }
 
-func (d oraDialect) NormalizePlaceholders(SQL string) string {
+func (d oraDialect) NormalizeSQL(SQL string) string {
 	count := 1
 	var normalizedSQL = ""
 	for _, r := range SQL {
