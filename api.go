@@ -157,8 +157,8 @@ type DatastoreDialect interface {
 	//EnableForeignKeyCheck disables fk check
 	EnableForeignKeyCheck(manager Manager, connection Connection) error
 
-	//Normalizes placeholders, by default dsc uses '?' for placeholder if some dialect use difference this method should take care of it
-	NormalizePlaceholders(SQL string) string
+	//Normalizes sql i.e for placeholders:   dsc uses '?' for placeholder if some dialect use difference this method should take care of it
+	NormalizeSQL(SQL string) string
 
 	//EachTable iterate all current connection manager datastore tables
 	EachTable(manager Manager, handler func(table string) error) error
@@ -168,6 +168,9 @@ type DatastoreDialect interface {
 
 	//Init initializes connection
 	Init(manager Manager, connection Connection) error
+
+	//CanHandleTransaction returns true if driver can handle transaction
+	CanHandleTransaction() bool
 }
 
 //Column represents TableColumn type interface (compabible with *sql.ColumnType

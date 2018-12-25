@@ -9,6 +9,7 @@ type TableColumn struct {
 	NumericPrecision *int64 `column:"numeric_precision"`
 	NumericScale     *int64 `column:"numeric_scale"`
 	IsNullable       *bool  `column:"is_nullable"`
+	Position         int    `column:"position"`
 	scanType         reflect.Type
 }
 

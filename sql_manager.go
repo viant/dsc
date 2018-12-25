@@ -74,11 +74,8 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 		args = make([]interface{}, 0)
 	}
 
-	if len(args) > 0 {
-		dialect := GetDatastoreDialect(m.config.DriverName)
-		sql = dialect.NormalizePlaceholders(sql)
-	}
-
+	dialect := GetDatastoreDialect(m.config.DriverName)
+	sql = dialect.NormalizeSQL(sql)
 	if sqlConnection, ok := connection.(*sqlConnection); ok {
 		if !sqlConnection.init {
 
@@ -86,6 +83,9 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	}
 
 	result, err := executable.Exec(sql, args...)
+	if !dialect.CanHandleTransaction() {
+		result = NewSQLResult(1, 0)
+	}
 	Logf("[%v]:%v %v", m.config.username, sql, args)
 	if err != nil {
 		return nil, fmt.Errorf(fmt.Sprintf("failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))
@@ -102,10 +102,8 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 		return err
 	}
 
-	if len(args) > 0 {
-		dialect := GetDatastoreDialect(m.config.DriverName)
-		query = dialect.NormalizePlaceholders(query)
-	}
+	dialect := GetDatastoreDialect(m.config.DriverName)
+	query = dialect.NormalizeSQL(query)
 
 	Logf("[%v]:%v", m.config.username, query)
 	sqlStatement, sqlError := db.Prepare(query)

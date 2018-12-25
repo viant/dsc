@@ -6,7 +6,7 @@ var managerFactories = make(map[string]ManagerFactory)
 
 func init() {
 	var managerFactory ManagerFactory = &sqlManagerFactory{}
-	sqlDrivers := []string{"mysql", "ora", "pg", "postgres", "mssql", "sqlite3", "odbc"}
+	sqlDrivers := []string{"mysql", "ora", "pg", "postgres", "mssql", "sqlite3", "odbc", "cql"}
 	for _, driver := range sqlDrivers {
 		RegisterManagerFactory(driver, managerFactory)
 	}

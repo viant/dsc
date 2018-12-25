@@ -78,12 +78,16 @@ func (d DefaultDialect) EnableForeignKeyCheck(manager Manager, connection Connec
 	return nil
 }
 
-func (d DefaultDialect) NormalizePlaceholders(SQL string) string {
+func (d DefaultDialect) NormalizeSQL(SQL string) string {
 	return SQL
 }
 
 func (d DefaultDialect) ShowCreateTable(manager Manager, table string) (string, error) {
 	return "", errors.New("unsupported")
+}
+
+func (d DefaultDialect) CanHandleTransaction() bool {
+	return false
 }
 
 //EachTable iterates each datastore table

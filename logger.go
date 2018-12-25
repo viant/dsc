@@ -15,5 +15,5 @@ func VoidLogger(format string, args ...interface{}) {
 
 //StdoutLogger represents stdout logger
 func StdoutLogger(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	fmt.Print(fmt.Sprintf(format, args...) + "\n")
 }
