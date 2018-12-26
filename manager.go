@@ -492,19 +492,23 @@ func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connect
 		rowsByKey[key] = row
 		return true
 	})
-	//fetch all existing pk values into rows to classify as updatable
-	rows, err := m.fetchExistingData(connection, table, pkValues, provider)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to fetch existing data: due to:\n\t%v", err.Error())
-	}
 
-	//process existing rows and add mapped entires as updatables
-	for _, row := range rows {
 
-		key := toolbox.JoinAsString(row, "")
-		if instance, ok := rowsByKey[key]; ok {
-			updatables = append(updatables, instance)
-			delete(rowsByKey, key)
+	hasPK := len(m.tableDescriptorRegistry.Get(table).PkColumns) > 0
+	if hasPK { //only if has PK, otherwise always insert
+		//fetch all existing pk values into rows to classify as updatable
+		rows, err := m.fetchExistingData(connection, table, pkValues, provider)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to fetch existing data: due to:\n\t%v", err.Error())
+		}
+		//process existing rows and add mapped entires as updatables
+		for _, row := range rows {
+
+			key := toolbox.JoinAsString(row, "")
+			if instance, ok := rowsByKey[key]; ok {
+				updatables = append(updatables, instance)
+				delete(rowsByKey, key)
+			}
 		}
 	}
 

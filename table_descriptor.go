@@ -142,7 +142,7 @@ func NewTableDescriptor(table string, instance interface{}) (*TableDescriptor, e
 			continue
 		}
 	}
-	
+
 	return &TableDescriptor{
 		Table:         table,
 		Autoincrement: autoincrement,
