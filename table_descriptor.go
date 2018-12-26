@@ -142,9 +142,7 @@ func NewTableDescriptor(table string, instance interface{}) (*TableDescriptor, e
 			continue
 		}
 	}
-	if len(pkColumns) == 0 {
-		return nil, fmt.Errorf("No primary key defined on table: %v, type: %v, consider adding 'primaryKey' tag to primary key column", table, targetType)
-	}
+	
 	return &TableDescriptor{
 		Table:         table,
 		Autoincrement: autoincrement,

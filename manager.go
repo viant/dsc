@@ -252,6 +252,7 @@ func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPoin
 	if descriptor.Autoincrement {
 		//we need to store original position of item, vs insertables, to set back autoincrement changed item to original slice
 		insertableMapping = make(map[int]int)
+
 		toolbox.ProcessSliceWithIndex(dataPointer, func(index int, value interface{}) bool {
 			for j, insertable := range insertables {
 				if isStructPointer {
@@ -273,10 +274,10 @@ func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPoin
 	inserted, insertErr := m.Manager.PersistData(connection, insertables, table, provider, func(item interface{}) *ParametrizedSQL {
 		return provider.Get(SQLTypeInsert, item)
 	})
+
 	if insertErr != nil {
 		return 0, 0, insertErr
 	}
-
 	if descriptor.Autoincrement {
 		for k, v := range insertableMapping {
 			value := insertables[k]
