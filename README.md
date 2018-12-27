@@ -3,7 +3,7 @@
 [![Datastore Connectivity library for Go.](https://goreportcard.com/badge/github.com/viant/dsc)](https://goreportcard.com/report/github.com/viant/dsc)
 [![GoDoc](https://godoc.org/github.com/viant/dsc?status.svg)](https://godoc.org/github.com/viant/dsc)
 
-This library is compatible with Go 1.5+
+This library is compatible with Go 1.10+
 
 Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes.
 

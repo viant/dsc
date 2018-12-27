@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+
+//TODO refactor for both better dialect and multi version of the same vendor handling
+
 const ansiTableListSQL = "SELECT table_name AS name FROM  information_schema.tables WHERE table_schema = ?"
 const ansiSequenceSQL = "SELECT auto_increment AS seq_value FROM information_schema.tables WHERE table_name = '%v' AND table_schema = DATABASE()"
 const ansiPrimaryKeySQL = "SELECT column_name AS name FROM information_schema.key_column_usage WHERE table_name = '%v' AND table_schema = '%v' AND constraint_name='PRIMARY'"

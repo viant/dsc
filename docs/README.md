@@ -60,7 +60,9 @@ Connection configuration examples:
 |MS SQL Server|mssql|server=[server];user id=[user];password:[password];database:[database]|**user**:myuser,**password**:dev,**sevrver**:localhost,**database**:mydbname|github.com/denisenkom/go-mssqldb|
 |Oracle|ora|[user]/[password]@[url]|**user**:myuser,**password**:dev,**url**:localhost:1521/mysid|github.com/rana/ora|
 |BigQuery|bigquery|n/a|**serviceAccountId**:myseriveAccount,**privateKeyPath**:/somepath/key.pem,**projectId**:myproject,**datasetId**:MyDataset,**dateFormat**:yyyy-MM-dd hh:mm:ss z|github.com/viant/bgc|
-|service|aerospike|n/a|**host**:127.0.0.1,**port**:3000,**namespace**:test,**dateFormat**:yyyy-MM-dd hh:mm:ss|github.com/viant/asc|
+|Aerospike|aerospike|n/a|**host**:127.0.0.1,**port**:3000,**namespace**:test,**dateFormat**:yyyy-MM-dd hh:mm:ss|github.com/viant/asc|
+|Casandra|cql|127.0.0.1?keyspace=mydb||github.com/MichaelS11/go-cql-driver|
+|MongoDB|mgc|n/a|**host**:127.0.0.1,**dbname**:mydb|github.com/adrianwit/mgc|
 |New line delimiter JSON|ndjson|n/a|**url**:someUrl,**ext**:.json,**dateFormat**:yyyy-MM-dd hh:mm:ss|github.com/viant/dsc|
 
 
