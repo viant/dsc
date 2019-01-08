@@ -76,12 +76,6 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 
 	dialect := GetDatastoreDialect(m.config.DriverName)
 	sql = dialect.NormalizeSQL(sql)
-	if sqlConnection, ok := connection.(*sqlConnection); ok {
-		if !sqlConnection.init {
-
-		}
-	}
-
 	result, err := executable.Exec(sql, args...)
 	if !dialect.CanHandleTransaction() {
 		result = NewSQLResult(1, 0)
@@ -104,7 +98,6 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 
 	dialect := GetDatastoreDialect(m.config.DriverName)
 	query = dialect.NormalizeSQL(query)
-
 	Logf("[%v]:%v", m.config.username, query)
 	sqlStatement, sqlError := db.Prepare(query)
 	if sqlError != nil {
