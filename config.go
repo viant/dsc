@@ -137,7 +137,7 @@ func (c *Config) initMutextIfNeeed() {
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
-	defer func() {c.initRun = true}()
+	defer func() { c.initRun = true }()
 	c.initMutextIfNeeed()
 	if c.URL != "" && c.DriverName == "" {
 		resource := url.NewResource(c.URL)
@@ -159,7 +159,7 @@ func (c *Config) Init() error {
 		if len(c.Parameters) == 0 {
 			c.Parameters = make(map[string]interface{})
 		}
-		if location, err := secrets.CredentialsLocation(c.Credentials);err == nil {
+		if location, err := secrets.CredentialsLocation(c.Credentials); err == nil {
 			c.Credentials = location
 		}
 		c.username = config.Username
