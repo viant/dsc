@@ -13,7 +13,7 @@ func GetDatastoreDialect(driver string) DatastoreDialect {
 	if result, ok := datastoreDialectableRegistry[driver]; ok {
 		return result
 	}
-	panic("failed to lookup datastore dialectabe: " + driver)
+	panic("failed to lookup datastore dialect: " + driver)
 }
 
 func init() {
