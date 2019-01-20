@@ -149,8 +149,8 @@ func (d sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (str
 			continue
 		}
 		projection = append(projection, ddlColumn)
-		projection = append(keyColumns, projection...)
 	}
+	projection = append(keyColumns, projection...)
 	return fmt.Sprintf("CREATE TABLE %v(\n\t%v);", table, strings.Join(projection, ",\n\t")), nil
 }
 
@@ -172,7 +172,7 @@ func (d sqlDatastoreDialect) Init(manager Manager, connection Connection) error 
 	return nil
 }
 
-func hasColumnType(columns []*sql.ColumnType) bool {
+func hasColumns(columns []*sql.ColumnType) bool {
 	if len(columns) == 0 {
 		return false
 	}
@@ -206,9 +206,8 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 	if err != nil {
 		return nil, err
 	}
-
 	var result = make([]Column, 0)
-	if !hasColumnType(columns) {
+	if !hasColumns(columns) {
 		tableInfoSQL := fmt.Sprintf(d.tableInfoSQL, tableName, datastore)
 		var tableColumns = []*TableColumn{}
 		err := manager.ReadAll(&tableColumns, tableInfoSQL, []interface{}{}, nil)
@@ -222,19 +221,20 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 			}
 			return result, nil
 		}
-	}
-	for _, column := range columns {
-		result = append(result, column)
+	} else {
+		for _, column := range columns {
+			result = append(result, column)
+		}
 	}
 	return result, nil
 }
 
 func (d sqlDatastoreDialect) EachTable(manager Manager, handler func(table string) error) error {
-	dbname, err := d.GetCurrentDatastore(manager)
+	dbName, err := d.GetCurrentDatastore(manager)
 	if err != nil {
 		return err
 	}
-	tables, err := d.GetTables(manager, dbname)
+	tables, err := d.GetTables(manager, dbName)
 	if err != nil {
 		return err
 	}
@@ -265,8 +265,8 @@ func (d sqlDatastoreDialect) DropTable(manager Manager, datastore string, table 
 }
 
 //CreateTable creates table on in datastore managed by manager.
-func (d sqlDatastoreDialect) CreateTable(manager Manager, datastore string, table string, specification string) error {
-	_, err := manager.Execute("CREATE TABLE " + table + "(" + specification + ")")
+func (d sqlDatastoreDialect) CreateTable(manager Manager, datastore string, table string, specification interface{}) error {
+	_, err := manager.Execute(fmt.Sprintf("CREATE TABLE %v(%v)", table, specification))
 	return err
 }
 
@@ -511,8 +511,6 @@ func (d casandraSQLDialect) GetKeyName(manager Manager, datastore, table string)
 	var err error
 	if err = manager.ReadAll(&records, fmt.Sprintf(casandraPrimaryKeyV3SQL, table, datastore), []interface{}{}, nil); err != nil {
 		err = manager.ReadAll(&records, fmt.Sprintf(casandraPrimaryKeyV2SQL, table, datastore), []interface{}{}, nil)
-
-		fmt.Printf("%v\n", fmt.Sprintf(casandraPrimaryKeyV2SQL, table, datastore))
 	}
 	if err != nil {
 		return ""
@@ -564,9 +562,9 @@ func (d casandraSQLDialect) CanHandleTransaction() bool {
 func (d casandraSQLDialect) GetDatastores(manager Manager) ([]string, error) {
 	var err error
 	var rows = make([][]interface{}, 0)
-	err = manager.ReadAll(&rows, casandraSchemaListV3SQL, nil, nil)
+	err = manager.ReadAll(&rows, casandraSchemaListV2SQL, nil, nil)
 	if err != nil {
-		err = manager.ReadAll(&rows, casandraSchemaListV2SQL, nil, nil)
+		err = manager.ReadAll(&rows, casandraSchemaListV3SQL, nil, nil)
 	}
 	if err != nil {
 		return nil, err

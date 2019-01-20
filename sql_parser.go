@@ -49,6 +49,21 @@ func (s *SQLCriteria) CriteriaValues(parameters toolbox.Iterator) ([]interface{}
 	return values, nil
 }
 
+func (s *SQLCriteria) Expression() string {
+	if len(s.Criteria) == 0 {
+		return ""
+	}
+	result := ""
+	for _, criterion := range s.Criteria {
+		if len(result) > 0 {
+			result += " " + s.LogicalOperator + " " + criterion.Expression()
+			continue
+		}
+		result += " " + criterion.Expression()
+	}
+	return strings.TrimSpace(result)
+}
+
 //SQLCriterion represents single where clause condiction
 type SQLCriterion struct {
 	Criteria      *SQLCriteria
@@ -57,6 +72,40 @@ type SQLCriterion struct {
 	RightOperand  interface{}
 	RightOperands []interface{}
 	Inverse       bool // if not operator presents
+}
+
+func (c *SQLCriterion) Expression() string {
+	preInverse := ""
+	postInverse := ""
+	if c.Inverse {
+		switch strings.ToUpper(c.Operator) {
+		case "IN":
+			preInverse = " NOT "
+		case "=":
+			preInverse = " !"
+		default:
+			if strings.ToUpper(toolbox.AsString(c.RightOperand)) == "NULL" {
+				postInverse = " NOT "
+			}
+		}
+	}
+	rightOperand := c.RightOperand
+	isMulti := len(c.RightOperands) > 1
+	if len(c.RightOperands) > 0 {
+		operandLiteral := ""
+		for _, item := range c.RightOperands {
+			if len(operandLiteral) > 0 {
+				operandLiteral += ", "
+			}
+			operandLiteral += toolbox.AsString(item)
+		}
+		if isMulti {
+			rightOperand = "(" + operandLiteral + ")"
+		} else {
+			rightOperand = operandLiteral
+		}
+	}
+	return fmt.Sprintf("%v %v%v%v %v", c.LeftOperand, preInverse, c.Operator, postInverse, rightOperand)
 }
 
 //BaseStatement represents a base query and dml statement
@@ -164,7 +213,7 @@ const (
 	notKeyword
 	groupingBegin
 	groupingEnd
-	expression
+	groupExpression
 	selectKeyword
 	fromKeyword
 	whereKeyword
@@ -229,19 +278,19 @@ var sqlMatchers = map[int]toolbox.Matcher{
 		valueOptionallyEnclosedWithChar: "'",
 		valueTerminatorCharacters:       ", \n\t)",
 	},
-	columnRef:     &toolbox.IntMatcher{},
-	groupingBegin: toolbox.CharactersMatcher{"("},
-	groupingEnd:   toolbox.CharactersMatcher{")"},
-	expression:    &toolbox.BodyMatcher{"(", ")"},
-	groupKeyword:  toolbox.KeywordMatcher{Keyword: "GROUP", CaseSensitive: false},
-	byKeyword:     toolbox.KeywordMatcher{Keyword: "BY", CaseSensitive: false},
-	selectKeyword: toolbox.KeywordMatcher{Keyword: "SELECT", CaseSensitive: false},
-	fromKeyword:   toolbox.KeywordMatcher{Keyword: "FROM", CaseSensitive: false},
-	whereKeyword:  toolbox.KeywordMatcher{Keyword: "WHERE", CaseSensitive: false},
-	asKeyword:     toolbox.KeywordMatcher{Keyword: "AS", CaseSensitive: false},
-	insertKeyword: toolbox.KeywordMatcher{Keyword: "INSERT", CaseSensitive: false},
-	intoKeyword:   toolbox.KeywordMatcher{Keyword: "INTO", CaseSensitive: false},
-	valuesKeyword: toolbox.KeywordMatcher{Keyword: "VALUES", CaseSensitive: false},
+	columnRef:       &toolbox.IntMatcher{},
+	groupingBegin:   toolbox.CharactersMatcher{"("},
+	groupingEnd:     toolbox.CharactersMatcher{")"},
+	groupExpression: &toolbox.BodyMatcher{"(", ")"},
+	groupKeyword:    toolbox.KeywordMatcher{Keyword: "GROUP", CaseSensitive: false},
+	byKeyword:       toolbox.KeywordMatcher{Keyword: "BY", CaseSensitive: false},
+	selectKeyword:   toolbox.KeywordMatcher{Keyword: "SELECT", CaseSensitive: false},
+	fromKeyword:     toolbox.KeywordMatcher{Keyword: "FROM", CaseSensitive: false},
+	whereKeyword:    toolbox.KeywordMatcher{Keyword: "WHERE", CaseSensitive: false},
+	asKeyword:       toolbox.KeywordMatcher{Keyword: "AS", CaseSensitive: false},
+	insertKeyword:   toolbox.KeywordMatcher{Keyword: "INSERT", CaseSensitive: false},
+	intoKeyword:     toolbox.KeywordMatcher{Keyword: "INTO", CaseSensitive: false},
+	valuesKeyword:   toolbox.KeywordMatcher{Keyword: "VALUES", CaseSensitive: false},
 
 	updateKeyword: toolbox.KeywordMatcher{Keyword: "UPDATE", CaseSensitive: false},
 	setKeyword:    toolbox.KeywordMatcher{Keyword: "SET", CaseSensitive: false},
@@ -302,7 +351,7 @@ func (bp *baseParser) readValues(values string) ([]interface{}, error) {
 	var result = make([]interface{}, 0)
 	tokenizer := toolbox.NewTokenizer(values, illegal, eof, sqlMatchers)
 	for {
-		token, err := bp.expectOptionalWhitespaceFollowedBy(tokenizer, "value", sqlValue)
+		token, err := bp.expectOptionalWhitespaceFollowedBy(tokenizer, "value", groupExpression, sqlValue)
 		if err != nil {
 			return nil, err
 		}
@@ -321,7 +370,7 @@ func (bp *baseParser) readValues(values string) ([]interface{}, error) {
 }
 
 func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []interface{}, error) {
-	token, err := bp.expectOptionalWhitespaceFollowedBy(tokenizer, "(value [,..])", sqlValues)
+	token, err := bp.expectOptionalWhitespaceFollowedBy(tokenizer, "(value [,..])", groupExpression, sqlValues)
 	if err != nil {
 		return "", nil, err
 	}
@@ -335,12 +384,12 @@ func (bp *baseParser) readInValues(tokenizer *toolbox.Tokenizer) (string, []inte
 
 func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, sqlCriteria *SQLCriteria, token *toolbox.Token) (err error) {
 	for {
-		token, err = bp.expectWhitespaceFollowedBy(tokenizer, "value", sqlValue)
+		token, err = bp.expectWhitespaceFollowedBy(tokenizer, "value", groupExpression, sqlValue)
 		if err != nil {
 			return err
 		}
 		if token.Matched == "" {
-			return fmt.Errorf("Expected criteria at %v", tokenizer.Index)
+			return fmt.Errorf("expected criteria at %v", tokenizer.Index)
 		}
 
 		index := len(sqlCriteria.Criteria)
@@ -368,7 +417,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, sqlCriteria *SQ
 				return err
 			}
 		case likeOperatorKeyword, operator:
-			token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "value", sqlValue)
+			token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "value", groupExpression, sqlValue)
 			if err != nil {
 				return err
 			}
@@ -403,6 +452,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, sqlCriteria *SQ
 			toValue := token.Matched
 			sqlCriteria.Criteria[index].RightOperands = []interface{}{fromValue, toValue}
 		}
+
 		token, err = bp.expectOptionalWhitespaceFollowedBy(tokenizer, "or | and | eof", eof, logicalOperator, groupKeyword)
 		if err != nil {
 			return err
@@ -431,15 +481,15 @@ type QueryParser struct{ baseParser }
 
 func buildColumn(token *toolbox.Token, tokenizer *toolbox.Tokenizer, query *QueryStatement, isGroupBy bool) (*SQLColumn, error) {
 	column := &SQLColumn{}
-	if token.Token == expression {
+	if token.Token == groupExpression {
 		column.Expression = token.Matched
 	} else if token.Token == columnRef {
 		if !isGroupBy {
-			return nil, fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
+			return nil, fmt.Errorf("invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
 		}
 		columnPosition := toolbox.AsInt(token.Matched)
 		if !(columnPosition-1 < len(query.Columns)) {
-			return nil, fmt.Errorf("Invalid colum reference %v at %v", columnPosition, tokenizer.Index)
+			return nil, fmt.Errorf("invalid colum reference %v at %v", columnPosition, tokenizer.Index)
 		}
 		column = query.Columns[columnPosition-1]
 	} else {
@@ -458,15 +508,15 @@ func (qp *QueryParser) readQueryColumns(tokenizer *toolbox.Tokenizer, query *Que
 	*columns = append(*columns, column)
 outer:
 	for {
-		token = tokenizer.Nexts(whitespaces, id, coma, eof, expression)
+		token = tokenizer.Nexts(whitespaces, id, coma, eof, groupExpression)
 		switch token.Token {
 		case illegal, eof:
 			if isGroupBy {
 				return nil
 			}
-			return fmt.Errorf("Invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
+			return fmt.Errorf("invalid token at %v expected ',' 'FROM' or alias", tokenizer.Index)
 
-		case expression:
+		case groupExpression:
 			column.Expression = column.Name + "" + token.Matched
 			column.Function = column.Name
 			if len(token.Matched) > 2 {
@@ -475,7 +525,7 @@ outer:
 			column.Name = ""
 
 		case coma:
-			token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "column", id, expression)
+			token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "column", id, groupExpression)
 			if err != nil {
 				return err
 			}
@@ -534,7 +584,7 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 		return nil, err
 	}
 
-	token, err = qp.expectWhitespaceFollowedBy(tokenizer, "* | column | expression ", asterisk, id, expression)
+	token, err = qp.expectWhitespaceFollowedBy(tokenizer, "* | column | groupExpression ", asterisk, id, groupExpression)
 	if err != nil {
 		return nil, err
 	}
@@ -547,7 +597,7 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 			return nil, err
 		}
 
-	case id, expression:
+	case id, groupExpression:
 		err = qp.readQueryColumns(tokenizer, result, &result.Columns, token, false, fromKeyword)
 		if err != nil {
 			return nil, err
@@ -587,7 +637,7 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 		if err != nil {
 			return nil, err
 		}
-		token, err = qp.expectWhitespaceFollowedBy(tokenizer, "column | expression ", id, expression, columnRef)
+		token, err = qp.expectWhitespaceFollowedBy(tokenizer, "column | groupExpression ", id, groupExpression, columnRef)
 		if err != nil {
 			return nil, err
 		}

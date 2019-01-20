@@ -222,7 +222,7 @@ func (m *AbstractManager) RegisterDescriptorIfNeeded(table string, instance inte
 		if err != nil {
 			return nil, err
 		}
-		m.tableDescriptorRegistry.Register(descriptor)
+		_ = m.tableDescriptorRegistry.Register(descriptor)
 	}
 	var result = m.tableDescriptorRegistry.Get(table)
 	if result != nil {
@@ -247,6 +247,7 @@ func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPoin
 	if err != nil {
 		return 0, 0, err
 	}
+
 	var isStructPointer = structType.Kind() == reflect.Ptr
 	var insertableMapping map[int]int
 	if descriptor.Autoincrement {
@@ -483,9 +484,14 @@ func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connect
 	var rowsByKey = make(map[string]interface{}, 0)
 	var candidates, insertables, updatables = make([]interface{}, 0), make([]interface{}, 0), make([]interface{}, 0)
 	var pkValues = make([][]interface{}, 0)
-
+	hasPK := len(m.tableDescriptorRegistry.Get(table).PkColumns) > 0
 	toolbox.ProcessSlice(dataPointer, func(row interface{}) bool {
 		var pkValueForThisRow = provider.Key(row)
+		for _, v := range pkValueForThisRow {
+			if v == nil { //pk value can not be nil
+				return false
+			}
+		}
 		candidates = append(candidates, row)
 		key := toolbox.JoinAsString(pkValueForThisRow, "")
 		pkValues = append(pkValues, pkValueForThisRow)
@@ -493,8 +499,6 @@ func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connect
 		return true
 	})
 
-
-	hasPK := len(m.tableDescriptorRegistry.Get(table).PkColumns) > 0
 	if hasPK { //only if has PK, otherwise always insert
 		//fetch all existing pk values into rows to classify as updatable
 		rows, err := m.fetchExistingData(connection, table, pkValues, provider)

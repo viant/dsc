@@ -124,7 +124,7 @@ type DatastoreDialect interface {
 
 	DropTable(manager Manager, datastore string, table string) error
 
-	CreateTable(manager Manager, datastore string, table string, specification string) error
+	CreateTable(manager Manager, datastore string, table string, specification interface{}) error
 
 	CanCreateDatastore(manager Manager) bool
 

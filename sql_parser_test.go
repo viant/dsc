@@ -222,6 +222,20 @@ func TestQueryParser(t *testing.T) {
 	}
 
 	{
+		query, err := parser.Parse("SELECT foo, bar FROM table WHERE (foo, bar) IN ((1,2),(3,4)) ")
+		assert.Nil(t, err)
+		assert.Equal(t, false, query.AllField)
+		assert.Equal(t, "table", query.Table)
+		assert.Equal(t, "(foo, bar)", query.Criteria[0].LeftOperand)
+		assert.Equal(t, "IN", query.Criteria[0].Operator)
+		assert.Equal(t, []interface{}{
+			"(1,2)",
+			"(3,4)",
+		}, query.Criteria[0].RightOperands)
+
+	}
+
+	{
 		_, err := parser.Parse("SELECT* FROM foo")
 		assert.NotNil(t, err)
 	}

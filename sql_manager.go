@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"time"
 )
 
 func asSQLDb(wrapped interface{}) (*sql.DB, error) {
@@ -88,6 +89,7 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 }
 
 func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, query string, args []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) error {
+	startTime := time.Now()
 	db, err := asSQLDb(connection.Unwrap((*sql.DB)(nil)))
 	if err == nil {
 		err = m.initConnectionIfNeeded(connection)
@@ -99,15 +101,20 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 	dialect := GetDatastoreDialect(m.config.DriverName)
 	query = dialect.NormalizeSQL(query)
 	Logf("[%v]:%v", m.config.username, query)
+
 	sqlStatement, sqlError := db.Prepare(query)
 	if sqlError != nil {
 		return fmt.Errorf("failed to prepare sql: %v with %v due to:%v\n\t", query, args, sqlError.Error())
 	}
+
+	Logf("[%v]:prepare time: %v\n", m.config.username, time.Now().Sub(startTime))
+
 	defer sqlStatement.Close()
 	rows, queryError := m.executeQuery(sqlStatement, query, args)
 	if queryError != nil {
 		return fmt.Errorf(fmt.Sprintf("failed to execute sql: %v with %v due to:%v\n\t", query, args, queryError.Error()))
 	}
+	Logf("[%v]:execute time: %v\n", m.config.username, time.Now().Sub(startTime))
 
 	defer rows.Close()
 	for rows.Next() {
@@ -120,6 +127,7 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 			break
 		}
 	}
+	Logf("[%v]:fetched time: %v\n", m.config.username, time.Now().Sub(startTime))
 	return rows.Err()
 }
 
