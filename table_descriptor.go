@@ -55,7 +55,7 @@ func (r *commonTableDescriptorRegistry) Get(table string) *TableDescriptor {
 	}
 	r.RUnlock()
 	var result = r.getDescriptor(table)
-	r.Register(result)
+	_ = r.Register(result)
 	return result
 }
 
