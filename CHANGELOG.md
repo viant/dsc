@@ -1,5 +1,6 @@
-## Jan 19 2018 0.3.0
-    * Added casandra dialect
+## Jan 19 2018 0.5.0
+    * Change CreateTable specificiation data type
+    * Update sql parser with mili column IN clause
 
 ## Dec 27 2018 0.3.0
     * Added casandra dialect
