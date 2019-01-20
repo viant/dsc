@@ -64,6 +64,9 @@ Connection configuration examples:
 |Casandra|cql|127.0.0.1?keyspace=mydb||github.com/MichaelS11/go-cql-driver|
 |MongoDB|mgc|n/a|**host**:127.0.0.1,**dbname**:mydb|github.com/adrianwit/mgc|
 |Firebase|fbc|n/a|**DatabaseURL**:https://myproject.firebaseio.com,**ProjecrID**:myproject|github.com/adrianwit/fbc|
+|Firestore|fsc|n/a||github.com/adrianwit/fsc|
+|DynamoDB|dyndb|n/a||github.com/adrianwit/dyndbc|
+
 |New line delimiter JSON|ndjson|n/a|**url**:someUrl,**ext**:.json,**dateFormat**:yyyy-MM-dd hh:mm:ss|github.com/viant/dsc|
 
 

@@ -43,6 +43,7 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 		}
 		var rowCriteria = strings.Repeat("?,", len(pkValues))
 		rowCriteria = rowCriteria[0 : len(rowCriteria)-1]
+
 		sqlArguments = append(sqlArguments, pkValues...)
 		if len(criteria) > 0 {
 			criteria = criteria + ","
