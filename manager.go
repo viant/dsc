@@ -484,12 +484,14 @@ func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connect
 	var rowsByKey = make(map[string]interface{}, 0)
 	var candidates, insertables, updatables = make([]interface{}, 0), make([]interface{}, 0), make([]interface{}, 0)
 	var pkValues = make([][]interface{}, 0)
+
 	hasPK := len(m.tableDescriptorRegistry.Get(table).PkColumns) > 0
 	toolbox.ProcessSlice(dataPointer, func(row interface{}) bool {
 		var pkValueForThisRow = provider.Key(row)
 		for _, v := range pkValueForThisRow {
-			if v == nil { //pk value can not be nil
-				return false
+			if v == nil { //if pk value null, this row has to be insertable
+				insertables = append(insertables, row)
+				return true
 			}
 		}
 		candidates = append(candidates, row)
@@ -507,7 +509,6 @@ func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connect
 		}
 		//process existing rows and add mapped entires as updatables
 		for _, row := range rows {
-
 			key := toolbox.JoinAsString(row, "")
 			if instance, ok := rowsByKey[key]; ok {
 				updatables = append(updatables, instance)

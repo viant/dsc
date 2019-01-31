@@ -27,9 +27,6 @@ func (r *commonTableDescriptorRegistry) getDescriptor(table string) *TableDescri
 	dialect := GetDatastoreDialect(dbConfig.DriverName)
 	datastore, _ := dialect.GetCurrentDatastore(r.manager)
 	key := dialect.GetKeyName(r.manager, datastore, table)
-
-	fmt.Printf("descr: %v %v\n", table, key)
-
 	isAutoincrement := dialect.IsAutoincrement(r.manager, datastore, table)
 	descriptor := &TableDescriptor{
 		Table:         table,
