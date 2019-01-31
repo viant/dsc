@@ -1,8 +1,7 @@
-## Jan 31 2018 0.5.1
+## Jan 31 2018 0.4.2
     * Patched persisting row with nil primary key value
 
-
-## Jan 19 2018 0.5.0
+## Jan 19 2018 0.4.1
     * Change CreateTable specificiation data type
     * Update sql parser with mili column IN clause
 
