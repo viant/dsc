@@ -1,3 +1,6 @@
+## Feb 6 2019 0.4.3
+    * Patched show create table dialect embedding issue
+
 ## Jan 31 2018 0.4.2
     * Patched persisting row with nil primary key value
 
