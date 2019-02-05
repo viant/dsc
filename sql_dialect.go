@@ -118,7 +118,7 @@ type sqlDatastoreDialect struct {
 }
 
 //ShowCreateTable returns basic table DDL (this implementation does not check unique and fk constrains)
-func (d sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (string, error) {
+func (d *sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (string, error) {
 	datastore, err := d.DatastoreDialect.GetCurrentDatastore(manager)
 	if err != nil {
 		return "", err
@@ -431,7 +431,18 @@ func (d sqlDatastoreDialect) CanPersistBatch() bool {
 //NewSQLDatastoreDialect creates a new default sql dialect
 func NewSQLDatastoreDialect(tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL, tableInfoSQL string, schmeaIndex int, dialect DatastoreDialect) *sqlDatastoreDialect {
 	return &sqlDatastoreDialect{
-		tablesSQL, sequenceSQL, schemaSQL, allSchemaSQL, keySQL, disableForeignKeyCheck, enableForeignKeyCheck, autoIncrementSQL, tableInfoSQL, schmeaIndex, dialect}
+		tablesSQL:              tablesSQL,
+		sequenceSQL:            sequenceSQL,
+		schemaSQL:              schemaSQL,
+		allSchemaSQL:           allSchemaSQL,
+		keySQL:                 keySQL,
+		disableForeignKeyCheck: disableForeignKeyCheck,
+		enableForeignKeyCheck:  enableForeignKeyCheck,
+		autoIncrementSQL:       autoIncrementSQL,
+		tableInfoSQL:           tableInfoSQL,
+		schemaResultsetIndex:   schmeaIndex,
+		DatastoreDialect:       dialect,
+	}
 }
 
 type mySQLDialect struct {
@@ -444,7 +455,9 @@ func (d mySQLDialect) CanPersistBatch() bool {
 
 func newMySQLDialect() mySQLDialect {
 	var result = mySQLDialect{}
-	result.DatastoreDialect = NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, ansiTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, defaultSchemaSQL, ansiSchemaListSQL, ansiPrimaryKeySQL, mysqlDisableForeignCheck, mysqlEnableForeignCheck, defaultAutoincremetSQL, ansiTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
 
@@ -629,7 +642,9 @@ func (d casandraSQLDialect) GetCurrentDatastore(manager Manager) (string, error)
 
 func newCasandraDialect() *casandraSQLDialect {
 	var result = &casandraSQLDialect{}
-	result.sqlDatastoreDialect = NewSQLDatastoreDialect(casandraTableListV3SQL, ansiSequenceSQL, "", casandraSchemaListV3SQL, casandraPrimaryKeyV3SQL, "", "", "", casandraTableInfoV3SQL, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(casandraTableListV3SQL, ansiSequenceSQL, "", casandraSchemaListV3SQL, casandraPrimaryKeyV3SQL, "", "", "", casandraTableInfoV3SQL, 0, result)
+	result.sqlDatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
 
@@ -700,7 +715,9 @@ func (d sqlLiteDialect) GetKeyName(manager Manager, datastore, table string) str
 
 func newSQLLiteDialect() *sqlLiteDialect {
 	result := &sqlLiteDialect{}
-	result.DatastoreDialect = NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "", ansiTableInfo, 2, result)
+	sqlDialect := NewSQLDatastoreDialect(sqlLightTableSQL, sqlLightSequenceSQL, sqlLightSchemaSQL, sqlLightSchemaSQL, sqlLightPkSQL, "", "", "", ansiTableInfo, 2, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
 
@@ -714,7 +731,9 @@ func (d pgDialect) CanPersistBatch() bool {
 
 func newPgDialect() *pgDialect {
 	result := &pgDialect{}
-	result.DatastoreDialect = NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, ansiTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(pgTableListSQL, "", pgCurrentSchemaSQL, pgSchemaListSQL, pgPrimaryKeySQL, "", "", pgAutoincrementSQL, ansiTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
 
@@ -831,7 +850,9 @@ func (d oraDialect) Init(manager Manager, connection Connection) error {
 
 func newOraDialect() *oraDialect {
 	result := &oraDialect{}
-	result.DatastoreDialect = NewSQLDatastoreDialect(oraTableSQL, "", oraSchemaSQL, oraSchemaListSQL, oraPrimaryKeySQL, "", "", "", ansiTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(oraTableSQL, "", oraSchemaSQL, oraSchemaListSQL, oraPrimaryKeySQL, "", "", "", ansiTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
 
@@ -864,7 +885,9 @@ func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 
 func newOdbcDialect() *odbcDialect {
 	result := &odbcDialect{}
-	result.DatastoreDialect = NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
 
@@ -874,6 +897,8 @@ type msSQLDialect struct {
 
 func newMsSQLDialect() *msSQLDialect {
 	result := &msSQLDialect{}
-	result.DatastoreDialect = NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, "", "", "", "", ansiTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, "", "", "", "", ansiTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
 	return result
 }
