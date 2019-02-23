@@ -143,18 +143,14 @@ func (m *AbstractManager) ReadSingleOnConnection(connection Connection, resultPo
 	if mapper == nil {
 		mapper = NewRecordMapperIfNeeded(mapper, reflect.TypeOf(resultPointer).Elem())
 	}
-
 	var mapped interface{}
 	var elementType = reflect.TypeOf(resultPointer).Elem()
-
 	err = m.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, func(scanner Scanner) (toContinue bool, err error) {
-
 		mapped, err = mapper.Map(scanner)
 		if err != nil {
 			return false, fmt.Errorf("failed to map record: %v with %T due to %v", query, mapper, err)
 		}
 		if mapped != nil {
-
 			if elementType.Kind() == reflect.Slice {
 				slice := reflect.ValueOf(resultPointer).Elem()
 				toolbox.ProcessSlice(mapped, func(item interface{}) bool {
@@ -167,12 +163,13 @@ func (m *AbstractManager) ReadSingleOnConnection(connection Connection, resultPo
 				})
 
 			} else if elementType.Kind() == reflect.Map {
-				toolbox.ProcessMap(mapped, func(key, value interface{}) bool {
+				if err = toolbox.ProcessMap(mapped, func(key, value interface{}) bool {
 					aMap := reflect.ValueOf(resultPointer).Elem()
 					aMap.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
 					return true
-				})
-
+				}); err != nil {
+					return false, err
+				}
 			} else {
 				if reflect.ValueOf(mapped).Kind() == reflect.Ptr {
 					mapped = reflect.ValueOf(mapped).Elem().Interface()
@@ -233,6 +230,15 @@ func (m *AbstractManager) RegisterDescriptorIfNeeded(table string, instance inte
 
 //PersistAllOnConnection persists on connection all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
 func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error) {
+
+	if ranger, isRanger := dataPointer.(toolbox.Ranger); isRanger {
+		collection := toolbox.AsSlice(ranger)
+		dataPointer = &collection
+	} else if iterator, isRanger := dataPointer.(toolbox.Iterator); isRanger {
+		collection := toolbox.AsSlice(iterator)
+		dataPointer = &collection
+	}
+
 	toolbox.AssertPointerKind(dataPointer, reflect.Slice, "resultSlicePointer")
 	structType := reflect.TypeOf(dataPointer).Elem().Elem()
 	provider, err = NewDmlProviderIfNeeded(provider, table, structType)
@@ -365,9 +371,10 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 		dataIndexes: []int{},
 		manager:     m.Manager,
 	}
-	collection := toolbox.AsSlice(data)
-	var updateId = func(index int, seq int64) {
-		if seq == 0 {
+
+	var collection = make([]interface{}, 0)
+	updateId := func(index int, seq int64) {
+		if seq == 0 || index < 0 {
 			return
 		}
 		var ptrType = false
@@ -390,42 +397,41 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 			collection[index] = structPointerValue.Elem().Interface()
 		}
 	}
-
 	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
-	for i, item := range collection {
+	persist := func(index int, item interface{}) error {
 		parametrizedSQL := sqlProvider(item)
 		if len(parametrizedSQL.Values) == 1 && parametrizedSQL.Type == SQLTypeUpdate {
 			//nothing to udpate, one parameter is ID=? without values to update
-			continue
+			return nil
 		}
 
 		if parametrizedSQL.Type == SQLTypeInsert && canUseBatch && batchControl.firstSeq > 0 {
-
 			if len(batchControl.dataIndexes) > batchSize {
-				batchControl.Flush(connection, updateId)
+				if _, err := batchControl.Flush(connection, updateId); err != nil {
+					return err
+				}
 			}
-
-			batchControl.dataIndexes = append(batchControl.dataIndexes, i)
+			batchControl.dataIndexes = append(batchControl.dataIndexes, index)
 			if len(batchControl.sql) == 0 {
 				batchControl.sql = parametrizedSQL.SQL
 				batchControl.values = parametrizedSQL.Values
-				continue
+				return nil
 			}
 			valuesIndex := strings.Index(parametrizedSQL.SQL, " VALUES")
 			if valuesIndex != -1 {
 				batchControl.sql += "," + string(parametrizedSQL.SQL[valuesIndex+7:])
 				batchControl.values = append(batchControl.values, parametrizedSQL.Values...)
 			}
-			continue
+			return nil
 		}
 
 		result, err := m.Manager.ExecuteOnConnection(connection, parametrizedSQL.SQL, parametrizedSQL.Values)
 		if err != nil {
-			return 0, err
+			return err
 		}
 		affected, err := result.RowsAffected()
 		if err != nil {
-			return 0, err
+			return err
 		}
 
 		processed += int(affected)
@@ -433,13 +439,37 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 		if canUseBatch && batchControl.firstSeq == 0 {
 			batchControl.firstSeq = seq
 		}
-		updateId(i, seq)
+		updateId(index, seq)
+		return nil
 	}
 
-	if batchControl != nil {
-		batchControl.Flush(connection, updateId)
+	var err error
+	if ranger, ok := data.(toolbox.Ranger); ok {
+		err = ranger.Range(func(item interface{}) (b bool, e error) {
+			err = persist(-1, item)
+			return err == nil, err
+		})
+	} else if iterator, ok := data.(toolbox.Iterator); ok {
+		for iterator.HasNext() && err == nil {
+			var item interface{}
+			if err = iterator.Next(&item); err == nil {
+				err = persist(-1, item)
+			}
+		}
+	} else if toolbox.IsSlice(data) {
+		collection = toolbox.AsSlice(data)
+		for i, item := range collection {
+			if err = persist(i, item); err != nil {
+				break
+			}
+		}
 	}
-	return processed, nil
+	if batchControl != nil && err == nil {
+		if _, err := batchControl.Flush(connection, updateId); err != nil {
+			return 0, err
+		}
+	}
+	return processed, err
 }
 
 func (m *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []*ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {
