@@ -1,3 +1,9 @@
+## Feb 6 2019 0.5.0
+   * Added persist support with toolbox.Ranger, toolbox.Iterator data types 
+
+## Feb 6 2019 0.4.4
+    * Patched getColumn with metadata
+
 ## Feb 6 2019 0.4.3
     * Patched show create table dialect embedding issue
 
