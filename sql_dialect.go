@@ -27,7 +27,7 @@ const ansiTableInfo = ` SELECT
 	numeric_scale,
 	is_nullable
 FROM information_schema.columns
-WHERE table_schema = ? AND table_name = ? 
+WHERE  table_name = '%s' AND table_schema = '%s' 
 ORDER BY ordinal_position`
 
 const casandraVersion = "SELECT cql_version AS version from system.local"
@@ -96,7 +96,7 @@ const verticaTableInfo = `SELECT column_name,
 	numeric_scale,  
 	is_nullable 
 FROM v_catalog.columns 
-WHERE table_schema = ? AND table_name = ? 
+WHERE table_name = '%s' AND  table_schema = '%s' 
 ORDER BY ordinal_position`
 
 type nameRecord struct {
@@ -207,6 +207,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		return nil, err
 	}
 	var result = make([]Column, 0)
+
 	if !hasColumns(columns) {
 		tableInfoSQL := fmt.Sprintf(d.tableInfoSQL, tableName, datastore)
 		var tableColumns = []*TableColumn{}
