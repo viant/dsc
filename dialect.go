@@ -108,6 +108,10 @@ func (d DefaultDialect) EachTable(manager Manager, handler func(table string) er
 	return err
 }
 
+func (d DefaultDialect) Ping(manager Manager) error {
+	return nil
+}
+
 //NewDefaultDialect crates a defulat dialect. DefaultDialect can be used as a embeddable struct (super class).
 func NewDefaultDialect() DatastoreDialect {
 	return &DefaultDialect{}

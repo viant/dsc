@@ -154,6 +154,20 @@ func (d *sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (st
 	return fmt.Sprintf("CREATE TABLE %v(\n\t%v);", table, strings.Join(projection, ",\n\t")), nil
 }
 
+func (d sqlDatastoreDialect) Ping(manager Manager) error {
+	provider := manager.ConnectionProvider()
+	connection, err := provider.Get()
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+	dbConnection, err := asSQLDb(connection.Unwrap((*sql.DB)(nil)))
+	if err != nil {
+		return err
+	}
+	return dbConnection.Ping()
+}
+
 func (d sqlDatastoreDialect) CanHandleTransaction() bool {
 	return true
 }

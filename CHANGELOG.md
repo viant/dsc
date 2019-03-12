@@ -1,3 +1,6 @@
+## March 12 2019 0.6.0
+   * Added Dialect.Ping to check/wait if database if online 
+
 ## Feb 23 2019 0.5.0
    * Added persist support with toolbox.Ranger, toolbox.Iterator data types 
 

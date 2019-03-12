@@ -171,6 +171,9 @@ type DatastoreDialect interface {
 
 	//CanHandleTransaction returns true if driver can handle transaction
 	CanHandleTransaction() bool
+
+	//Checks if database is online
+	Ping(manager Manager) error
 }
 
 //Column represents TableColumn type interface (compabible with *sql.ColumnType
