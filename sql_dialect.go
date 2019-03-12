@@ -165,7 +165,22 @@ func (d sqlDatastoreDialect) Ping(manager Manager) error {
 	if err != nil {
 		return err
 	}
-	return dbConnection.Ping()
+	err =  dbConnection.Ping()
+	if err == nil {
+		return nil
+	}
+	errMessage := strings.ToLower(err.Error())
+	if strings.Contains(errMessage, "access denied") { //connected but issue with password
+		return nil
+	}
+	if strings.Contains(errMessage, "password") { //connected but issue with password
+		return nil
+	}
+	if strings.Contains(errMessage, "user") { //connected but issue with password
+		return nil
+	}
+
+	return err
 }
 
 func (d sqlDatastoreDialect) CanHandleTransaction() bool {
