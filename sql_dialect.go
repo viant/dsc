@@ -179,7 +179,6 @@ func (d sqlDatastoreDialect) Ping(manager Manager) error {
 	if strings.Contains(errMessage, "user") { //connected but issue with password
 		return nil
 	}
-
 	return err
 }
 
