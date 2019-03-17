@@ -165,7 +165,7 @@ func (d sqlDatastoreDialect) Ping(manager Manager) error {
 	if err != nil {
 		return err
 	}
-	err =  dbConnection.Ping()
+	err = dbConnection.Ping()
 	if err == nil {
 		return nil
 	}
