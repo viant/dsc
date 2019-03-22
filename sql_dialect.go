@@ -87,6 +87,31 @@ AND p.owner = UPPER('%v')
 AND p.constraint_type = 'P'
 ORDER BY c.position`
 
+const oraTableInfo = `
+SELECT 
+	COLUMN_NAME AS "column_name",
+	DATA_TYPE AS "data_type",
+	DATA_LENGTH AS "data_type_length",
+	DATA_PRECISION AS "numeric_precision",
+	(CASE WHEN NULLABLE = 'Y' THEN 1 END) AS "is_nullable"
+FROM ALL_TAB_COLUMNS
+WHERE TABLE_NAME = '%s' AND OWNER = '%s'
+ORDER BY COLUMN_ID
+`
+
+/*
+
+ ` SELECT
+	column_name,
+	data_type,
+	character_maximum_length AS data_type_length,
+	numeric_precision,
+	numeric_scale,
+	is_nullable
+FROM information_schema.columns
+WHERE  table_name = '%s' AND table_schema = '%s'
+ORDER BY ordinal_position`
+*/
 const msSchemaSQL = "SELECT SCHEMA_NAME() AS name"
 const msSequenceSQL = "SELECT current_value AS seq_value FROM sys.sequences WHERE  name = '%v'"
 const verticaTableInfo = `SELECT column_name, 
@@ -240,6 +265,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		tableInfoSQL := fmt.Sprintf(d.tableInfoSQL, tableName, datastore)
 		var tableColumns = []*TableColumn{}
 		err := manager.ReadAll(&tableColumns, tableInfoSQL, []interface{}{}, nil)
+
 		if err == nil {
 			for _, column := range tableColumns {
 				if index := strings.Index(column.DataType, "("); index != -1 {
@@ -254,6 +280,55 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		for _, column := range columns {
 			result = append(result, column)
 		}
+	}
+	return result, nil
+}
+
+func (d oraDialect) GetColumns(manager Manager, datastore, tableName string) ([]Column, error) {
+	provider := manager.ConnectionProvider()
+	connection, err := provider.Get()
+	if err != nil {
+		return nil, err
+	}
+	defer connection.Close()
+	dbConnection, err := asSQLDb(connection.Unwrap((*sql.DB)(nil)))
+	if err != nil {
+		return nil, err
+	}
+	var source = datastore + "." + tableName
+	currentDb, err := d.GetCurrentDatastore(manager)
+	if err == nil && currentDb == datastore {
+		source = tableName
+	}
+	var result = make([]Column, 0)
+	tableInfoSQL := fmt.Sprintf(oraTableInfo, tableName, datastore)
+	var tableColumns = []*TableColumn{}
+	err = manager.ReadAll(&tableColumns, tableInfoSQL, []interface{}{}, nil)
+	if err == nil {
+		for _, column := range tableColumns {
+			if index := strings.Index(column.DataType, "("); index != -1 {
+				column.DataType = string(column.DataType[:index])
+			}
+
+			column.DataType = strings.ToUpper(column.DataType)
+			if column.DataTypeLength != nil && strings.Contains(column.DataType, "CHAR") {
+				column.DataType += fmt.Sprintf("(%d)", *column.DataTypeLength)
+			}
+			result = append(result, column)
+		}
+		return result, nil
+	}
+	var query = "SELECT * FROM " + source + " WHERE 1 = 0"
+	rows, err := dbConnection.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query: %v, %v", query, err)
+	}
+	columns, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	for _, column := range columns {
+		result = append(result, column)
 	}
 	return result, nil
 }

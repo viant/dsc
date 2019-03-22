@@ -21,6 +21,7 @@ func init() {
 	RegisterDatastoreDialect("pg", newPgDialect())
 	RegisterDatastoreDialect("postgres", newPgDialect())
 	RegisterDatastoreDialect("ora", newOraDialect())
+	RegisterDatastoreDialect("oci8", newOraDialect())
 	RegisterDatastoreDialect("mssql", newMsSQLDialect())
 	RegisterDatastoreDialect("sqlite3", newSQLLiteDialect())
 	RegisterDatastoreDialect("cql", newCasandraDialect())
