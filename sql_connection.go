@@ -19,6 +19,9 @@ func (c *sqlConnection) CloseNow() error {
 	if err != nil {
 		return err
 	}
+	db.SetConnMaxLifetime(time.Microsecond)
+	db.SetMaxIdleConns(0)
+	db.SetMaxOpenConns(0)
 	return db.Close()
 }
 
@@ -112,7 +115,6 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 	//TODO add to control this with config parameters
 	//set to min to not have lingered connection
 	db.SetConnMaxLifetime(1 * time.Second)
-
 	result, err = c.NewConnection()
 	if err != nil {
 		return nil, err
