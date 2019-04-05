@@ -1,3 +1,6 @@
+## March 12 2019 0.6.1
+    * Updated close now
+    
 ## March 12 2019 0.6.0
    * Added Dialect.Ping to check/wait if database if online 
 
