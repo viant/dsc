@@ -116,6 +116,7 @@ func (cp *AbstractConnectionProvider) Close() error {
 			}
 		}
 	}
+
 	return nil
 }
 

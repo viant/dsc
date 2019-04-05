@@ -14,7 +14,7 @@ func (r commonManagerRegistry) Register(name string, manager Manager) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	if previousManager, found := r.registry[name]; found {
-		previousManager.ConnectionProvider().Close()
+		_ = previousManager.ConnectionProvider().Close()
 	}
 	r.registry[name] = manager
 }
