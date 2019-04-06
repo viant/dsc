@@ -255,6 +255,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 	if err != nil {
 		return nil, fmt.Errorf("unable to query: %v, %v", query, err)
 	}
+	defer rows.Close()
 	columns, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
@@ -323,6 +324,7 @@ func (d oraDialect) GetColumns(manager Manager, datastore, tableName string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("unable to query: %v, %v", query, err)
 	}
+	defer rows.Close()
 	columns, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
