@@ -1,3 +1,6 @@
+## April 15 2019 0.6.5
+    * Reduced  
+    
 ## April 5 2019 0.6.4
     * Patched connection leackage
     

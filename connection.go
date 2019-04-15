@@ -127,9 +127,9 @@ func (cp *AbstractConnectionProvider) Get() (Connection, error) {
 
 	var result Connection
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(100 * time.Millisecond):
 		{
-			log.Printf("failed to acquire connection from pool after a second, creating new connection ...")
+			Logf("unable to acquire connection from pool after a second, creating new connection ...")
 		}
 	case result = <-connectionPool:
 	}

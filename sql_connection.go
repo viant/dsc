@@ -19,9 +19,7 @@ func (c *sqlConnection) CloseNow() error {
 	if err != nil {
 		return err
 	}
-	db.SetConnMaxLifetime(time.Microsecond)
-	db.SetMaxIdleConns(0)
-	db.SetMaxOpenConns(0)
+	db.SetConnMaxLifetime(1000 *time.Millisecond)
 	return db.Close()
 }
 
@@ -37,7 +35,6 @@ func (c *sqlConnection) Begin() error {
 	if err != nil {
 		return err
 	}
-
 	c.tx = tx
 	return nil
 }
