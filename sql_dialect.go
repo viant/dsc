@@ -997,6 +997,18 @@ func newOdbcDialect() *odbcDialect {
 	return result
 }
 
+type ansiSQLDialect struct {
+	DatastoreDialect
+}
+
+func newAnsiSQLDialect() *msSQLDialect {
+	result := &msSQLDialect{}
+	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, ansiSequenceSQL, "", ansiSchemaListSQL, "", "", "", "", ansiTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
+	return result
+}
+
 type msSQLDialect struct {
 	DatastoreDialect
 }

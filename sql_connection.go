@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+const (
+	connMaxLifetimeMsKey     = "connMaxLifetimeMs"
+	defaultConnMaxLifetimeMs = 1000
+	maxIdleConnsKey          = "maxIdleConns"
+)
+
 type sqlConnection struct {
 	canHandleTransaction bool
 	*AbstractConnection
@@ -19,7 +25,7 @@ func (c *sqlConnection) CloseNow() error {
 	if err != nil {
 		return err
 	}
-	db.SetConnMaxLifetime(1000 *time.Millisecond)
+	db.SetConnMaxLifetime(1000 * time.Millisecond)
 	return db.Close()
 }
 
@@ -109,9 +115,16 @@ func (c *sqlConnectionProvider) Get() (Connection, error) {
 		return result, nil
 	}
 
-	//TODO add to control this with config parameters
-	//set to min to not have lingered connection
-	db.SetConnMaxLifetime(1 * time.Second)
+	if c.config.Has(connMaxLifetimeMsKey) {
+		connMaxLifetime := c.config.GetDuration(connMaxLifetimeMsKey, time.Millisecond, defaultConnMaxLifetimeMs)
+		if connMaxLifetime != 0 {
+			db.SetConnMaxLifetime(connMaxLifetime)
+		}
+	}
+	if c.config.Has(maxIdleConnsKey) {
+		db.SetMaxIdleConns(c.config.GetInt(maxIdleConnsKey, 1))
+	}
+
 	result, err = c.NewConnection()
 	if err != nil {
 		return nil, err

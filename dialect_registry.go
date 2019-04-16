@@ -13,6 +13,10 @@ func GetDatastoreDialect(driver string) DatastoreDialect {
 	if result, ok := datastoreDialectableRegistry[driver]; ok {
 		return result
 	}
+	if isSQLDatabase(driver) {
+		RegisterDatastoreDialect(driver, newAnsiSQLDialect())
+		return datastoreDialectableRegistry[driver]
+	}
 	panic("failed to lookup datastore dialect: " + driver)
 }
 

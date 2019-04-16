@@ -1,3 +1,7 @@
+## April 15 2019 0.7.0
+    * Added dynamic sql driver
+    * Added request limiter
+
 ## April 15 2019 0.6.5
     * Reduced connection time 
     
