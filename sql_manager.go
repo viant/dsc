@@ -55,6 +55,7 @@ func (m *sqlManager) initConnectionIfNeeded(connection Connection) error {
 }
 
 func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args []interface{}) (sql.Result, error) {
+	m.Acquire()
 	db, err := asSQLDb(connection.Unwrap(sqlDbPointer))
 	if err == nil {
 		err = m.initConnectionIfNeeded(connection)
@@ -89,6 +90,7 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 }
 
 func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, query string, args []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) error {
+	m.Acquire()
 	startTime := time.Now()
 	db, err := asSQLDb(connection.Unwrap((*sql.DB)(nil)))
 	if err == nil {

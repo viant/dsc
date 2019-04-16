@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/viant/toolbox"
 )
@@ -19,6 +20,7 @@ type AbstractManager struct {
 	config                  *Config
 	connectionProvider      ConnectionProvider
 	tableDescriptorRegistry TableDescriptorRegistry
+	limiter                 *Limiter
 }
 
 //Config returns a config.
@@ -52,9 +54,17 @@ func (m *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 	return m.Manager.ExecuteAllOnConnection(connection, sqls)
 }
 
+//Acquire if max request per second is specified this function will throttle any request exceeding specified max
+func (m *AbstractManager) Acquire() {
+	if m.config.MaxRequestPerSecond == 0 {
+		return
+	}
+
+	m.limiter.Acquire()
+}
+
 //ExecuteAllOnConnection executes passed in SQL on connection. It returns sql result, or an error.
 func (m *AbstractManager) ExecuteAllOnConnection(connection Connection, sqls []string) ([]sql.Result, error) {
-
 	var result = make([]sql.Result, len(sqls))
 
 	err := connection.Begin()
@@ -701,5 +711,8 @@ func NewAbstractManager(config *Config, connectionProvider ConnectionProvider, s
 	var descriptorRegistry = newTableDescriptorRegistry()
 	var result = &AbstractManager{config: config, connectionProvider: connectionProvider, Manager: self, tableDescriptorRegistry: descriptorRegistry}
 	descriptorRegistry.manager = result
+	if config.MaxRequestPerSecond > 0 {
+		result.limiter = NewLimiter(time.Second, config.MaxRequestPerSecond)
+	}
 	return result
 }
