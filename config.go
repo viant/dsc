@@ -15,18 +15,19 @@ const BatchSizeKey = "batchSize"
 
 //Config represent datastore config.
 type Config struct {
-	URL              string
-	DriverName       string
-	PoolSize         int
-	MaxPoolSize      int
-	Descriptor       string
-	SecureDescriptor string
-	Parameters       map[string]interface{}
-	Credentials      string
-	username         string
-	lock             *sync.Mutex
-	race             uint32
-	initRun          bool
+	URL                 string
+	DriverName          string
+	PoolSize            int
+	MaxPoolSize         int
+	Descriptor          string
+	SecureDescriptor    string
+	Parameters          map[string]interface{}
+	Credentials         string
+	MaxRequestPerSecond int
+	username            string
+	lock                *sync.Mutex
+	race                uint32
+	initRun             bool
 }
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
