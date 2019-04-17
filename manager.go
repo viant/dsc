@@ -376,6 +376,7 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 	var processed = 0
 	dialect := GetDatastoreDialect(m.config.DriverName)
 	canUseBatch := dialect != nil && dialect.CanPersistBatch()
+	Logf("[%v]: canUseBatch: %v\n", m.config.DriverName, canUseBatch)
 	var batchControl = &batchControl{
 		values:      []interface{}{},
 		dataIndexes: []int{},
@@ -407,7 +408,10 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 			collection[index] = structPointerValue.Elem().Interface()
 		}
 	}
+
 	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
+	Logf("batch size: %v\n", batchSize)
+
 	persist := func(index int, item interface{}) error {
 		parametrizedSQL := sqlProvider(item)
 		if len(parametrizedSQL.Values) == 1 && parametrizedSQL.Type == SQLTypeUpdate {
@@ -415,7 +419,7 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 			return nil
 		}
 
-		if parametrizedSQL.Type == SQLTypeInsert && canUseBatch && batchControl.firstSeq > 0 {
+		if parametrizedSQL.Type == SQLTypeInsert && canUseBatch {
 			if len(batchControl.dataIndexes) > batchSize {
 				if _, err := batchControl.Flush(connection, updateId); err != nil {
 					return err

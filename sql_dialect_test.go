@@ -63,4 +63,8 @@ func TestSqlDialect(t *testing.T) {
 
 	assert.Nil(t, dialect.DropDatastore(manager, "bar"))
 
+	{
+		mySQLDialect := dsc.GetDatastoreDialect("mysql")
+		assert.True(t, mySQLDialect.CanPersistBatch())
+	}
 }
