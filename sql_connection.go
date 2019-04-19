@@ -84,7 +84,11 @@ type sqlConnectionProvider struct {
 
 func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	config := c.ConnectionProvider.Config()
-	db, err := sql.Open(config.DriverName, config.Descriptor)
+	dsn, err := config.DsnDescriptor()
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open(config.DriverName, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
 	}

@@ -735,7 +735,7 @@ func (d casandraSQLDialect) GetCurrentDatastore(manager Manager) (string, error)
 		keySpace = manager.Config().GetString("dbname", "")
 	}
 	if keySpace == "" {
-		description := manager.Config().Descriptor
+		description, _ := manager.Config().DsnDescriptor()
 		if index := strings.Index(description, "keyspace="); index != -1 {
 			keySpace = string(description[index+len("keyspace="):])
 			if index := strings.Index(keySpace, "&"); index != -1 {

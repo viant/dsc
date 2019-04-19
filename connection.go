@@ -129,7 +129,7 @@ func (cp *AbstractConnectionProvider) Get() (Connection, error) {
 	select {
 	case <-time.After(100 * time.Millisecond):
 		{
-			Logf("unable to acquire connection from pool after a second, creating new connection ...")
+			Logf("unable to acquire connection from pool, creating new connection ...")
 		}
 	case result = <-connectionPool:
 	}

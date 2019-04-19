@@ -1,3 +1,8 @@
+## April 15 2019 0.8.0
+ - Secured raw description credentials
+    * Added DsnDescription method
+    * Removed SecuredDescriptor
+
 ## April 15 2019 0.7.1
     * Patched batch insert
 

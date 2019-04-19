@@ -20,11 +20,12 @@ type Config struct {
 	PoolSize            int
 	MaxPoolSize         int
 	Descriptor          string
-	SecureDescriptor    string
 	Parameters          map[string]interface{}
 	Credentials         string
 	MaxRequestPerSecond int
 	username            string
+	password            string
+	descriptor          string
 	lock                *sync.Mutex
 	race                uint32
 	initRun             bool
@@ -38,6 +39,16 @@ func (c *Config) Get(name string) string {
 		return toolbox.AsString(result)
 	}
 	return ""
+}
+
+//DsnDescriptor return dsn expanded descriptor or error
+func (c *Config) DsnDescriptor() (string, error) {
+	if c.descriptor == "" {
+		if err := c.Init(); err != nil {
+			return "", err
+		}
+	}
+	return c.descriptor, nil
 }
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
@@ -164,20 +175,21 @@ func (c *Config) Init() error {
 			c.Credentials = location
 		}
 		c.username = config.Username
-		c.SecureDescriptor = c.Descriptor
-		c.Parameters["username"] = config.Username
-		c.Parameters["password"] = config.Password
-		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, "[password]", "***", 1)
+		c.password = config.Password
+		c.Parameters["username"] = c.username
 	}
 
+	c.descriptor = c.Descriptor
+	c.descriptor = strings.Replace(c.descriptor, "[username]", c.username, 1)
+	c.descriptor = strings.Replace(c.descriptor, "[password]", c.password, 1)
 	for key, value := range c.Parameters {
 		textValue, ok := value.(string)
 		if !ok {
 			continue
 		}
 		macro := "[" + key + "]"
-		c.Descriptor = strings.Replace(c.Descriptor, macro, textValue, 1)
-		c.SecureDescriptor = strings.Replace(c.SecureDescriptor, macro, textValue, 1)
+		c.descriptor = strings.Replace(c.descriptor, macro, textValue, 1)
+
 	}
 	return nil
 }
