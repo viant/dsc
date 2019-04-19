@@ -25,7 +25,7 @@ type Config struct {
 	MaxRequestPerSecond int
 	username            string
 	password            string
-	descriptor          string
+	dsnDescriptor       string
 	lock                *sync.Mutex
 	race                uint32
 	initRun             bool
@@ -43,12 +43,12 @@ func (c *Config) Get(name string) string {
 
 //DsnDescriptor return dsn expanded descriptor or error
 func (c *Config) DsnDescriptor() (string, error) {
-	if c.descriptor == "" {
+	if c.dsnDescriptor == "" {
 		if err := c.Init(); err != nil {
 			return "", err
 		}
 	}
-	return c.descriptor, nil
+	return c.dsnDescriptor, nil
 }
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
@@ -147,6 +147,27 @@ func (c *Config) initMutextIfNeeed() {
 	}
 }
 
+func (c *Config) loadCredentials() error {
+	if c.Credentials == "" {
+		return nil
+	}
+	secrets := secret.New("", false)
+	config, err := secrets.GetCredentials(c.Credentials)
+	if err != nil {
+		return err
+	}
+	if len(c.Parameters) == 0 {
+		c.Parameters = make(map[string]interface{})
+	}
+	if location, err := secrets.CredentialsLocation(c.Credentials); err == nil {
+		c.Credentials = location
+	}
+	c.username = config.Username
+	c.password = config.Password
+	c.Parameters["username"] = c.username
+	return nil
+}
+
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
 	defer func() { c.initRun = true }()
@@ -157,39 +178,22 @@ func (c *Config) Init() error {
 			return err
 		}
 	}
-
 	var lock = c.lock
 	lock.Lock()
 	defer lock.Unlock()
-
-	if c.Credentials != "" {
-		secrets := secret.New("", false)
-		config, err := secrets.GetCredentials(c.Credentials)
-		if err != nil {
-			return err
-		}
-		if len(c.Parameters) == 0 {
-			c.Parameters = make(map[string]interface{})
-		}
-		if location, err := secrets.CredentialsLocation(c.Credentials); err == nil {
-			c.Credentials = location
-		}
-		c.username = config.Username
-		c.password = config.Password
-		c.Parameters["username"] = c.username
+	if err := c.loadCredentials(); err != nil {
+		return err
 	}
-
-	c.descriptor = c.Descriptor
-	c.descriptor = strings.Replace(c.descriptor, "[username]", c.username, 1)
-	c.descriptor = strings.Replace(c.descriptor, "[password]", c.password, 1)
+	c.dsnDescriptor = c.Descriptor
+	c.dsnDescriptor = strings.Replace(c.dsnDescriptor, "[username]", c.username, 1)
+	c.dsnDescriptor = strings.Replace(c.dsnDescriptor, "[password]", c.password, 1)
 	for key, value := range c.Parameters {
 		textValue, ok := value.(string)
 		if !ok {
 			continue
 		}
 		macro := "[" + key + "]"
-		c.descriptor = strings.Replace(c.descriptor, macro, textValue, 1)
-
+		c.dsnDescriptor = strings.Replace(c.dsnDescriptor, macro, textValue, 1)
 	}
 	return nil
 }
