@@ -88,7 +88,6 @@ func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("dsn:%v\n", dsn)
 	db, err := sql.Open(config.DriverName, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
