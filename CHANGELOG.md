@@ -1,4 +1,4 @@
-## April 28 2019 0.8.1
+## April 28 2019 0.8.2
  - Patched nil pointer on keySetter
 
 ## April 15 2019 0.8.0
