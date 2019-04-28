@@ -1,3 +1,6 @@
+## April 28 2019 0.8.1
+ - Patched nil pointer on keySetter
+
 ## April 15 2019 0.8.0
  - Secured raw description credentials
     * Added DsnDescription method
