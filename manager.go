@@ -401,12 +401,16 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 		}
 		structPointerValue := reflect.New(dataType)
 		reflect.Indirect(structPointerValue).Set(itemValue)
-		keySetter.SetKey(structPointerValue.Interface(), seq)
+
+		if keySetter != nil {
+			keySetter.SetKey(structPointerValue.Interface(), seq)
+		}
 		if ptrType {
 			collection[index] = structPointerValue.Interface()
 		} else {
 			collection[index] = structPointerValue.Elem().Interface()
 		}
+
 	}
 
 	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
