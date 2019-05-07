@@ -1,5 +1,6 @@
-## MAy 7 2019 0.8.3
+## MAy 7 2019 0.8.4
  - Patched CreateDatastore ora dialect
+ - Patched  duplicate column DML builder
 
 ## April 28 2019 0.8.2
  - Patched nil pointer on keySetter

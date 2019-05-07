@@ -3,8 +3,6 @@ package dsc
 import (
 	"fmt"
 	"strings"
-
-	"github.com/viant/toolbox"
 )
 
 var querySQLTemplate = "SELECT %v FROM %v WHERE %v"
@@ -104,10 +102,14 @@ func buildDeleteSQL(descriptor *TableDescriptor) string {
 func NewDmlBuilder(descriptor *TableDescriptor) *DmlBuilder {
 	pkMap := make(map[string]bool)
 
-	toolbox.SliceToMap(descriptor.PkColumns, pkMap, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
+	if len(descriptor.PkColumns) > 0 {
+		for _, k := range descriptor.PkColumns {
+			pkMap[strings.ToLower(k)] = true
+		}
+	}
 	var nonPkColumns = make([]string, 0)
 	for _, column := range descriptor.Columns {
-		if _, ok := pkMap[column]; !ok {
+		if _, ok := pkMap[strings.ToLower(column)]; !ok {
 			nonPkColumns = append(nonPkColumns, column)
 		}
 	}
