@@ -1,3 +1,6 @@
+## MAy 7 2019 0.8.3
+ - Patched CreateDatastore ora dialect
+
 ## April 28 2019 0.8.2
  - Patched nil pointer on keySetter
 

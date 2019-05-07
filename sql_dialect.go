@@ -899,8 +899,8 @@ func (d oraDialect) CanPersistBatch() bool {
 
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
 func (d oraDialect) CreateDatastore(manager Manager, datastore string) error {
-	var password, ok = manager.Config().Parameters["password"]
-	if !ok {
+	password := manager.Config().password
+	if password == "" {
 		return fmt.Errorf("password was empty")
 	}
 	DCL := fmt.Sprintf("CREATE USER %v IDENTIFIED BY %v", datastore, password)
