@@ -100,16 +100,19 @@ func buildDeleteSQL(descriptor *TableDescriptor) string {
 
 //NewDmlBuilder returns a new DmlBuilder for passed in table descriptor.
 func NewDmlBuilder(descriptor *TableDescriptor) *DmlBuilder {
-	pkMap := make(map[string]bool)
+	pkMap := make(map[string]int)
 
 	if len(descriptor.PkColumns) > 0 {
-		for _, k := range descriptor.PkColumns {
-			pkMap[strings.ToLower(k)] = true
+		for i, k := range descriptor.PkColumns {
+			pkMap[strings.ToLower(k)] = i
 		}
 	}
 	var nonPkColumns = make([]string, 0)
 	for _, column := range descriptor.Columns {
-		if _, ok := pkMap[strings.ToLower(column)]; !ok {
+		idx, ok := pkMap[strings.ToLower(column)]
+		if ok { //update pk with right case
+			descriptor.PkColumns[idx] = column
+		} else {
 			nonPkColumns = append(nonPkColumns, column)
 		}
 	}

@@ -1,4 +1,8 @@
-## MAy 7 2019 0.8.4
+## MAy 7 2019 0.9.0
+ - Changed IsNullable as interface type
+ - Added dialect.BulkInsertType
+ - Added INSERT ALL support
+ - Patched oracle show create table
  - Patched CreateDatastore ora dialect
  - Patched  duplicate column DML builder
 

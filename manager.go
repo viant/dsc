@@ -13,6 +13,8 @@ import (
 
 var defaultBatchSize = 512
 
+var BulkInsertAllType = "insertAll"
+
 //AbstractManager represent general abstraction for datastore implementation.
 // Note that ExecuteOnConnection,  ReadAllOnWithHandlerOnConnection may need to be implemented for particular datastore.
 type AbstractManager struct {
@@ -344,6 +346,7 @@ type batchControl struct {
 	values      []interface{}
 	dataIndexes []int
 	firstSeq    int64
+	isInsertAll bool
 	manager     Manager
 }
 
@@ -353,6 +356,9 @@ func (c *batchControl) Flush(connection Connection, updateId func(index int, seq
 	}
 	var dataIndexes = c.dataIndexes
 	c.dataIndexes = []int{}
+	if c.isInsertAll {
+		c.sql += " SELECT 1 FROM DUAL"
+	}
 	result, err := c.manager.ExecuteOnConnection(connection, c.sql, c.values)
 	c.sql = ""
 	c.values = []interface{}{}
@@ -375,12 +381,23 @@ func (c *batchControl) Flush(connection Connection, updateId func(index int, seq
 func (m *AbstractManager) PersistData(connection Connection, data interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
 	var processed = 0
 	dialect := GetDatastoreDialect(m.config.DriverName)
-	canUseBatch := dialect != nil && dialect.CanPersistBatch()
+
+	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
+	Logf("batch size: %v\n", batchSize)
+
+	canUseBatch := dialect != nil && dialect.CanPersistBatch() && batchSize > 1
+
+	isInsertAll := dialect.BulkInsertType() == BulkInsertAllType
+
 	Logf("[%v]: canUseBatch: %v\n", m.config.DriverName, canUseBatch)
+
+	//TODO may need to move batch insert to dialect ?
+
 	var batchControl = &batchControl{
 		values:      []interface{}{},
 		dataIndexes: []int{},
 		manager:     m.Manager,
+		isInsertAll: isInsertAll,
 	}
 
 	var collection = make([]interface{}, 0)
@@ -413,9 +430,6 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 
 	}
 
-	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
-	Logf("batch size: %v\n", batchSize)
-
 	persist := func(index int, item interface{}) error {
 		parametrizedSQL := sqlProvider(item)
 		if len(parametrizedSQL.Values) == 1 && parametrizedSQL.Type == SQLTypeUpdate {
@@ -432,12 +446,24 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 			batchControl.dataIndexes = append(batchControl.dataIndexes, index)
 			if len(batchControl.sql) == 0 {
 				batchControl.sql = parametrizedSQL.SQL
+				if isInsertAll {
+					batchControl.sql = strings.Replace(batchControl.sql, "INSERT ", "INSERT ALL ", 1)
+				}
 				batchControl.values = parametrizedSQL.Values
 				return nil
 			}
-			valuesIndex := strings.Index(parametrizedSQL.SQL, " VALUES")
+
+			fragment := " VALUES"
+			if isInsertAll {
+				fragment = "INSERT "
+			}
+			valuesIndex := strings.Index(parametrizedSQL.SQL, fragment)
 			if valuesIndex != -1 {
-				batchControl.sql += "," + string(parametrizedSQL.SQL[valuesIndex+7:])
+				if isInsertAll {
+					batchControl.sql += "\n" + string(parametrizedSQL.SQL[valuesIndex+7:])
+				} else {
+					batchControl.sql += "," + string(parametrizedSQL.SQL[valuesIndex+7:])
+				}
 				batchControl.values = append(batchControl.values, parametrizedSQL.Values...)
 			}
 			return nil
