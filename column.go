@@ -1,15 +1,18 @@
 package dsc
 
-import "reflect"
+import (
+	"github.com/viant/toolbox"
+	"reflect"
+)
 
 type TableColumn struct {
-	ColumnName       string `column:"column_name"`
-	DataType         string `column:"data_type"`
-	DataTypeLength   *int64 `column:"data_type_length"`
-	NumericPrecision *int64 `column:"numeric_precision"`
-	NumericScale     *int64 `column:"numeric_scale"`
-	IsNullable       *bool  `column:"is_nullable"`
-	Position         int    `column:"position"`
+	ColumnName       string      `column:"column_name"`
+	DataType         string      `column:"data_type"`
+	DataTypeLength   *int64      `column:"data_type_length"`
+	NumericPrecision *int64      `column:"numeric_precision"`
+	NumericScale     *int64      `column:"numeric_scale"`
+	IsNullable       interface{} `column:"is_nullable"`
+	Position         int         `column:"position"`
 	scanType         reflect.Type
 }
 
@@ -39,7 +42,7 @@ func (c *TableColumn) Nullable() (nullable, ok bool) {
 	if c.IsNullable == nil {
 		return false, false
 	}
-	return *c.IsNullable, true
+	return toolbox.AsBoolean(c.IsNullable), true
 }
 
 // Common type include "VARCHAR", "TEXT", "NVARCHAR", "DECIMAL", "BOOL", "INT", "BIGINT".
