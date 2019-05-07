@@ -151,6 +151,9 @@ type DatastoreDialect interface {
 	//Flag if data store can persist batch
 	CanPersistBatch() bool
 
+	//BulkInsert type
+	BulkInsertType() string
+
 	//DisableForeignKeyCheck disables fk check
 	DisableForeignKeyCheck(manager Manager, connection Connection) error
 

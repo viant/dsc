@@ -95,7 +95,7 @@ SELECT
 	DATA_PRECISION AS "numeric_precision",
 	(CASE WHEN NULLABLE = 'Y' THEN 1 END) AS "is_nullable"
 FROM ALL_TAB_COLUMNS
-WHERE TABLE_NAME = '%s' AND OWNER = '%s'
+WHERE UPPER(TABLE_NAME) = UPPER('%s') AND OWNER = '%s'
 ORDER BY COLUMN_ID
 `
 
@@ -140,6 +140,10 @@ type sqlDatastoreDialect struct {
 	tableInfoSQL           string
 	schemaResultsetIndex   int
 	DatastoreDialect
+}
+
+func (d *sqlDatastoreDialect) BulkInsertType() string {
+	return ""
 }
 
 //ShowCreateTable returns basic table DDL (this implementation does not check unique and fk constrains)
@@ -301,6 +305,7 @@ func (d oraDialect) GetColumns(manager Manager, datastore, tableName string) ([]
 	if err == nil && currentDb == datastore {
 		source = tableName
 	}
+
 	var result = make([]Column, 0)
 	tableInfoSQL := fmt.Sprintf(oraTableInfo, tableName, datastore)
 	var tableColumns = []*TableColumn{}
@@ -310,15 +315,17 @@ func (d oraDialect) GetColumns(manager Manager, datastore, tableName string) ([]
 			if index := strings.Index(column.DataType, "("); index != -1 {
 				column.DataType = string(column.DataType[:index])
 			}
-
 			column.DataType = strings.ToUpper(column.DataType)
-			if column.DataTypeLength != nil && strings.Contains(column.DataType, "CHAR") {
+			if column.DataType == "NUMBER" {
+				column.DataType += fmt.Sprintf("(%d, %d)", *column.DataTypeLength, *column.NumericPrecision)
+			} else if column.DataTypeLength != nil && strings.Contains(column.DataType, "CHAR") {
 				column.DataType += fmt.Sprintf("(%d)", *column.DataTypeLength)
 			}
 			result = append(result, column)
 		}
 		return result, nil
 	}
+
 	var query = "SELECT * FROM " + source + " WHERE 1 = 0"
 	rows, err := dbConnection.Query(query)
 	if err != nil {
@@ -895,6 +902,10 @@ type oraDialect struct {
 
 func (d oraDialect) CanPersistBatch() bool {
 	return true
+}
+
+func (d oraDialect) BulkInsertType() string {
+	return BulkInsertAllType
 }
 
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore

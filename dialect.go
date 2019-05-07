@@ -48,6 +48,10 @@ func (d DefaultDialect) GetCurrentDatastore(manager Manager) (string, error) {
 	return "", nil
 }
 
+func (d DefaultDialect) BulkInsertType() string {
+	return ""
+}
+
 func (d DefaultDialect) GetSequence(manager Manager, name string) (int64, error) {
 	return 0, errUnsupportedOperation
 }
