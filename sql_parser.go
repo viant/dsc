@@ -113,6 +113,7 @@ type BaseStatement struct {
 	*SQLCriteria
 	SQL     string
 	Table   string
+	Alias   string
 	Columns []*SQLColumn
 }
 
@@ -610,10 +611,16 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	}
 	result.Table = token.Matched
 
-	token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "WHERE | GROUP BY | eof", eof, whereKeyword, groupKeyword)
+	token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "WHERE | GROUP BY | eof", eof, whereKeyword, groupKeyword, id)
 	if err != nil {
 		return nil, err
 	}
+	//alias
+	if token.Token == id {
+		result.BaseStatement.Alias = token.Matched
+		token, err = qp.expectOptionalWhitespaceFollowedBy(tokenizer, "WHERE | GROUP BY | eof", eof, whereKeyword, groupKeyword, id)
+	}
+
 	if token.Token == eof {
 		return result, nil
 	}

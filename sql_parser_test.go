@@ -8,6 +8,8 @@ import (
 	"github.com/viant/toolbox"
 )
 
+
+
 func TestAggregationQueryParser(t *testing.T) {
 
 	parser := dsc.NewQueryParser()
@@ -68,13 +70,14 @@ func TestQueryParser(t *testing.T) {
 
 	}
 
+
 	{
-		query, err := parser.Parse("SELECT a AS one FROM bar")
+		query, err := parser.Parse("SELECT  id,\nevent_type,\nquantity,\ntimestamp,\nquery_string\nFROM events t")
 		assert.Nil(t, err)
-		assert.Equal(t, 1, len(query.Columns))
-		assert.Equal(t, "a", query.Columns[0].Name)
-		assert.Equal(t, "one", query.Columns[0].Alias)
-		assert.Equal(t, "bar", query.Table)
+		assert.Equal(t, 5, len(query.Columns))
+		assert.Equal(t, "id", query.Columns[0].Name)
+		assert.Equal(t, "events", query.Table)
+		assert.Equal(t, "t", query.Alias)
 	}
 
 	{
