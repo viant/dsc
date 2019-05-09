@@ -1,4 +1,4 @@
-## MAy 8 2019 0.9.1
+## MAy 8 2019 0.10.0
  - Added config.Clone
  
 ## MAy 7 2019 0.9.0
