@@ -220,6 +220,7 @@ func (c *Config) Clone() *Config {
 		password:            c.password,
 		dsnDescriptor:       c.dsnDescriptor,
 		lock:                &sync.Mutex{},
+		Credentials:		 cred,
 		cred:                c.cred,
 	}
 	if len(c.Parameters) > 0 {
