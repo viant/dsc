@@ -1,3 +1,6 @@
+## MAy 8 2019 0.9.1
+ - Added config.Clone
+ 
 ## MAy 7 2019 0.9.0
  - Changed IsNullable as interface type
  - Added dialect.BulkInsertType

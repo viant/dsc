@@ -23,6 +23,7 @@ type Config struct {
 	Parameters          map[string]interface{}
 	Credentials         string
 	MaxRequestPerSecond int
+	cred                string
 	username            string
 	password            string
 	dsnDescriptor       string
@@ -171,6 +172,9 @@ func (c *Config) loadCredentials() error {
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
 	defer func() { c.initRun = true }()
+	if c.cred == "" {
+		c.cred = c.Credentials
+	}
 	c.initMutextIfNeeed()
 	if c.URL != "" && c.DriverName == "" {
 		resource := url.NewResource(c.URL)
@@ -196,6 +200,34 @@ func (c *Config) Init() error {
 		c.dsnDescriptor = strings.Replace(c.dsnDescriptor, macro, textValue, 1)
 	}
 	return nil
+}
+
+//Clone clones config
+func (c *Config) Clone() *Config {
+	cred := c.cred
+	if cred == "" {
+		cred = c.Credentials
+	}
+	result := &Config{
+		DriverName:          c.DriverName,
+		URL:                 c.URL,
+		Descriptor:          c.Descriptor,
+		PoolSize:            c.PoolSize,
+		MaxPoolSize:         c.MaxPoolSize,
+		MaxRequestPerSecond: c.MaxRequestPerSecond,
+		Parameters:          make(map[string]interface{}),
+		username:            c.username,
+		password:            c.password,
+		dsnDescriptor:       c.dsnDescriptor,
+		lock:                &sync.Mutex{},
+		cred:                c.cred,
+	}
+	if len(c.Parameters) > 0 {
+		for k, v := range c.Parameters {
+			result.Parameters[k] = v
+		}
+	}
+	return result
 }
 
 //NewConfig creates new Config, it takes the following parameters
