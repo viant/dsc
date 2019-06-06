@@ -8,8 +8,6 @@ import (
 	"github.com/viant/toolbox"
 )
 
-
-
 func TestAggregationQueryParser(t *testing.T) {
 
 	parser := dsc.NewQueryParser()
@@ -69,7 +67,6 @@ func TestQueryParser(t *testing.T) {
 		assert.Equal(t, "bar", query.Table)
 
 	}
-
 
 	{
 		query, err := parser.Parse("SELECT  id,\nevent_type,\nquantity,\ntimestamp,\nquery_string\nFROM events t")

@@ -18,11 +18,7 @@ type QueryBuilder struct {
 //BuildQueryAll builds query all data without where clause
 func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
-	table := qb.TableDescriptor.Table
-	if len(qb.TableDescriptor.FromQuery) > 0 {
-		table = "(" + qb.TableDescriptor.FromQuery + ")" + qb.TableDescriptor.FromQueryAlias
-	}
-
+	table := qb.TableDescriptor.From()
 	return &ParametrizedSQL{
 		SQL:    fmt.Sprintf(queryAllSQLTemplate, columnsLiteral, table),
 		Values: make([]interface{}, 0),
@@ -59,10 +55,7 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 	if multiValuePk {
 		whereCriteria = "(" + pkColumns + ") IN (" + criteria + ")"
 	}
-	table := qb.TableDescriptor.Table
-	if len(qb.TableDescriptor.FromQuery) > 0 {
-		table = "(" + qb.TableDescriptor.FromQuery + ")"
-	}
+	table := qb.TableDescriptor.From()
 	return &ParametrizedSQL{
 		SQL:    fmt.Sprintf(querySQLTemplate, columnsLiteral, table, whereCriteria),
 		Values: sqlArguments,
