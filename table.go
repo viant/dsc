@@ -2,12 +2,16 @@ package dsc
 
 import "fmt"
 
+
+
 //TableDescriptor represents a table details.
 type TableDescriptor struct {
 	Table          string
 	Autoincrement  bool
 	PkColumns      []string
 	Columns        []string
+	ColumnTypes    map[string]string
+	Nullables      map[string]bool
 	OrderColumns   []string
 	Schema         []map[string]interface{} //Schema to be interpreted by NoSQL drivers for create table operation .
 	SchemaURL      string                   //url with JSON to the TableDescriptor.Schema.
