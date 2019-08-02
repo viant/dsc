@@ -124,6 +124,10 @@ FROM v_catalog.columns
 WHERE table_name = '%s' AND  table_schema = '%s' 
 ORDER BY ordinal_position`
 
+const verticaSchemaSQL = "SELECT DISTINCT SCHEMA_NAME AS name FROM v_catalog.schemata"
+const verticaTableListSQL = "SELECT table_name AS name FROM  v_catalog.tables WHERE table_schema = ?"
+const verticaCurrentSchema = "SELECT current_schema"
+
 type nameRecord struct {
 	Name string `TableColumn:"name"`
 }
@@ -265,12 +269,10 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		return nil, err
 	}
 	var result = make([]Column, 0)
-
 	if !hasColumns(columns) {
 		tableInfoSQL := fmt.Sprintf(d.tableInfoSQL, tableName, datastore)
 		var tableColumns = []*TableColumn{}
 		err := manager.ReadAll(&tableColumns, tableInfoSQL, []interface{}{}, nil)
-
 		if err == nil {
 			for _, column := range tableColumns {
 				if index := strings.Index(column.DataType, "("); index != -1 {
@@ -282,6 +284,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 			return result, nil
 		}
 	} else {
+		
 		for _, column := range columns {
 			result = append(result, column)
 		}
@@ -977,6 +980,22 @@ type odbcDialect struct {
 	DatastoreDialect
 }
 
+
+//DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
+func (d odbcDialect) DropDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("DROP SCHEMA " + datastore + " CASCADE")
+	return err
+}
+
+
+//CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
+func (d odbcDialect) CreateDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("CREATE SCHEMA " + datastore)
+	return err
+}
+//SELECT DISTINCT SCHEMA_NAME FROM v_catalog.schemata
+
+
 func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
@@ -1002,7 +1021,7 @@ func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 
 func newOdbcDialect() *odbcDialect {
 	result := &odbcDialect{}
-	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(verticaTableListSQL, "", verticaCurrentSchema, verticaSchemaSQL, "", "", "", "", verticaTableInfo, 0, result)
 	result.DatastoreDialect = sqlDialect
 	sqlDialect.DatastoreDialect = result
 	return result
