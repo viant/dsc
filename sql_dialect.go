@@ -1019,6 +1019,13 @@ func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	return nil
 }
 
+
+func (d *odbcDialect) CanPersistBatch() bool {
+	return true
+}
+
+
+
 func newOdbcDialect() *odbcDialect {
 	result := &odbcDialect{}
 	sqlDialect := NewSQLDatastoreDialect(verticaTableListSQL, "", verticaCurrentSchema, verticaSchemaSQL, "", "", "", "", verticaTableInfo, 0, result)
