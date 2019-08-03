@@ -1024,6 +1024,9 @@ func (d *odbcDialect) CanPersistBatch() bool {
 	return true
 }
 
+func (d *odbcDialect) BulkInsertType() string {
+	return UnionSelectInsert
+}
 
 
 func newOdbcDialect() *odbcDialect {

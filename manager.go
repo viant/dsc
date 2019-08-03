@@ -14,6 +14,7 @@ import (
 var defaultBatchSize = 512
 
 var BulkInsertAllType = "insertAll"
+var UnionSelectInsert = "unionSelectInsert"
 
 //AbstractManager represent general abstraction for datastore implementation.
 // Note that ExecuteOnConnection,  ReadAllOnWithHandlerOnConnection may need to be implemented for particular datastore.
@@ -342,12 +343,13 @@ func (m *AbstractManager) PersistSingleOnConnection(connection Connection, dataP
 }
 
 type batchControl struct {
-	sql         string
-	values      []interface{}
-	dataIndexes []int
-	firstSeq    int64
-	isInsertAll bool
-	manager     Manager
+	sql                 string
+	values              []interface{}
+	dataIndexes         []int
+	firstSeq            int64
+	isInsertAll         bool
+	isUnionSelectInsert bool
+	manager             Manager
 }
 
 func (c *batchControl) Flush(connection Connection, updateId func(index int, seq int64)) (int, error) {
@@ -377,6 +379,8 @@ func (c *batchControl) Flush(connection Connection, updateId func(index int, seq
 	return int(affected), nil
 }
 
+
+
 //PersistData persist data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
 func (m *AbstractManager) PersistData(connection Connection, data interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
 	var processed = 0
@@ -388,16 +392,18 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 	canUseBatch := dialect != nil && dialect.CanPersistBatch() && batchSize > 1
 
 	isInsertAll := dialect.BulkInsertType() == BulkInsertAllType
+	isUnionSelectInsert := dialect.BulkInsertType() == UnionSelectInsert
 
 	Logf("[%v]: canUseBatch: %v\n", m.config.DriverName, canUseBatch)
 
 	//TODO may need to move batch insert to dialect ?
 
 	var batchControl = &batchControl{
-		values:      []interface{}{},
-		dataIndexes: []int{},
-		manager:     m.Manager,
-		isInsertAll: isInsertAll,
+		values:              []interface{}{},
+		dataIndexes:         []int{},
+		manager:             m.Manager,
+		isInsertAll:         isInsertAll,
+		isUnionSelectInsert: isUnionSelectInsert,
 	}
 
 	var collection = make([]interface{}, 0)
@@ -443,23 +449,38 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 					return err
 				}
 			}
+			fragment := " VALUES"
+			valuesIndex := strings.Index(parametrizedSQL.SQL, fragment)
+
 			batchControl.dataIndexes = append(batchControl.dataIndexes, index)
 			if len(batchControl.sql) == 0 {
 				batchControl.sql = parametrizedSQL.SQL
-				if isInsertAll {
+				if batchControl.isUnionSelectInsert {
+					selectAll :=  " SELECT " + strings.Trim(strings.TrimSpace(string(parametrizedSQL.SQL[valuesIndex+7:])), "()")
+					selectAll = m.ExpandSQL(selectAll, parametrizedSQL.Values)
+					parametrizedSQL.Values = []interface{}{}
+					batchControl.sql = batchControl.sql[:valuesIndex] + " " + selectAll
+
+				} else if isInsertAll {
 					batchControl.sql = strings.Replace(batchControl.sql, "INSERT ", "INSERT ALL ", 1)
 				}
 				batchControl.values = parametrizedSQL.Values
 				return nil
 			}
 
-			fragment := " VALUES"
 			if isInsertAll {
 				fragment = "INSERT "
 			}
-			valuesIndex := strings.Index(parametrizedSQL.SQL, fragment)
+
+
 			if valuesIndex != -1 {
-				if isInsertAll {
+				if batchControl.isUnionSelectInsert {
+					selectAll :=  "\n UNION SELECT " + strings.Trim(strings.TrimSpace(string(parametrizedSQL.SQL[valuesIndex+7:])), "()")
+					selectAll = m.ExpandSQL(selectAll, parametrizedSQL.Values)
+					parametrizedSQL.Values = []interface{}{}
+					batchControl.sql += selectAll
+
+				} else if isInsertAll {
 					batchControl.sql += "\n" + string(parametrizedSQL.SQL[valuesIndex+7:])
 				} else {
 					batchControl.sql += "," + string(parametrizedSQL.SQL[valuesIndex+7:])
