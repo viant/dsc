@@ -476,7 +476,7 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 			valuesIndex = strings.Index(parametrizedSQL.SQL, fragment)
 			if valuesIndex != -1 {
 				if batchControl.isUnionSelectInsert {
-					selectAll :=  "\n UNION SELECT " + strings.Trim(strings.TrimSpace(string(parametrizedSQL.SQL[valuesIndex+7:])), "()")
+					selectAll :=  "\nUNION ALL SELECT " + strings.Trim(strings.TrimSpace(string(parametrizedSQL.SQL[valuesIndex+7:])), "()")
 					selectAll = m.ExpandSQL(selectAll, parametrizedSQL.Values)
 					parametrizedSQL.Values = []interface{}{}
 					batchControl.sql += selectAll
