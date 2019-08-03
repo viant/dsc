@@ -468,11 +468,12 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 				return nil
 			}
 
+
+			fragment = " VALUES"
 			if isInsertAll {
 				fragment = "INSERT "
 			}
-
-
+			valuesIndex = strings.Index(parametrizedSQL.SQL, fragment)
 			if valuesIndex != -1 {
 				if batchControl.isUnionSelectInsert {
 					selectAll :=  "\n UNION SELECT " + strings.Trim(strings.TrimSpace(string(parametrizedSQL.SQL[valuesIndex+7:])), "()")
