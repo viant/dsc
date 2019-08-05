@@ -148,7 +148,7 @@ type DatastoreDialect interface {
 	//IsAutoincrement returns true if autoicrement
 	IsAutoincrement(manager Manager, datastore, table string) bool
 
-	//Flag if data store can persist batch
+	//Flag if data store can batch batch
 	CanPersistBatch() bool
 
 	//BulkInsert type

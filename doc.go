@@ -6,7 +6,7 @@ For native database/sql it is just a ("database/sql") proxy, and for noSQL it su
 put/get,scan,batch native NoSQL operations.
 
 
-Datastore Manager implements read, persist (no insert nor update), and delete operations.
+Datastore Manager implements read, batch (no insert nor update), and delete operations.
 Read operation requires data record mapper,
 Persist operation requires dml provider.
 Delete operation requries key provider.

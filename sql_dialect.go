@@ -284,7 +284,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 			return result, nil
 		}
 	} else {
-		
+
 		for _, column := range columns {
 			result = append(result, column)
 		}
@@ -539,7 +539,7 @@ func (d sqlDatastoreDialect) NormalizeSQL(SQL string) string {
 	return SQL
 }
 
-//CanPersistBatch return true if datastore can persist in batch
+//CanPersistBatch return true if datastore can batch in batch
 func (d sqlDatastoreDialect) CanPersistBatch() bool {
 	return false
 }
@@ -980,21 +980,19 @@ type odbcDialect struct {
 	DatastoreDialect
 }
 
-
 //DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
 func (d odbcDialect) DropDatastore(manager Manager, datastore string) error {
 	_, err := manager.Execute("DROP SCHEMA " + datastore + " CASCADE")
 	return err
 }
 
-
 //CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
 func (d odbcDialect) CreateDatastore(manager Manager, datastore string) error {
 	_, err := manager.Execute("CREATE SCHEMA " + datastore)
 	return err
 }
-//SELECT DISTINCT SCHEMA_NAME FROM v_catalog.schemata
 
+//SELECT DISTINCT SCHEMA_NAME FROM v_catalog.schemata
 
 func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	searchPath := manager.Config().Get("SEARCH_PATH")
@@ -1019,15 +1017,13 @@ func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	return nil
 }
 
-
 func (d *odbcDialect) CanPersistBatch() bool {
 	return true
 }
 
 func (d *odbcDialect) BulkInsertType() string {
-	return UnionSelectInsert
+	return CopyLocalInsert
 }
-
 
 func newOdbcDialect() *odbcDialect {
 	result := &odbcDialect{}
