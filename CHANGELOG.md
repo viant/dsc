@@ -1,4 +1,4 @@
-## September 17 2019 0.14.0
+## September 17 2019 0.14.1
 - Added vertica dialect
 - Added dialect IsKeyCheckSessionLevel
 

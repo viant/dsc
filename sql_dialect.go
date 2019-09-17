@@ -150,6 +150,12 @@ func (d *sqlDatastoreDialect) BulkInsertType() string {
 	return ""
 }
 
+
+//IsKeyCheckSwitchSessionLevel returns true
+func (d sqlDatastoreDialect) IsKeyCheckSwitchSessionLevel() bool {
+	return true
+}
+
 //ShowCreateTable returns basic table DDL (this implementation does not check unique and fk constrains)
 func (d *sqlDatastoreDialect) ShowCreateTable(manager Manager, table string) (string, error) {
 	datastore, err := d.DatastoreDialect.GetCurrentDatastore(manager)
