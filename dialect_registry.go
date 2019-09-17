@@ -29,6 +29,7 @@ func init() {
 	RegisterDatastoreDialect("mssql", newMsSQLDialect())
 	RegisterDatastoreDialect("sqlite3", newSQLLiteDialect())
 	RegisterDatastoreDialect("cql", newCasandraDialect())
+	RegisterDatastoreDialect("vertica", newVerticaDialect())
 	RegisterDatastoreDialect("odbc", newOdbcDialect())
 	RegisterDatastoreDialect("ndjson", &fileDialect{})
 	RegisterDatastoreDialect("tsv", &fileDialect{})

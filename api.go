@@ -160,6 +160,9 @@ type DatastoreDialect interface {
 	//EnableForeignKeyCheck disables fk check
 	EnableForeignKeyCheck(manager Manager, connection Connection) error
 
+	//IsKeyCheckSwitchSessionLevel returns true if key check is controlled on connection level (as opposed to globally on table level)
+	IsKeyCheckSwitchSessionLevel() bool
+
 	//Normalizes sql i.e for placeholders:   dsc uses '?' for placeholder if some dialect use difference this method should take care of it
 	NormalizeSQL(SQL string) string
 

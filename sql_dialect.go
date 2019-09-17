@@ -885,6 +885,10 @@ func (d pgDialect) IsAutoincrement(manager Manager, datastore, table string) boo
 	return false
 }
 
+func (d pgDialect) IsKeyCheckSwitchSessionLevel() bool {
+	return false
+}
+
 func (d pgDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
 	return d.EachTable(manager, func(table string) error {
 		_, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("ALTER TABLE %v DISABLE TRIGGER ALL", table), nil)
@@ -976,6 +980,63 @@ func newOraDialect() *oraDialect {
 	return result
 }
 
+type verticaDialect struct {
+	DatastoreDialect
+}
+
+//DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
+func (d verticaDialect) DropDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("DROP SCHEMA " + datastore + " CASCADE")
+	return err
+}
+
+//CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
+func (d verticaDialect) CreateDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("CREATE SCHEMA " + datastore)
+	return err
+}
+
+//SELECT DISTINCT SCHEMA_NAME FROM v_catalog.schemata
+
+func (d *verticaDialect) Init(manager Manager, connection Connection) error {
+	searchPath := manager.Config().Get("SEARCH_PATH")
+	if searchPath != "" {
+
+		var SQL = fmt.Sprintf("SET SEARCH_PATH=%v", searchPath)
+		if _, err := manager.ExecuteOnConnection(connection, SQL, nil); err != nil {
+			return err
+		}
+	}
+	timezone := manager.Config().Get("TIMEZONE")
+	if timezone != "" {
+		var SQL = fmt.Sprintf("SET TIMEZONE TO '%v'", timezone)
+		if _, err := manager.ExecuteOnConnection(connection, SQL, nil); err != nil {
+			return err
+		}
+		//ODBC driver harcoding issue
+		if location, err := time.LoadLocation(timezone); err == nil {
+			time.Local = location
+		}
+	}
+	return nil
+}
+
+func (d *verticaDialect) CanPersistBatch() bool {
+	return true
+}
+
+func (d *verticaDialect) BulkInsertType() string {
+	return CopyLocalInsert
+}
+
+func newVerticaDialect() *verticaDialect {
+	result := &verticaDialect{}
+	sqlDialect := NewSQLDatastoreDialect(verticaTableListSQL, "", verticaCurrentSchema, verticaSchemaSQL, "", "", "", "", verticaTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
+	return result
+}
+
 type odbcDialect struct {
 	DatastoreDialect
 }
@@ -992,12 +1053,9 @@ func (d odbcDialect) CreateDatastore(manager Manager, datastore string) error {
 	return err
 }
 
-//SELECT DISTINCT SCHEMA_NAME FROM v_catalog.schemata
-
 func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
-
 		var SQL = fmt.Sprintf("SET SEARCH_PATH=%v", searchPath)
 		if _, err := manager.ExecuteOnConnection(connection, SQL, nil); err != nil {
 			return err

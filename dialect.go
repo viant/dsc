@@ -20,6 +20,10 @@ func (d DefaultDialect) DropTable(manager Manager, datastore string, table strin
 	return nil
 }
 
+func (d DefaultDialect) IsKeyCheckSwitchSessionLevel() bool {
+	return true
+}
+
 func (d DefaultDialect) CreateTable(manager Manager, datastore string, table string, options interface{}) error {
 	return nil
 }
