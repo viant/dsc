@@ -124,6 +124,10 @@ FROM v_catalog.columns
 WHERE table_name = '%s' AND  table_schema = '%s' 
 ORDER BY ordinal_position`
 
+const verticaSchemaSQL = "SELECT DISTINCT SCHEMA_NAME AS name FROM v_catalog.schemata"
+const verticaTableListSQL = "SELECT table_name AS name FROM  v_catalog.tables WHERE table_schema = ?"
+const verticaCurrentSchema = "SELECT current_schema"
+
 type nameRecord struct {
 	Name string `TableColumn:"name"`
 }
@@ -144,6 +148,12 @@ type sqlDatastoreDialect struct {
 
 func (d *sqlDatastoreDialect) BulkInsertType() string {
 	return ""
+}
+
+
+//IsKeyCheckSwitchSessionLevel returns true
+func (d sqlDatastoreDialect) IsKeyCheckSwitchSessionLevel() bool {
+	return true
 }
 
 //ShowCreateTable returns basic table DDL (this implementation does not check unique and fk constrains)
@@ -265,12 +275,10 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 		return nil, err
 	}
 	var result = make([]Column, 0)
-
 	if !hasColumns(columns) {
 		tableInfoSQL := fmt.Sprintf(d.tableInfoSQL, tableName, datastore)
 		var tableColumns = []*TableColumn{}
 		err := manager.ReadAll(&tableColumns, tableInfoSQL, []interface{}{}, nil)
-
 		if err == nil {
 			for _, column := range tableColumns {
 				if index := strings.Index(column.DataType, "("); index != -1 {
@@ -282,6 +290,7 @@ func (d sqlDatastoreDialect) GetColumns(manager Manager, datastore, tableName st
 			return result, nil
 		}
 	} else {
+
 		for _, column := range columns {
 			result = append(result, column)
 		}
@@ -536,7 +545,7 @@ func (d sqlDatastoreDialect) NormalizeSQL(SQL string) string {
 	return SQL
 }
 
-//CanPersistBatch return true if datastore can persist in batch
+//CanPersistBatch return true if datastore can batch in batch
 func (d sqlDatastoreDialect) CanPersistBatch() bool {
 	return false
 }
@@ -882,6 +891,10 @@ func (d pgDialect) IsAutoincrement(manager Manager, datastore, table string) boo
 	return false
 }
 
+func (d pgDialect) IsKeyCheckSwitchSessionLevel() bool {
+	return false
+}
+
 func (d pgDialect) DisableForeignKeyCheck(manager Manager, connection Connection) error {
 	return d.EachTable(manager, func(table string) error {
 		_, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("ALTER TABLE %v DISABLE TRIGGER ALL", table), nil)
@@ -973,11 +986,25 @@ func newOraDialect() *oraDialect {
 	return result
 }
 
-type odbcDialect struct {
+type verticaDialect struct {
 	DatastoreDialect
 }
 
-func (d *odbcDialect) Init(manager Manager, connection Connection) error {
+//DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
+func (d verticaDialect) DropDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("DROP SCHEMA " + datastore + " CASCADE")
+	return err
+}
+
+//CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
+func (d verticaDialect) CreateDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("CREATE SCHEMA " + datastore)
+	return err
+}
+
+//SELECT DISTINCT SCHEMA_NAME FROM v_catalog.schemata
+
+func (d *verticaDialect) Init(manager Manager, connection Connection) error {
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
 
@@ -1000,9 +1027,71 @@ func (d *odbcDialect) Init(manager Manager, connection Connection) error {
 	return nil
 }
 
+func (d *verticaDialect) CanPersistBatch() bool {
+	return true
+}
+
+func (d *verticaDialect) BulkInsertType() string {
+	return CopyLocalInsert
+}
+
+func newVerticaDialect() *verticaDialect {
+	result := &verticaDialect{}
+	sqlDialect := NewSQLDatastoreDialect(verticaTableListSQL, "", verticaCurrentSchema, verticaSchemaSQL, "", "", "", "", verticaTableInfo, 0, result)
+	result.DatastoreDialect = sqlDialect
+	sqlDialect.DatastoreDialect = result
+	return result
+}
+
+type odbcDialect struct {
+	DatastoreDialect
+}
+
+//DropTable drops a datastore (database/schema), it takes manager and datastore to be droped
+func (d odbcDialect) DropDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("DROP SCHEMA " + datastore + " CASCADE")
+	return err
+}
+
+//CreateDatastore create a new datastore (database/schema), it takes manager and target datastore
+func (d odbcDialect) CreateDatastore(manager Manager, datastore string) error {
+	_, err := manager.Execute("CREATE SCHEMA " + datastore)
+	return err
+}
+
+func (d *odbcDialect) Init(manager Manager, connection Connection) error {
+	searchPath := manager.Config().Get("SEARCH_PATH")
+	if searchPath != "" {
+		var SQL = fmt.Sprintf("SET SEARCH_PATH=%v", searchPath)
+		if _, err := manager.ExecuteOnConnection(connection, SQL, nil); err != nil {
+			return err
+		}
+	}
+	timezone := manager.Config().Get("TIMEZONE")
+	if timezone != "" {
+		var SQL = fmt.Sprintf("SET TIMEZONE TO '%v'", timezone)
+		if _, err := manager.ExecuteOnConnection(connection, SQL, nil); err != nil {
+			return err
+		}
+		//ODBC driver harcoding issue
+		if location, err := time.LoadLocation(timezone); err == nil {
+			time.Local = location
+		}
+	}
+	return nil
+}
+
+func (d *odbcDialect) CanPersistBatch() bool {
+	return true
+}
+
+func (d *odbcDialect) BulkInsertType() string {
+	return CopyLocalInsert
+}
+
 func newOdbcDialect() *odbcDialect {
 	result := &odbcDialect{}
-	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, "", "", ansiSchemaListSQL, "", "", "", "", verticaTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(verticaTableListSQL, "", verticaCurrentSchema, verticaSchemaSQL, "", "", "", "", verticaTableInfo, 0, result)
 	result.DatastoreDialect = sqlDialect
 	sqlDialect.DatastoreDialect = result
 	return result

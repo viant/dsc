@@ -14,6 +14,8 @@ import (
 var defaultBatchSize = 512
 
 var BulkInsertAllType = "insertAll"
+var UnionSelectInsert = "unionSelectInsert"
+var CopyLocalInsert = "copyLocalInsert"
 
 //AbstractManager represent general abstraction for datastore implementation.
 // Note that ExecuteOnConnection,  ReadAllOnWithHandlerOnConnection may need to be implemented for particular datastore.
@@ -341,65 +343,8 @@ func (m *AbstractManager) PersistSingleOnConnection(connection Connection, dataP
 	return m.Manager.PersistAllOnConnection(connection, &slice, table, provider)
 }
 
-type batchControl struct {
-	sql         string
-	values      []interface{}
-	dataIndexes []int
-	firstSeq    int64
-	isInsertAll bool
-	manager     Manager
-}
-
-func (c *batchControl) Flush(connection Connection, updateId func(index int, seq int64)) (int, error) {
-	if c.sql == "" {
-		return 0, nil
-	}
-	var dataIndexes = c.dataIndexes
-	c.dataIndexes = []int{}
-	if c.isInsertAll {
-		c.sql += " SELECT 1 FROM DUAL"
-	}
-	result, err := c.manager.ExecuteOnConnection(connection, c.sql, c.values)
-	c.sql = ""
-	c.values = []interface{}{}
-	if err != nil {
-		return 0, err
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-	for _, i := range dataIndexes {
-		c.firstSeq++
-		updateId(i, c.firstSeq)
-	}
-	c.firstSeq = 0
-	return int(affected), nil
-}
-
-//PersistData persist data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
+//PersistData batch data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
 func (m *AbstractManager) PersistData(connection Connection, data interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
-	var processed = 0
-	dialect := GetDatastoreDialect(m.config.DriverName)
-
-	var batchSize = m.config.GetInt(BatchSizeKey, defaultBatchSize)
-	Logf("batch size: %v\n", batchSize)
-
-	canUseBatch := dialect != nil && dialect.CanPersistBatch() && batchSize > 1
-
-	isInsertAll := dialect.BulkInsertType() == BulkInsertAllType
-
-	Logf("[%v]: canUseBatch: %v\n", m.config.DriverName, canUseBatch)
-
-	//TODO may need to move batch insert to dialect ?
-
-	var batchControl = &batchControl{
-		values:      []interface{}{},
-		dataIndexes: []int{},
-		manager:     m.Manager,
-		isInsertAll: isInsertAll,
-	}
-
 	var collection = make([]interface{}, 0)
 	updateId := func(index int, seq int64) {
 		if seq == 0 || index < 0 {
@@ -427,93 +372,35 @@ func (m *AbstractManager) PersistData(connection Connection, data interface{}, t
 		} else {
 			collection[index] = structPointerValue.Elem().Interface()
 		}
-
 	}
-
-	persist := func(index int, item interface{}) error {
-		parametrizedSQL := sqlProvider(item)
-		if len(parametrizedSQL.Values) == 1 && parametrizedSQL.Type == SQLTypeUpdate {
-			//nothing to udpate, one parameter is ID=? without values to update
-			return nil
-		}
-
-		if parametrizedSQL.Type == SQLTypeInsert && canUseBatch {
-			if len(batchControl.dataIndexes) > batchSize {
-				if _, err := batchControl.Flush(connection, updateId); err != nil {
-					return err
-				}
-			}
-			batchControl.dataIndexes = append(batchControl.dataIndexes, index)
-			if len(batchControl.sql) == 0 {
-				batchControl.sql = parametrizedSQL.SQL
-				if isInsertAll {
-					batchControl.sql = strings.Replace(batchControl.sql, "INSERT ", "INSERT ALL ", 1)
-				}
-				batchControl.values = parametrizedSQL.Values
-				return nil
-			}
-
-			fragment := " VALUES"
-			if isInsertAll {
-				fragment = "INSERT "
-			}
-			valuesIndex := strings.Index(parametrizedSQL.SQL, fragment)
-			if valuesIndex != -1 {
-				if isInsertAll {
-					batchControl.sql += "\n" + string(parametrizedSQL.SQL[valuesIndex+7:])
-				} else {
-					batchControl.sql += "," + string(parametrizedSQL.SQL[valuesIndex+7:])
-				}
-				batchControl.values = append(batchControl.values, parametrizedSQL.Values...)
-			}
-			return nil
-		}
-
-		result, err := m.Manager.ExecuteOnConnection(connection, parametrizedSQL.SQL, parametrizedSQL.Values)
-		if err != nil {
-			return err
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		processed += int(affected)
-		seq, _ := result.LastInsertId()
-		if canUseBatch && batchControl.firstSeq == 0 {
-			batchControl.firstSeq = seq
-		}
-		updateId(index, seq)
-		return nil
-	}
-
+	var batch = newBatch(table, connection, m, sqlProvider, updateId)
 	var err error
 	if ranger, ok := data.(toolbox.Ranger); ok {
 		err = ranger.Range(func(item interface{}) (b bool, e error) {
-			err = persist(-1, item)
+			err = batch.persist(-1, item)
 			return err == nil, err
 		})
 	} else if iterator, ok := data.(toolbox.Iterator); ok {
 		for iterator.HasNext() && err == nil {
 			var item interface{}
 			if err = iterator.Next(&item); err == nil {
-				err = persist(-1, item)
+				err = batch.persist(-1, item)
 			}
 		}
 	} else if toolbox.IsSlice(data) {
 		collection = toolbox.AsSlice(data)
 		for i, item := range collection {
-			if err = persist(i, item); err != nil {
+			if err = batch.persist(i, item); err != nil {
 				break
 			}
 		}
 	}
-	if batchControl != nil && err == nil {
-		if _, err := batchControl.Flush(connection, updateId); err != nil {
+	if batch != nil && err == nil {
+		if _, err := batch.flush(); err != nil {
 			return 0, err
 		}
 	}
-	return processed, err
+	return batch.processed, err
 }
 
 func (m *AbstractManager) fetchDataInBatches(connection Connection, sqlsWihtArguments []*ParametrizedSQL, mapper RecordMapper) (*[][]interface{}, error) {

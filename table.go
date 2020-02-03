@@ -2,8 +2,6 @@ package dsc
 
 import "fmt"
 
-
-
 //TableDescriptor represents a table details.
 type TableDescriptor struct {
 	Table          string

@@ -148,7 +148,7 @@ type DatastoreDialect interface {
 	//IsAutoincrement returns true if autoicrement
 	IsAutoincrement(manager Manager, datastore, table string) bool
 
-	//Flag if data store can persist batch
+	//Flag if data store can batch batch
 	CanPersistBatch() bool
 
 	//BulkInsert type
@@ -159,6 +159,9 @@ type DatastoreDialect interface {
 
 	//EnableForeignKeyCheck disables fk check
 	EnableForeignKeyCheck(manager Manager, connection Connection) error
+
+	//IsKeyCheckSwitchSessionLevel returns true if key check is controlled on connection level (as opposed to globally on table level)
+	IsKeyCheckSwitchSessionLevel() bool
 
 	//Normalizes sql i.e for placeholders:   dsc uses '?' for placeholder if some dialect use difference this method should take care of it
 	NormalizeSQL(SQL string) string

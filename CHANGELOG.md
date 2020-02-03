@@ -1,3 +1,10 @@
+## September 17 2019 0.14.1
+- Added vertica dialect
+- Added dialect IsKeyCheckSessionLevel
+
+## August 5 2019 0.12.0
+ - Added CopyLocalInsert batch support
+
 ## MAy 8 2019 0.10.0
  - Added config.Clone
  
