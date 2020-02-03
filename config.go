@@ -2,6 +2,7 @@ package dsc
 
 import (
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/cred"
 	"github.com/viant/toolbox/secret"
 	"github.com/viant/toolbox/url"
 	"strings"
@@ -30,7 +31,9 @@ type Config struct {
 	lock                *sync.Mutex
 	race                uint32
 	initRun             bool
+	CredConfig          *cred.Config `json:"-"`
 }
+
 
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
@@ -138,12 +141,12 @@ func (c *Config) Has(name string) bool {
 	return false
 }
 
-func (c *Config) initMutextIfNeeed() {
+func (c *Config) initLock() {
 	if c.lock == nil {
 		if atomic.CompareAndSwapUint32(&c.race, 0, 1) {
 			c.lock = &sync.Mutex{}
 		} else {
-			c.initMutextIfNeeed()
+			c.initLock()
 		}
 	}
 }
@@ -163,11 +166,17 @@ func (c *Config) loadCredentials() error {
 	if location, err := secrets.CredentialsLocation(c.Credentials); err == nil {
 		c.Credentials = location
 	}
+	return c.ApplyCredentials(config)
+}
+
+func (c *Config) ApplyCredentials(config *cred.Config) error {
 	c.username = config.Username
 	c.password = config.Password
 	c.Parameters["username"] = c.username
+	c.CredConfig = config
 	return nil
 }
+
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
@@ -175,7 +184,7 @@ func (c *Config) Init() error {
 	if c.cred == "" {
 		c.cred = c.Credentials
 	}
-	c.initMutextIfNeeed()
+	c.initLock()
 	if c.URL != "" && c.DriverName == "" {
 		resource := url.NewResource(c.URL)
 		if err := resource.Decode(c); err != nil {
@@ -264,6 +273,5 @@ func NewConfigFromURL(URL string) (*Config, error) {
 	if err == nil {
 		err = result.Init()
 	}
-
 	return result, err
 }
