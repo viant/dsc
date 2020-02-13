@@ -150,7 +150,6 @@ func (d *sqlDatastoreDialect) BulkInsertType() string {
 	return ""
 }
 
-
 //IsKeyCheckSwitchSessionLevel returns true
 func (d sqlDatastoreDialect) IsKeyCheckSwitchSessionLevel() bool {
 	return true

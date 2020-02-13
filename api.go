@@ -11,6 +11,9 @@ type Scanner interface {
 	//Returns all columns specified in select statement.
 	Columns() ([]string, error)
 
+	//ColumnTypes return column types
+	ColumnTypes() ([]ColumnType, error)
+
 	//Scans datastore record data to convert and assign it to provided destinations, a destination needs to be pointer.
 	Scan(dest ...interface{}) error
 }
@@ -182,11 +185,7 @@ type DatastoreDialect interface {
 	Ping(manager Manager) error
 }
 
-//Column represents TableColumn type interface (compabible with *sql.ColumnType
-type Column interface {
-	// Name returns the name or alias of the TableColumn.
-	Name() string
-
+type ColumnType interface {
 	// Length returns the TableColumn type length for variable length TableColumn types such
 	// as text and binary field types. If the type length is unbounded the value will
 	// be math.MaxInt64 (any database limits will still apply).
@@ -213,6 +212,13 @@ type Column interface {
 	// are not included.
 	// Common type include "VARCHAR", "TEXT", "NVARCHAR", "DECIMAL", "BOOL", "INT", "BIGINT".
 	DatabaseTypeName() string
+}
+
+//Column represents TableColumn type interface (compabible with *sql.ColumnType
+type Column interface {
+	ColumnType
+	// Name returns the name or alias of the TableColumn.
+	Name() string
 }
 
 //TransactionManager represents a transaction manager.

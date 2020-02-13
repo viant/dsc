@@ -404,7 +404,7 @@ func (m *FileManager) readWithPredicate(connection Connection, statement *QueryS
 			columns = append(columns, column.Name)
 		}
 	}
-	fileScanner := NewFileScanner(m.config, columns)
+	fileScanner := NewFileScanner(m.config, columns, nil)
 	err := m.fetchRecords(statement.Table, predicate, func(record map[string]interface{}, matched bool) (bool, error) {
 
 		if !matched {

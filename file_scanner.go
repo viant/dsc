@@ -8,14 +8,20 @@ import (
 
 //FileScanner represents a file scanner to transfer record to destinations.
 type FileScanner struct {
-	columns   []string
-	converter toolbox.Converter
-	Values    map[string]interface{}
+	columns     []string
+	columnTypes []ColumnType
+	converter   toolbox.Converter
+	Values      map[string]interface{}
 }
 
 //Columns returns columns of the processed record.
 func (s *FileScanner) Columns() ([]string, error) {
 	return s.columns, nil
+}
+
+//Columns returns columns of the processed record.
+func (s *FileScanner) ColumnTypes() ([]ColumnType, error) {
+	return s.columnTypes, nil
 }
 
 //Scan reads file record values to assign it to passed in destinations.
@@ -62,10 +68,11 @@ func (s *FileScanner) Scan(destinations ...interface{}) (err error) {
 }
 
 //NewFileScanner create a new file scanner, it takes config, and columns as parameters.
-func NewFileScanner(config *Config, columns []string) *FileScanner {
+func NewFileScanner(config *Config, columns []string, columnTypes []ColumnType) *FileScanner {
 	converter := toolbox.NewColumnConverter(config.GetDateLayout())
 	return &FileScanner{
-		converter: *converter,
-		columns:   columns,
+		converter:   *converter,
+		columnTypes: columnTypes,
+		columns:     columns,
 	}
 }

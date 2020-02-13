@@ -10,6 +10,10 @@ func (s *scanner) Columns() ([]string, error) {
 	return s.scanner.Columns()
 }
 
+func (s *scanner) ColumnTypes() ([]ColumnType, error) {
+	return s.scanner.ColumnTypes()
+}
+
 func (s *scanner) Scan(destinations ...interface{}) error {
 	if len(destinations) == 1 {
 		if toolbox.IsMap(destinations[0]) {

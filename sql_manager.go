@@ -3,6 +3,7 @@ package dsc
 import (
 	"database/sql"
 	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
 	"time"
 )
@@ -27,11 +28,27 @@ func asSQLTx(wrapped interface{}) (*sql.Tx, error) {
 }
 
 func asScanner(wrapped interface{}) (Scanner, error) {
-	if result, ok := reflect.ValueOf(wrapped).Interface().(Scanner); ok {
-		return result, nil
+	sqlRows, ok := wrapped.(*sql.Rows)
+	if !ok {
+		return nil, errors.Errorf("expected :%T, but had: %T", sqlRows, wrapped)
 	}
-	wrappedType := reflect.ValueOf(wrapped)
-	return nil, fmt.Errorf(fmt.Sprintf("failed cast as Scannable: was %v %v !", wrappedType.Type(), reflect.ValueOf(wrapped).Elem()))
+	return &sqlScanner{sqlRows}, nil
+}
+
+type sqlScanner struct {
+	*sql.Rows
+}
+
+func (s *sqlScanner) ColumnTypes() ([]ColumnType, error) {
+	types, err := s.Rows.ColumnTypes()
+	if err != nil || len(types) == 0 {
+		return nil, err
+	}
+	var columnTypes = make([]ColumnType, len(types))
+	for i := range types {
+		columnTypes[i] = types[i]
+	}
+	return columnTypes, nil
 }
 
 type sqlExecutor interface {
@@ -119,8 +136,10 @@ func (m *sqlManager) ReadAllOnWithHandlerOnConnection(connection Connection, que
 	Logf("[%v]:execute time: %v\n", m.config.username, time.Now().Sub(startTime))
 
 	defer rows.Close()
+
 	for rows.Next() {
 		scanner, _ := asScanner(rows)
+
 		toContinue, err := readingHandler(NewScanner(scanner))
 		if err != nil {
 			return err

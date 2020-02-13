@@ -34,7 +34,6 @@ type Config struct {
 	CredConfig          *cred.Config `json:"-"`
 }
 
-
 //Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
 	c.lock.Lock()
@@ -172,11 +171,13 @@ func (c *Config) loadCredentials() error {
 func (c *Config) ApplyCredentials(config *cred.Config) error {
 	c.username = config.Username
 	c.password = config.Password
+	if len(c.Parameters) == 0 {
+		c.Parameters = make(map[string]interface{})
+	}
 	c.Parameters["username"] = c.username
 	c.CredConfig = config
 	return nil
 }
-
 
 //Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
