@@ -1,3 +1,6 @@
+## Frb 13 2020 0.16.0
+- Added ColumnTypes to Scanner interface
+
 ## September 17 2019 0.14.1
 - Added vertica dialect
 - Added dialect IsKeyCheckSessionLevel
