@@ -1,3 +1,6 @@
+## March 17 2020 0.16.1
+- Update sql dialect with session control
+
 ## Feb 13 2020 0.16.0
 - Added ColumnTypes to Scanner interface
 
