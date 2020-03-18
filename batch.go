@@ -103,12 +103,18 @@ func (b *batch) transformFirst(parametrizedSQL *ParametrizedSQL) error {
 		if _, err := b.writer.Write([]byte(b.expandedValues(parametrizedSQL))); err != nil {
 			return err
 		}
+
+		dialect := GetDatastoreDialect(b.manager.config.DriverName)
+		table := b.table
+		if db, _ := dialect.GetCurrentDatastore(b.manager); db != "" {
+			table = db + "." + table
+		}
 		b.sql = fmt.Sprintf(`COPY %v(%v)
 FROM LOCAL '%v' GZIP
 DELIMITER ','
 NULL AS 'null'
 ENCLOSED BY ''''
-`, b.table, b.columns, file.Name())
+`, table, b.columns, file.Name())
 		b.values = make([]interface{}, 0)
 	case UnionSelectInsert:
 		valuesIndex := strings.Index(parametrizedSQL.SQL, " VALUES")
