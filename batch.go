@@ -104,11 +104,7 @@ func (b *batch) transformFirst(parametrizedSQL *ParametrizedSQL) error {
 			return err
 		}
 
-		dialect := GetDatastoreDialect(b.manager.config.DriverName)
 		table := b.table
-		if db, _ := dialect.GetCurrentDatastore(b.manager); db != "" {
-			table = db + "." + table
-		}
 		b.sql = fmt.Sprintf(`COPY %v(%v)
 FROM LOCAL '%v' GZIP
 DELIMITER ','
