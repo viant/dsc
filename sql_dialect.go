@@ -1004,7 +1004,6 @@ func (d verticaDialect) CreateDatastore(manager Manager, datastore string) error
 func (d *verticaDialect) Init(manager Manager, connection Connection) error {
 	searchPath := manager.Config().Get("SEARCH_PATH")
 	if searchPath != "" {
-
 		var SQL = fmt.Sprintf("SET SEARCH_PATH=%v", searchPath)
 		if _, err := manager.ExecuteOnConnection(connection, SQL, nil); err != nil {
 			return err

@@ -66,7 +66,7 @@ func (p *metaDmlProvider) readValue(source reflect.Value, column string) interfa
 	if fieldName, ok := columnSetting["fieldName"]; ok {
 		field := source.FieldByName(fieldName)
 		value := toolbox.UnwrapValue(&field)
-		if toolbox.IsZero(field) {
+		if toolbox.IsZero(field) && value != nil && toolbox.IsStruct(value)  {
 			value = nil
 		}
 		return p.mapValueIfNeeded(value, column, columnSetting)
