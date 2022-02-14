@@ -16,6 +16,8 @@ const ansiSequenceSQL = "SELECT auto_increment AS seq_value FROM information_sch
 const ansiPrimaryKeySQL = "SELECT column_name AS name FROM information_schema.key_column_usage WHERE table_name = '%v' AND table_schema = '%v' AND constraint_name='PRIMARY'"
 const defaultAutoincremetSQL = "SELECT 1 AS autoicrement FROM information_schema.COLUMNS WHERE T TABLE_SCHEMA = '%v'  AND TABLE_NAME = '%v'  AND COLUMN_NAME = '%v'  AND EXTRA like '%auto_increment%'"
 
+const msSqlPrimaryKeySQL = "SELECT column_name AS name FROM information_schema.key_column_usage WHERE table_name = '%v' AND table_schema = '%v' AND constraint_name LIKE 'PK%%'"
+
 const defaultSchemaSQL = "SELECT DATABASE() AS name"
 const ansiSchemaListSQL = "SELECT schema_name AS name FROM  information_schema.schemata"
 
@@ -253,7 +255,6 @@ func (d sqlDatastoreDialect) Init(manager Manager, connection Connection) error 
 	return nil
 }
 
-
 func hasColumns(columns []*sql.ColumnType) bool {
 	if len(columns) == 0 {
 		return false
@@ -441,6 +442,7 @@ func (d sqlDatastoreDialect) GetKeyName(manager Manager, datastore, table string
 
 	err := manager.ReadAll(&records, SQL, []interface{}{}, nil)
 	if err != nil {
+		fmt.Printf("ERR:%v\n", err)
 		return ""
 	}
 	var result = make([]string, 0)
@@ -974,6 +976,20 @@ func (d oraDialect) NormalizeSQL(SQL string) string {
 	return normalizedSQL
 }
 
+func (d msSQLDialect) NormalizeSQL(SQL string) string {
+	count := 1
+	var normalizedSQL = ""
+	for _, r := range SQL {
+		aChar := string(r)
+		if aChar == "?" {
+			normalizedSQL += "@p" + toolbox.AsString(count)
+			count++
+		} else {
+			normalizedSQL += aChar
+		}
+	}
+	return normalizedSQL
+}
 
 func newOraDialect() *oraDialect {
 	result := &oraDialect{}
@@ -1111,7 +1127,7 @@ type msSQLDialect struct {
 
 func newMsSQLDialect() *msSQLDialect {
 	result := &msSQLDialect{}
-	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, "", "", "", "", ansiTableInfo, 0, result)
+	sqlDialect := NewSQLDatastoreDialect(ansiTableListSQL, msSequenceSQL, msSchemaSQL, ansiSchemaListSQL, msSqlPrimaryKeySQL, "", "", "", ansiTableInfo, 0, result)
 	result.DatastoreDialect = sqlDialect
 	sqlDialect.DatastoreDialect = result
 	return result
