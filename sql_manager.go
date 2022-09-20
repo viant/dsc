@@ -101,7 +101,7 @@ func (m *sqlManager) ExecuteOnConnection(connection Connection, sql string, args
 	}
 	Logf("[%v]:%v %v", m.config.username, sql, args)
 	if err != nil {
-		return nil, fmt.Errorf(fmt.Sprintf("failed to execute %v %v on %v due to:\n%v", sql, args, m.Manager.Config().Parameters, err.Error()))
+		return nil, fmt.Errorf("failed to execute %w: %v %v on %v", err.Error(), sql, args, m.Manager.Config().Parameters)
 	}
 	return result, err
 }
