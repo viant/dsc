@@ -28,8 +28,12 @@ func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 
 //BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
 func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interface{}) *ParametrizedSQL {
+	columns = append([]string{}, columns...)
+	updateReserved(columns)
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
-	var pkColumns = strings.Join(qb.TableDescriptor.PkColumns, ",")
+	pk := append([]string{}, qb.TableDescriptor.PkColumns...)
+	updateReserved(pk)
+	var pkColumns = strings.Join(pk, ",")
 	var sqlArguments = make([]interface{}, 0)
 	var criteria = ""
 	var multiValuePk = false

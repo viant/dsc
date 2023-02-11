@@ -532,7 +532,8 @@ func (m *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoint
 		if err != nil {
 			return false
 		}
-		where := strings.Join(descriptor.PkColumns, ",")
+
+		where := m.buildPKWhere(descriptor)
 		if len(descriptor.PkColumns) > 1 {
 			values := strings.Repeat("?,", len(descriptor.PkColumns))
 			values = values[0 : len(values)-1]
@@ -557,6 +558,13 @@ func (m *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoint
 		return 0, err
 	}
 	return deleted, nil
+}
+
+func (m *AbstractManager) buildPKWhere(descriptor *TableDescriptor) string {
+	var pk = descriptor.PkColumns
+	updateReserved(pk)
+	where := strings.Join(pk, ",")
+	return where
 }
 
 //DeleteSingle deletes single row from table on for passed in data pointer, key provider is used to extract primary keys. It returns boolean if successful, or error.

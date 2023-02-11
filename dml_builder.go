@@ -79,23 +79,29 @@ func buildInsertSQL(descriptor *TableDescriptor, columns []string, nonPkColumns 
 	var insertColumns []string
 	var insertValues []string = make([]string, 0)
 	if descriptor.Autoincrement {
-		insertColumns = nonPkColumns
+		insertColumns = append(insertColumns, nonPkColumns...)
 	} else {
-		insertColumns = columns
+		insertColumns = append(insertColumns, columns...)
 	}
 	for range insertColumns {
 		insertValues = append(insertValues, "?")
 	}
 
+	updateReserved(insertColumns)
 	return fmt.Sprintf(insertSQLTemplate, descriptor.Table, strings.Join(insertColumns, ","), strings.Join(insertValues, ","))
 }
 
 func buildUpdateSQL(descriptor *TableDescriptor, nonPkColumns []string) string {
-	return fmt.Sprintf(updateSQLTemplate, descriptor.Table, buildAssignValueSQL(nonPkColumns, ","), buildAssignValueSQL(descriptor.PkColumns, " AND "))
+	updateReserved(nonPkColumns)
+	pk := append([]string{}, descriptor.PkColumns...)
+	updateReserved(pk)
+	return fmt.Sprintf(updateSQLTemplate, descriptor.Table, buildAssignValueSQL(nonPkColumns, ","), buildAssignValueSQL(pk, " AND "))
 }
 
 func buildDeleteSQL(descriptor *TableDescriptor) string {
-	return fmt.Sprintf(deleteSQLTemplate, descriptor.Table, buildAssignValueSQL(descriptor.PkColumns, " AND "))
+	pk := append([]string{}, descriptor.PkColumns...)
+	updateReserved(pk)
+	return fmt.Sprintf(deleteSQLTemplate, descriptor.Table, buildAssignValueSQL(pk, " AND "))
 }
 
 //NewDmlBuilder returns a new DmlBuilder for passed in table descriptor.
