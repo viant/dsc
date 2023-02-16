@@ -1,6 +1,9 @@
 package dsc
 
-import "strings"
+import (
+	"os"
+	"strings"
+)
 
 var reservedKeyword = map[string]bool{
 	"key":        true,
@@ -29,6 +32,9 @@ var reservedKeyword = map[string]bool{
 }
 
 func updateReserved(pk []string) {
+	if os.Getenv("SQLQuoteReserved") == "" {
+		return
+	}
 	for i := range pk {
 		if reservedKeyword[strings.ToLower(pk[i])] {
 			if strings.Count(pk[i], "`") == 0 {
