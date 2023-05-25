@@ -28,12 +28,16 @@ func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 
 //BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
 func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interface{}) *ParametrizedSQL {
+	return qb.BuildQueryWithInColumns(columns, append([]string{}, qb.TableDescriptor.PkColumns...), pkRowValues)
+}
+
+//BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
+func (qb *QueryBuilder) BuildQueryWithInColumns(columns []string, inCriteriaColumns []string, pkRowValues [][]interface{}) *ParametrizedSQL {
 	columns = append([]string{}, columns...)
 	updateReserved(columns)
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
-	pk := append([]string{}, qb.TableDescriptor.PkColumns...)
-	updateReserved(pk)
-	var pkColumns = strings.Join(pk, ",")
+	updateReserved(inCriteriaColumns)
+	var inColumns = strings.Join(inCriteriaColumns, ",")
 	var sqlArguments = make([]interface{}, 0)
 	var criteria = ""
 	var multiValuePk = false
@@ -55,9 +59,9 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 		}
 	}
 
-	var whereCriteria = pkColumns + " IN (" + criteria + ")"
+	var whereCriteria = inColumns + " IN (" + criteria + ")"
 	if multiValuePk {
-		whereCriteria = "(" + pkColumns + ") IN (" + criteria + ")"
+		whereCriteria = "(" + inColumns + ") IN (" + criteria + ")"
 	}
 	table := qb.TableDescriptor.From()
 	return &ParametrizedSQL{
@@ -65,6 +69,16 @@ func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interfa
 		Values: sqlArguments,
 	}
 
+}
+
+//BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
+func (qb *QueryBuilder) BuildBatchedInQuery(columns []string, pkRowValues [][]interface{}, inColumns []string, batchSize int) []*ParametrizedSQL {
+	var result = make([]*ParametrizedSQL, 0)
+	toolbox.Process2DSliceInBatches(pkRowValues, batchSize, func(batch [][]interface{}) {
+		sqlWithArguments := qb.BuildQueryWithInColumns(columns, inColumns, batch)
+		result = append(result, sqlWithArguments)
+	})
+	return result
 }
 
 //BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
