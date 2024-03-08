@@ -15,7 +15,6 @@ func TestConnectionConfig(t *testing.T) {
 	assert.Nil(t, connection.Begin())
 	assert.Nil(t, connection.Commit())
 	assert.Nil(t, connection.Rollback())
-
 }
 
 func TestConnectionProvider(t *testing.T) {

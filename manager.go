@@ -209,7 +209,7 @@ func (m *AbstractManager) PersistAll(dataPointer interface{}, table string, prov
 
 	err = connection.Begin()
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", m.config.zDescriptor, err)
+		return 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", m.config.Descriptor, err)
 	}
 	inserted, updated, err := m.Manager.PersistAllOnConnection(connection, dataPointer, table, provider)
 	if err == nil {
