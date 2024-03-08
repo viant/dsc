@@ -105,7 +105,9 @@ func (cp *AbstractConnectionProvider) SpawnConnectionIfNeeded() {
 
 //Close closes a datastore connection or returns it to the pool (Config.PoolSize and Config.MaxPoolSize).
 func (cp *AbstractConnectionProvider) Close() error {
-	for i := 0; i < len(cp.connectionPool); i++ {
+
+	poolsize := len(cp.connectionPool)
+	for i := 0; i < poolsize; i++ {
 		var connection Connection
 		select {
 		case <-time.After(1 * time.Second):
@@ -115,6 +117,11 @@ func (cp *AbstractConnectionProvider) Close() error {
 				return err
 			}
 		}
+	}
+
+	// 防止池子中再回收进新连接
+	if len(cp.connectionPool) > 0 {
+		cp.Close()
 	}
 
 	return nil
