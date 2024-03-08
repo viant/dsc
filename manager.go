@@ -17,7 +17,7 @@ var BulkInsertAllType = "insertAll"
 var UnionSelectInsert = "unionSelectInsert"
 var CopyLocalInsert = "copyLocalInsert"
 
-//AbstractManager represent general abstraction for datastore implementation.
+// AbstractManager represent general abstraction for datastore implementation.
 // Note that ExecuteOnConnection,  ReadAllOnWithHandlerOnConnection may need to be implemented for particular datastore.
 type AbstractManager struct {
 	Manager
@@ -27,17 +27,17 @@ type AbstractManager struct {
 	limiter                 *Limiter
 }
 
-//Config returns a config.
+// Config returns a config.
 func (m *AbstractManager) Config() *Config {
 	return m.config
 }
 
-//ConnectionProvider returns a connection provider.
+// ConnectionProvider returns a connection provider.
 func (m *AbstractManager) ConnectionProvider() ConnectionProvider {
 	return m.connectionProvider
 }
 
-//Execute executes passed in sql with parameters.  It returns sql result, or an error.
+// Execute executes passed in sql with parameters.  It returns sql result, or an error.
 func (m *AbstractManager) Execute(sql string, sqlParameters ...interface{}) (result sql.Result, err error) {
 	var connection Connection
 	connection, err = m.Manager.ConnectionProvider().Get()
@@ -48,7 +48,7 @@ func (m *AbstractManager) Execute(sql string, sqlParameters ...interface{}) (res
 	return m.Manager.ExecuteOnConnection(connection, sql, sqlParameters)
 }
 
-//ExecuteAll passed in SQL. It returns sql result, or an error.
+// ExecuteAll passed in SQL. It returns sql result, or an error.
 func (m *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -58,7 +58,7 @@ func (m *AbstractManager) ExecuteAll(sqls []string) ([]sql.Result, error) {
 	return m.Manager.ExecuteAllOnConnection(connection, sqls)
 }
 
-//Acquire if max request per second is specified this function will throttle any request exceeding specified max
+// Acquire if max request per second is specified this function will throttle any request exceeding specified max
 func (m *AbstractManager) Acquire() {
 	if m.config.MaxRequestPerSecond == 0 {
 		return
@@ -67,7 +67,7 @@ func (m *AbstractManager) Acquire() {
 	m.limiter.Acquire()
 }
 
-//ExecuteAllOnConnection executes passed in SQL on connection. It returns sql result, or an error.
+// ExecuteAllOnConnection executes passed in SQL on connection. It returns sql result, or an error.
 func (m *AbstractManager) ExecuteAllOnConnection(connection Connection, sqls []string) ([]sql.Result, error) {
 	var result = make([]sql.Result, len(sqls))
 
@@ -93,7 +93,7 @@ func (m *AbstractManager) ExecuteAllOnConnection(connection Connection, sqls []s
 	return result, nil
 }
 
-//ReadAllWithHandler executes query with parameters and for each fetch row call reading handler with a scanner, to continue reading next row, scanner needs to return true.
+// ReadAllWithHandler executes query with parameters and for each fetch row call reading handler with a scanner, to continue reading next row, scanner needs to return true.
 func (m *AbstractManager) ReadAllWithHandler(query string, queryParameters []interface{}, readingHandler func(scanner Scanner) (toContinue bool, err error)) error {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -103,7 +103,7 @@ func (m *AbstractManager) ReadAllWithHandler(query string, queryParameters []int
 	return m.Manager.ReadAllOnWithHandlerOnConnection(connection, query, queryParameters, readingHandler)
 }
 
-//ReadAll executes query with parameters and fetches all table rows. The row is mapped to result slice pointer with record mapper.
+// ReadAll executes query with parameters and fetches all table rows. The row is mapped to result slice pointer with record mapper.
 func (m AbstractManager) ReadAll(resultSlicePointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) error {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -114,7 +114,7 @@ func (m AbstractManager) ReadAll(resultSlicePointer interface{}, query string, q
 	return m.Manager.ReadAllOnConnection(connection, resultSlicePointer, query, queryParameters, mapper)
 }
 
-//ReadAllOnConnection executes query with parameters on passed in connection and fetches all table rows. The row is mapped to result slice pointer with record mapper.
+// ReadAllOnConnection executes query with parameters on passed in connection and fetches all table rows. The row is mapped to result slice pointer with record mapper.
 func (m *AbstractManager) ReadAllOnConnection(connection Connection, resultSlicePointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) error {
 	toolbox.AssertPointerKind(resultSlicePointer, reflect.Slice, "resultSlicePointer")
 	slice := reflect.ValueOf(resultSlicePointer).Elem()
@@ -141,7 +141,7 @@ func (m *AbstractManager) ReadAllOnConnection(connection Connection, resultSlice
 	return err
 }
 
-//ReadSingle executes query with parameters and reads on connection single table row. The row is mapped to result pointer with record mapper.
+// ReadSingle executes query with parameters and reads on connection single table row. The row is mapped to result pointer with record mapper.
 func (m *AbstractManager) ReadSingle(resultPointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) (success bool, err error) {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -151,7 +151,7 @@ func (m *AbstractManager) ReadSingle(resultPointer interface{}, query string, qu
 	return m.Manager.ReadSingleOnConnection(connection, resultPointer, query, queryParameters, mapper)
 }
 
-//ReadSingleOnConnection executes query with parameters on passed in connection and reads single table row. The row is mapped to result pointer with record mapper.
+// ReadSingleOnConnection executes query with parameters on passed in connection and reads single table row. The row is mapped to result pointer with record mapper.
 func (m *AbstractManager) ReadSingleOnConnection(connection Connection, resultPointer interface{}, query string, queryParameters []interface{}, mapper RecordMapper) (success bool, err error) {
 	toolbox.AssertKind(resultPointer, reflect.Ptr, "resultStruct")
 	if mapper == nil {
@@ -198,8 +198,8 @@ func (m *AbstractManager) ReadSingleOnConnection(connection Connection, resultPo
 	return success, err
 }
 
-//PersistAll persists all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
-//If driver allows this operation is executed in one transaction.
+// PersistAll persists all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
+// If driver allows this operation is executed in one transaction.
 func (m *AbstractManager) PersistAll(dataPointer interface{}, table string, provider DmlProvider) (int, int, error) {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -209,7 +209,7 @@ func (m *AbstractManager) PersistAll(dataPointer interface{}, table string, prov
 
 	err = connection.Begin()
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", m.config.Descriptor, err)
+		return 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", m.config.zDescriptor, err)
 	}
 	inserted, updated, err := m.Manager.PersistAllOnConnection(connection, dataPointer, table, provider)
 	if err == nil {
@@ -226,7 +226,7 @@ func (m *AbstractManager) PersistAll(dataPointer interface{}, table string, prov
 	return inserted, updated, err
 }
 
-//RegisterDescriptorIfNeeded register a table descriptor if there it is not present, returns a pointer to a table descriptor.
+// RegisterDescriptorIfNeeded register a table descriptor if there it is not present, returns a pointer to a table descriptor.
 func (m *AbstractManager) RegisterDescriptorIfNeeded(table string, instance interface{}) (*TableDescriptor, error) {
 	if !m.tableDescriptorRegistry.Has(table) {
 		descriptor, err := NewTableDescriptor(table, instance)
@@ -242,7 +242,7 @@ func (m *AbstractManager) RegisterDescriptorIfNeeded(table string, instance inte
 	return nil, fmt.Errorf("failed to lookup descriptor for table: %v", table)
 }
 
-//PersistAllOnConnection persists on connection all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
+// PersistAllOnConnection persists on connection all table rows, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
 func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error) {
 
 	if ranger, isRanger := dataPointer.(toolbox.Ranger); isRanger {
@@ -317,7 +317,7 @@ func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPoin
 	return inserted, updated, nil
 }
 
-//PersistSingle persists single table row, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
+// PersistSingle persists single table row, dmlProvider is used to generate insert or update statement. It returns number of inserted, updated or error.
 func (m *AbstractManager) PersistSingle(dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error) {
 	slice := convertToTypesSlice(dataPointer)
 	inserted, updated, err = m.Manager.PersistAll(slice, table, provider)
@@ -337,13 +337,13 @@ func (m *AbstractManager) PersistSingle(dataPointer interface{}, table string, p
 	return inserted, updated, err
 }
 
-//PersistSingleOnConnection persists on connection single table row, dmlProvider is used to generate insert or udpate statement. It returns number of inserted, updated or error.
+// PersistSingleOnConnection persists on connection single table row, dmlProvider is used to generate insert or udpate statement. It returns number of inserted, updated or error.
 func (m *AbstractManager) PersistSingleOnConnection(connection Connection, dataPointer interface{}, table string, provider DmlProvider) (inserted int, updated int, err error) {
 	slice := []interface{}{dataPointer}
 	return m.Manager.PersistAllOnConnection(connection, &slice, table, provider)
 }
 
-//PersistData batch data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
+// PersistData batch data on connection on table, keySetter is used to optionally set autoincrement column, sqlProvider handler will generate ParametrizedSQL with Insert or Update statement.
 func (m *AbstractManager) PersistData(connection Connection, data interface{}, table string, keySetter KeySetter, sqlProvider func(item interface{}) *ParametrizedSQL) (int, error) {
 	var collection = make([]interface{}, 0)
 	updateId := func(index int, seq int64) {
@@ -436,7 +436,7 @@ func (m *AbstractManager) fetchExistingData(connection Connection, table string,
 	return rows, nil
 }
 
-//ClassifyDataAsInsertableOrUpdatable classifies passed in data as insertable or updatable.
+// ClassifyDataAsInsertableOrUpdatable classifies passed in data as insertable or updatable.
 func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connection, dataPointer interface{}, table string, provider DmlProvider) ([]interface{}, []interface{}, error) {
 	if provider == nil {
 		return nil, nil, errors.New("provider was nil")
@@ -489,7 +489,7 @@ func (m *AbstractManager) ClassifyDataAsInsertableOrUpdatable(connection Connect
 	return insertables, updatables, nil
 }
 
-//DeleteAll deletes all rows for passed in table,  key provider is used to extract primary keys. It returns number of deleted rows or error.
+// DeleteAll deletes all rows for passed in table,  key provider is used to extract primary keys. It returns number of deleted rows or error.
 func (m *AbstractManager) DeleteAll(dataPointer interface{}, table string, keyProvider KeyGetter) (deleted int, err error) {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -515,8 +515,8 @@ func (m *AbstractManager) DeleteAll(dataPointer interface{}, table string, keyPr
 	return deleted, err
 }
 
-//DeleteAllOnConnection deletes all rows on connection from table, key provider is used to extract primary keys. It returns number of deleted rows or error.
-//If driver allows this operation is executed in one transaction.
+// DeleteAllOnConnection deletes all rows on connection from table, key provider is used to extract primary keys. It returns number of deleted rows or error.
+// If driver allows this operation is executed in one transaction.
 func (m *AbstractManager) DeleteAllOnConnection(connection Connection, dataPointer interface{}, table string, keyProvider KeyGetter) (deleted int, err error) {
 
 	deleted = 0
@@ -567,7 +567,7 @@ func (m *AbstractManager) buildPKWhere(descriptor *TableDescriptor) string {
 	return where
 }
 
-//DeleteSingle deletes single row from table on for passed in data pointer, key provider is used to extract primary keys. It returns boolean if successful, or error.
+// DeleteSingle deletes single row from table on for passed in data pointer, key provider is used to extract primary keys. It returns boolean if successful, or error.
 func (m *AbstractManager) DeleteSingle(dataPointer interface{}, table string, keyProvider KeyGetter) (bool, error) {
 	connection, err := m.Manager.ConnectionProvider().Get()
 	if err != nil {
@@ -603,7 +603,7 @@ func convertToTypesSlice(dataPointer interface{}) interface{} {
 	return slicePointer.Interface()
 }
 
-//DeleteSingleOnConnection deletes data on connection from table on for passed in data pointer, key provider is used to extract primary keys. It returns true if successful.
+// DeleteSingleOnConnection deletes data on connection from table on for passed in data pointer, key provider is used to extract primary keys. It returns true if successful.
 func (m *AbstractManager) DeleteSingleOnConnection(connection Connection, dataPointer interface{}, table string, keyProvider KeyGetter) (bool, error) {
 	toolbox.AssertPointerKind(dataPointer, reflect.Struct, "dataPointer")
 	slice := convertToTypesSlice(dataPointer)
@@ -614,7 +614,7 @@ func (m *AbstractManager) DeleteSingleOnConnection(connection Connection, dataPo
 	return deleted == 1, nil
 }
 
-//ExpandSQL expands sql with passed in arguments
+// ExpandSQL expands sql with passed in arguments
 func (m *AbstractManager) ExpandSQL(sql string, arguments []interface{}) string {
 	for _, arg := range arguments {
 		stringArg := toolbox.AsString(arg)
@@ -630,12 +630,12 @@ func (m *AbstractManager) ExpandSQL(sql string, arguments []interface{}) string 
 	return sql
 }
 
-//TableDescriptorRegistry returns a table descriptor registry
+// TableDescriptorRegistry returns a table descriptor registry
 func (m *AbstractManager) TableDescriptorRegistry() TableDescriptorRegistry {
 	return m.tableDescriptorRegistry
 }
 
-//NewAbstractManager create a new abstract manager, it takes config, conneciton provider, and target (sub class) manager
+// NewAbstractManager create a new abstract manager, it takes config, conneciton provider, and target (sub class) manager
 func NewAbstractManager(config *Config, connectionProvider ConnectionProvider, self Manager) *AbstractManager {
 	var descriptorRegistry = newTableDescriptorRegistry()
 	var result = &AbstractManager{config: config, connectionProvider: connectionProvider, Manager: self, tableDescriptorRegistry: descriptorRegistry}

@@ -11,16 +11,22 @@ import (
 	"time"
 )
 
-//BatchSizeKey represents a config batch size parameter
+// BatchSizeKey represents a config batch size parameter
 const BatchSizeKey = "batchSize"
 
-//Config represent datastore config.
+// Config represent datastore config.
 type Config struct {
-	URL                 string
-	DriverName          string
-	PoolSize            int
-	MaxPoolSize         int
-	Descriptor          string
+	URL string
+	//@deprecated use driver instead
+	DriverName string `json:"-"`
+	Driver     string
+
+	PoolSize    int
+	MaxPoolSize int
+	//@deprecated use DSN instead
+	Descriptor string `json:"-"`
+	DSN        string
+
 	Parameters          map[string]interface{}
 	Credentials         string
 	MaxRequestPerSecond int
@@ -34,7 +40,7 @@ type Config struct {
 	CredConfig          *cred.Config `json:"-"`
 }
 
-//Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
+// Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) Get(name string) string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -44,7 +50,7 @@ func (c *Config) Get(name string) string {
 	return ""
 }
 
-//DsnDescriptor return dsn expanded descriptor or error
+// DsnDescriptor return dsn expanded descriptor or error
 func (c *Config) DsnDescriptor() (string, error) {
 	if c.dsnDescriptor == "" {
 		if err := c.Init(); err != nil {
@@ -54,7 +60,7 @@ func (c *Config) DsnDescriptor() (string, error) {
 	return c.dsnDescriptor, nil
 }
 
-//Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
+// Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
 func (c *Config) GetMap(name string) map[string]interface{} {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -66,7 +72,7 @@ func (c *Config) GetMap(name string) map[string]interface{} {
 	return nil
 }
 
-//GetInt returns value for passed in parameter name or defaultValue
+// GetInt returns value for passed in parameter name or defaultValue
 func (c *Config) GetInt(name string, defaultValue int) int {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -76,7 +82,7 @@ func (c *Config) GetInt(name string, defaultValue int) int {
 	return defaultValue
 }
 
-//GetFloat returns value for passed in parameter name or defaultValue
+// GetFloat returns value for passed in parameter name or defaultValue
 func (c *Config) GetFloat(name string, defaultValue float64) float64 {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -86,7 +92,7 @@ func (c *Config) GetFloat(name string, defaultValue float64) float64 {
 	return defaultValue
 }
 
-//GetDuration returns value for passed in parameter name or defaultValue
+// GetDuration returns value for passed in parameter name or defaultValue
 func (c *Config) GetDuration(name string, multiplier time.Duration, defaultValue time.Duration) time.Duration {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -96,7 +102,7 @@ func (c *Config) GetDuration(name string, multiplier time.Duration, defaultValue
 	return defaultValue
 }
 
-//GetString returns value for passed in parameter name or defaultValue
+// GetString returns value for passed in parameter name or defaultValue
 func (c *Config) GetString(name string, defaultValue string) string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -106,7 +112,7 @@ func (c *Config) GetString(name string, defaultValue string) string {
 	return defaultValue
 }
 
-//GetBoolean returns value for passed in parameter name or defaultValue
+// GetBoolean returns value for passed in parameter name or defaultValue
 func (c *Config) GetBoolean(name string, defaultValue bool) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -116,21 +122,21 @@ func (c *Config) GetBoolean(name string, defaultValue bool) bool {
 	return defaultValue
 }
 
-//HasDateLayout returns true if config has date layout, it checks dateLayout or dateFormat parameter names.
+// HasDateLayout returns true if config has date layout, it checks dateLayout or dateFormat parameter names.
 func (c *Config) HasDateLayout() bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return toolbox.HasTimeLayout(c.Parameters)
 }
 
-//GetDateLayout returns date layout
+// GetDateLayout returns date layout
 func (c *Config) GetDateLayout() string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return toolbox.GetTimeLayout(c.Parameters)
 }
 
-//Has returns true if parameter with passed in name is present, otherwise it returns false.
+// Has returns true if parameter with passed in name is present, otherwise it returns false.
 func (c *Config) Has(name string) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -179,7 +185,7 @@ func (c *Config) ApplyCredentials(config *cred.Config) error {
 	return nil
 }
 
-//Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
+// Init makes parameter map from encoded parameters if presents, expands descriptor with parameter value using [param_name] matching pattern.
 func (c *Config) Init() error {
 	defer func() { c.initRun = true }()
 	if c.cred == "" {
@@ -198,7 +204,14 @@ func (c *Config) Init() error {
 	if err := c.loadCredentials(); err != nil {
 		return err
 	}
+	if c.DriverName == "" {
+		c.DriverName = c.Driver
+	}
+	if c.Descriptor == "" {
+		c.Descriptor = c.DSN
+	}
 	c.dsnDescriptor = c.Descriptor
+
 	c.dsnDescriptor = strings.Replace(c.dsnDescriptor, "[username]", c.username, 1)
 	c.dsnDescriptor = strings.Replace(c.dsnDescriptor, "[password]", c.password, 1)
 	for key, value := range c.Parameters {
@@ -212,7 +225,7 @@ func (c *Config) Init() error {
 	return nil
 }
 
-//Clone clones config
+// Clone clones config
 func (c *Config) Clone() *Config {
 	cred := c.cred
 	if cred == "" {
@@ -222,6 +235,8 @@ func (c *Config) Clone() *Config {
 		DriverName:          c.DriverName,
 		URL:                 c.URL,
 		Descriptor:          c.Descriptor,
+		Driver:              c.Driver,
+		DSN:                 c.DSN,
 		PoolSize:            c.PoolSize,
 		MaxPoolSize:         c.MaxPoolSize,
 		MaxRequestPerSecond: c.MaxRequestPerSecond,
@@ -241,22 +256,24 @@ func (c *Config) Clone() *Config {
 	return result
 }
 
-//NewConfig creates new Config, it takes the following parameters
+// NewConfig creates new Config, it takes the following parameters
 // descriptor - optional datastore connection string with macros that will be looked epxanded from for instance [user]:[password]@[url]
 // encodedParameters should be in the following format:   <key1>:<value1>, ...,<keyN>:<valueN>
 func NewConfig(driverName string, descriptor string, encodedParameters string) *Config {
 	var parameters = toolbox.MakeMap(encodedParameters, ":", ",")
-	result := &Config{DriverName: driverName, PoolSize: 1, MaxPoolSize: 2, Descriptor: descriptor, Parameters: parameters,
+	result := &Config{DriverName: driverName, PoolSize: 1, MaxPoolSize: 2, Descriptor: descriptor, DSN: descriptor, Driver: driverName, Parameters: parameters,
 		lock: &sync.Mutex{}}
 	result.Init()
 	return result
 }
 
-//NewConfigWithParameters creates a new config with parameters
+// NewConfigWithParameters creates a new config with parameters
 func NewConfigWithParameters(driverName string, descriptor string, credential string, parameters map[string]interface{}) (*Config, error) {
 	result := &Config{
 		DriverName:  driverName,
 		Descriptor:  descriptor,
+		DSN:         descriptor,
+		Driver:      driverName,
 		Credentials: credential,
 		Parameters:  parameters,
 		lock:        &sync.Mutex{},
@@ -265,7 +282,7 @@ func NewConfigWithParameters(driverName string, descriptor string, credential st
 	return result, err
 }
 
-//NewConfigFromUrl returns new config from url
+// NewConfigFromUrl returns new config from url
 func NewConfigFromURL(URL string) (*Config, error) {
 	result := &Config{}
 	var resource = url.NewResource(URL)
