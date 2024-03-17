@@ -1,9 +1,10 @@
 package dsc
 
 import (
+	"context"
+	"github.com/viant/scy/cred"
+	"github.com/viant/scy/cred/secret"
 	"github.com/viant/toolbox"
-	"github.com/viant/toolbox/cred"
-	"github.com/viant/toolbox/secret"
 	"github.com/viant/toolbox/url"
 	"strings"
 	"sync"
@@ -37,7 +38,7 @@ type Config struct {
 	lock                *sync.Mutex
 	race                uint32
 	initRun             bool
-	CredConfig          *cred.Config `json:"-"`
+	CredConfig          *cred.Generic `json:"-"`
 }
 
 // Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
@@ -156,25 +157,22 @@ func (c *Config) initLock() {
 	}
 }
 
-func (c *Config) loadCredentials() error {
+func (c *Config) loadCredentials(ctx context.Context) error {
 	if c.Credentials == "" {
 		return nil
 	}
-	secrets := secret.New("", false)
-	config, err := secrets.GetCredentials(c.Credentials)
+	secrets := secret.New()
+	config, err := secrets.GetCredentials(ctx, c.Credentials)
 	if err != nil {
 		return err
 	}
 	if len(c.Parameters) == 0 {
 		c.Parameters = make(map[string]interface{})
 	}
-	if location, err := secrets.CredentialsLocation(c.Credentials); err == nil {
-		c.Credentials = location
-	}
 	return c.ApplyCredentials(config)
 }
 
-func (c *Config) ApplyCredentials(config *cred.Config) error {
+func (c *Config) ApplyCredentials(config *cred.Generic) error {
 	c.username = config.Username
 	c.password = config.Password
 	if len(c.Parameters) == 0 {
@@ -201,7 +199,7 @@ func (c *Config) Init() error {
 	var lock = c.lock
 	lock.Lock()
 	defer lock.Unlock()
-	if err := c.loadCredentials(); err != nil {
+	if err := c.loadCredentials(context.Background()); err != nil {
 		return err
 	}
 	if c.DriverName == "" {
