@@ -25,9 +25,9 @@ type Config struct {
 	PoolSize    int
 	MaxPoolSize int
 	//@deprecated use DSN instead
-	Descriptor string `json:"-"`
-	DSN        string
-
+	Descriptor          string `json:"-"`
+	DSN                 string
+	InitSQL             []string
 	Parameters          map[string]interface{}
 	Credentials         string
 	MaxRequestPerSecond int
@@ -232,6 +232,7 @@ func (c *Config) Clone() *Config {
 	result := &Config{
 		DriverName:          c.DriverName,
 		URL:                 c.URL,
+		InitSQL:             c.InitSQL,
 		Descriptor:          c.Descriptor,
 		Driver:              c.Driver,
 		DSN:                 c.DSN,

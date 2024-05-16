@@ -92,6 +92,13 @@ func (c *sqlConnectionProvider) NewConnection() (Connection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to %v on %v due to %v", config.DriverName, config.Descriptor, err)
 	}
+	if len(config.InitSQL) > 0 {
+		for _, SQL := range config.InitSQL {
+			if _, err = db.Exec(SQL); err != nil {
+				return nil, fmt.Errorf("failed to execute init SQL %v on %v due to %v", SQL, config.Descriptor, err)
+			}
+		}
+	}
 	dialect := GetDatastoreDialect(config.DriverName)
 	var sqlConnection = &sqlConnection{db: db, canHandleTransaction: dialect.CanHandleTransaction()}
 	var connection Connection = sqlConnection
