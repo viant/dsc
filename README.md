@@ -52,7 +52,7 @@ func main() {
   
     interest := Interest{}
     
-    success, err:= manager.ReadSingle(&interest, SELECT id, name, expiry, category FROM interests WHERE id = ?", []interface{}{id},nil)
+    success, err:= manager.ReadSingle(&interest, "SELECT id, name, expiry, category FROM interests WHERE id = ?", []interface{}{id},nil)
 	if err != nil {
         panic(err.Error())
 	}
