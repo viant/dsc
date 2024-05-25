@@ -52,34 +52,35 @@ func main() {
   
     interest := Interest{}
     
-    success, err:= manager.ReadSingle(&interest, SELECT id, name, expiry, category FROM interests WHERE id = ?", []interface{}{id},nil)
+    success, err:= manager.ReadSingle(&interest, "SELECT id, name, expiry, category FROM interests WHERE id = ?", []interface{}{id},nil)
 	if err != nil {
         panic(err.Error())
 	}
 
-    var intersts = make([]Interest, 0)
-    err:= manager.ReadAll(&interests, SELECT id, name, expiry, category FROM interests", nil ,nil)
+    var interests = make([]Interest, 0)
+    err:= manager.ReadAll(&interests, "SELECT id, name, expiry, category FROM interests", nil ,nil)
     if err != nil {
         panic(err.Error())
     }
 
-    
-    intersts := []Interest {
+    fmt.Printf("all interests: %v\n", interests)
+
+    interests = []Interest {
         Interest{Name:"Abc", ExpiryTimeInSecond:3600, Category:"xyz"},
         Interest{Name:"Def", ExpiryTimeInSecond:3600, Category:"xyz"},
         Interest{Id:20, Name:"Ghi", ExpiryTimeInSecond:3600, Category:"xyz"},
     }
 
 
-	inserted, updated, err:= manager.PersistAll(&intersts, "interests", nil)
+	inserted, updated, err:= manager.PersistAll(&interests, "interests", nil)
 	if err != nil {
         panic(err.Error())
    	}
-    deleted, err := manager.DeleteAll(&intersts, "intersts", nil)
+    deleted, err := manager.DeleteAll(&interests, "interests", nil)
     if err != nil {
         panic(err.Error())
    	}
- 	fmt.Printf("Inserted %v, updated: %v\n", deleted)
+ 	fmt.Printf("Inserted %v, updated: %v, deleted: %v\n", inserted, updated, deleted)
   
 }
 ```
