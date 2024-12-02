@@ -3,11 +3,12 @@ package dsc
 import (
 	"errors"
 	"fmt"
+	"github.com/viant/dsc/matcher"
 	"github.com/viant/toolbox"
 	"strings"
 )
 
-//SQLColumn represents a sql column
+// SQLColumn represents a sql column
 type SQLColumn struct {
 	Name              string
 	Alias             string
@@ -16,13 +17,13 @@ type SQLColumn struct {
 	FunctionArguments string
 }
 
-//SQLCriteria represents SQL criteria
+// SQLCriteria represents SQL criteria
 type SQLCriteria struct {
 	Criteria        []*SQLCriterion
 	LogicalOperator string
 }
 
-//CriteriaValues returns criteria values  extracted from binding parameters, starting from parametersOffset,
+// CriteriaValues returns criteria values  extracted from binding parameters, starting from parametersOffset,
 func (s *SQLCriteria) CriteriaValues(parameters toolbox.Iterator) ([]interface{}, error) {
 	var values = make([]interface{}, 0)
 	for _, criterion := range s.Criteria {
@@ -64,7 +65,7 @@ func (s *SQLCriteria) Expression() string {
 	return strings.TrimSpace(result)
 }
 
-//SQLCriterion represents single where clause condiction
+// SQLCriterion represents single where clause condiction
 type SQLCriterion struct {
 	Criteria      *SQLCriteria
 	LeftOperand   interface{}
@@ -108,7 +109,7 @@ func (c *SQLCriterion) Expression() string {
 	return fmt.Sprintf("%v %v%v%v %v", c.LeftOperand, preInverse, c.Operator, postInverse, rightOperand)
 }
 
-//BaseStatement represents a base query and dml statement
+// BaseStatement represents a base query and dml statement
 type BaseStatement struct {
 	*SQLCriteria
 	SQL     string
@@ -117,7 +118,7 @@ type BaseStatement struct {
 	Columns []*SQLColumn
 }
 
-//ColumnNames returns a column names.
+// ColumnNames returns a column names.
 func (bs BaseStatement) ColumnNames() []string {
 	var result = make([]string, 0)
 	for _, column := range bs.Columns {
@@ -150,7 +151,7 @@ func bindValueIfNeeded(source interface{}, parameters toolbox.Iterator) (interfa
 	return source, nil
 }
 
-//QueryStatement represents SQL query statement.
+// QueryStatement represents SQL query statement.
 type QueryStatement struct {
 	*BaseStatement
 	AllField    bool
@@ -158,14 +159,14 @@ type QueryStatement struct {
 	GroupBy     []*SQLColumn
 }
 
-//DmlStatement represents dml statement.
+// DmlStatement represents dml statement.
 type DmlStatement struct {
 	*BaseStatement
 	Type   string
 	Values []interface{}
 }
 
-//ColumnValues returns values of columns extracted from binding parameters
+// ColumnValues returns values of columns extracted from binding parameters
 func (ds DmlStatement) ColumnValues(parameters toolbox.Iterator) ([]interface{}, error) {
 	var values = make([]interface{}, 0)
 	for i := range ds.Columns {
@@ -179,7 +180,7 @@ func (ds DmlStatement) ColumnValues(parameters toolbox.Iterator) ([]interface{},
 	return values, nil
 }
 
-//ColumnValueMap returns map of column with its values extracted from passed in parameters
+// ColumnValueMap returns map of column with its values extracted from passed in parameters
 func (ds DmlStatement) ColumnValueMap(parameters toolbox.Iterator) (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 	columnValues, err := ds.ColumnValues(parameters)
@@ -234,7 +235,7 @@ const (
 var sqlMatchers = map[int]toolbox.Matcher{
 	eof:         toolbox.EOFMatcher{},
 	whitespaces: toolbox.CharactersMatcher{" \n\t"},
-	id:          toolbox.IdMatcher{},
+	id:          matcher.IdMatcher{},
 	asterisk:    toolbox.CharactersMatcher{"*"},
 	coma:        toolbox.CharactersMatcher{","},
 	operator: toolbox.KeywordsMatcher{
@@ -477,7 +478,7 @@ func (bp *baseParser) readCriteria(tokenizer *toolbox.Tokenizer, sqlCriteria *SQ
 	return nil
 }
 
-//QueryParser represents a simple SQL query parser.
+// QueryParser represents a simple SQL query parser.
 type QueryParser struct{ baseParser }
 
 func buildColumn(token *toolbox.Token, tokenizer *toolbox.Tokenizer, query *QueryStatement, isGroupBy bool) (*SQLColumn, error) {
@@ -568,7 +569,7 @@ outer:
 	return nil
 }
 
-//Parse parses SQL query to build QueryStatement
+// Parse parses SQL query to build QueryStatement
 func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	tokenizer := toolbox.NewTokenizer(query, illegal, eof, sqlMatchers)
 	baseStatement := &BaseStatement{
@@ -659,12 +660,12 @@ func (qp *QueryParser) Parse(query string) (*QueryStatement, error) {
 	return result, nil
 }
 
-//NewQueryParser represents basic SQL query parser.
+// NewQueryParser represents basic SQL query parser.
 func NewQueryParser() *QueryParser {
 	return &QueryParser{}
 }
 
-//DmlParser represents dml parser.
+// DmlParser represents dml parser.
 type DmlParser struct{ baseParser }
 
 func (dp *DmlParser) readInsertColumns(tokenizer *toolbox.Tokenizer, statement *DmlStatement) error {
@@ -839,7 +840,7 @@ func (dp *DmlParser) parseDelete(tokenizer *toolbox.Tokenizer, statement *DmlSta
 	return nil
 }
 
-//Parse parses input to create DmlStatement.
+// Parse parses input to create DmlStatement.
 func (dp *DmlParser) Parse(input string) (*DmlStatement, error) {
 	baseStatement := BaseStatement{
 		SQL: input,
@@ -867,7 +868,7 @@ func (dp *DmlParser) Parse(input string) (*DmlStatement, error) {
 	return result, nil
 }
 
-//NewDmlParser creates a new NewDmlParser
+// NewDmlParser creates a new NewDmlParser
 func NewDmlParser() *DmlParser {
 	return &DmlParser{}
 }
