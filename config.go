@@ -19,7 +19,7 @@ const BatchSizeKey = "batchSize"
 type Config struct {
 	URL string
 	//@deprecated use driver instead
-	DriverName string
+	DriverName string `json:"-"`
 	Driver     string
 
 	PoolSize    int

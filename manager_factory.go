@@ -6,9 +6,9 @@ import (
 
 type managerFactoryProxy struct{}
 
-//Create creates a new manager for the passed in config.
+// Create creates a new manager for the passed in config.
 func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
-	if config.DriverName == "" {
+	if config.DriverName == "" && config.Driver == "" {
 		return nil, fmt.Errorf("DriverName was empty %v", config)
 	}
 	factory, err := GetManagerFactory(config.DriverName)
@@ -19,7 +19,7 @@ func (f managerFactoryProxy) Create(config *Config) (Manager, error) {
 	return factory.Create(config)
 }
 
-//CreateFromURL create a new manager from URL, url resource should be a JSON Config
+// CreateFromURL create a new manager from URL, url resource should be a JSON Config
 func (f managerFactoryProxy) CreateFromURL(URL string) (Manager, error) {
 	config, err := NewConfigFromURL(URL)
 	if err != nil {
@@ -32,7 +32,7 @@ func (f managerFactoryProxy) CreateFromURL(URL string) (Manager, error) {
 	return factory.Create(config)
 }
 
-//NewManagerFactory create a new manager factory.
+// NewManagerFactory create a new manager factory.
 func NewManagerFactory() ManagerFactory {
 	var manager ManagerFactory = &managerFactoryProxy{}
 	return manager
