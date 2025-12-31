@@ -39,6 +39,13 @@ type Config struct {
 	race                uint32
 	initRun             bool
 	CredConfig          *cred.Generic `json:"-"`
+
+	// QuoteReserved enables quoting of reserved identifiers in generated SQL.
+	// If not set, the legacy behavior uses the SQLQuoteReserved env var.
+	QuoteReserved bool `json:"quoteReserved,omitempty"`
+	// ReservedKeywords extends the default reserved identifiers list.
+	// Items can also be provided in parameters under "reservedKeywords" or "reserved" (comma/space separated).
+	ReservedKeywords []string `json:"reservedKeywords,omitempty"`
 }
 
 // Get returns value for passed in parameter name or panic - please use Config.Has to check if value is present.
@@ -246,6 +253,8 @@ func (c *Config) Clone() *Config {
 		lock:                &sync.Mutex{},
 		Credentials:         cred,
 		cred:                c.cred,
+		QuoteReserved:       c.QuoteReserved,
+		ReservedKeywords:    append([]string(nil), c.ReservedKeywords...),
 	}
 	if len(c.Parameters) > 0 {
 		for k, v := range c.Parameters {

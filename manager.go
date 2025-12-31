@@ -640,6 +640,8 @@ func NewAbstractManager(config *Config, connectionProvider ConnectionProvider, s
 	var descriptorRegistry = newTableDescriptorRegistry()
 	var result = &AbstractManager{config: config, connectionProvider: connectionProvider, Manager: self, tableDescriptorRegistry: descriptorRegistry}
 	descriptorRegistry.manager = result
+	// Initialize reserved keyword handling from config.
+	InitReserved(config)
 	if config.MaxRequestPerSecond > 0 {
 		result.limiter = NewLimiter(time.Second, config.MaxRequestPerSecond)
 	}
