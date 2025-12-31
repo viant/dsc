@@ -165,3 +165,8 @@ func (b *DmlBuilder) RebuildWithReserved(res *Reserved) {
 	b.UpdateSQL = buildUpdateSQL(b.TableDescriptor, nonPk, res)
 	b.DeleteSQL = buildDeleteSQL(b.TableDescriptor, res)
 }
+
+// RebuildWithKeywords rebuilds SQL statements using supplied keywords (enables quoting).
+func (b *DmlBuilder) RebuildWithKeywords(keywords []string) {
+	b.RebuildWithReserved(NewReservedFromKeywords(keywords))
+}

@@ -116,3 +116,8 @@ func (qb QueryBuilder) WithReserved(res *Reserved) QueryBuilder {
 	qb.reserved = res
 	return qb
 }
+
+// WithKeywords attaches quoting settings derived from keywords to a copy of QueryBuilder.
+func (qb QueryBuilder) WithKeywords(keywords []string) QueryBuilder {
+	return qb.WithReserved(NewReservedFromKeywords(keywords))
+}

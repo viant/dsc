@@ -50,6 +50,31 @@ func newReservedFromConfig(config *Config) *Reserved {
 	return r
 }
 
+// NewReservedFromConfig builds Reserved settings from a Config (exported wrapper).
+func NewReservedFromConfig(config *Config) *Reserved {
+	return newReservedFromConfig(config)
+}
+
+// NewReservedFromKeywords builds Reserved settings enabled with the given keywords.
+// Keywords are lowercased and trimmed; quoting is enabled by default.
+func NewReservedFromKeywords(keywords []string) *Reserved {
+	r := &Reserved{enabled: true, quoteChar: "`", keywords: map[string]bool{}}
+	// seed with defaults
+	for k, v := range reservedKeyword {
+		if v {
+			r.keywords[k] = true
+		}
+	}
+	for _, k := range keywords {
+		k = strings.TrimSpace(strings.ToLower(k))
+		if k == "" {
+			continue
+		}
+		r.keywords[k] = true
+	}
+	return r
+}
+
 // quoteIfReserved quotes identifier names in-place if they match the reserved list and quoting is enabled.
 func (r *Reserved) quoteIfReserved(columns []string) {
 	if r == nil || !r.enabled {
