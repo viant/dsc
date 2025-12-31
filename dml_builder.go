@@ -10,7 +10,7 @@ var insertSQLTemplate = "INSERT INTO %v(%v) VALUES(%v)"
 var updateSQLTemplate = "UPDATE %v SET %v WHERE %v"
 var deleteSQLTemplate = "DELETE FROM %v WHERE %v"
 
-//DmlBuilder represents a insert,update,delete statement builder.
+// DmlBuilder represents a insert,update,delete statement builder.
 type DmlBuilder struct {
 	TableDescriptor *TableDescriptor
 	NonPkColumns    *[]string
@@ -18,6 +18,7 @@ type DmlBuilder struct {
 	InsertSQL       string
 	UpdateSQL       string
 	DeleteSQL       string
+	reserved        *Reserved
 }
 
 func (b *DmlBuilder) readValues(columns []string, valueProvider func(column string) interface{}) []interface{} {
@@ -38,7 +39,7 @@ func (b *DmlBuilder) readInsertValues(valueProvider func(column string) interfac
 	return b.readValues(columns, valueProvider)
 }
 
-//GetParametrizedSQL returns GetParametrizedSQL for passed in sqlType, and value provider.
+// GetParametrizedSQL returns GetParametrizedSQL for passed in sqlType, and value provider.
 func (b *DmlBuilder) GetParametrizedSQL(sqlType int, valueProvider func(column string) interface{}) *ParametrizedSQL {
 	switch sqlType {
 	case SQLTypeInsert:
@@ -75,7 +76,7 @@ func buildAssignValueSQL(columns []string, separator string) string {
 	return result
 }
 
-func buildInsertSQL(descriptor *TableDescriptor, columns []string, nonPkColumns []string) string {
+func buildInsertSQL(descriptor *TableDescriptor, columns []string, nonPkColumns []string, reserved *Reserved) string {
 	var insertColumns []string
 	var insertValues []string = make([]string, 0)
 	if descriptor.Autoincrement {
@@ -86,25 +87,41 @@ func buildInsertSQL(descriptor *TableDescriptor, columns []string, nonPkColumns 
 	for range insertColumns {
 		insertValues = append(insertValues, "?")
 	}
-
-	updateReserved(insertColumns)
+	// Prefer per-manager reserved when provided
+	if reserved != nil {
+		reserved.quoteIfReserved(insertColumns)
+	} else {
+		updateReserved(insertColumns)
+	}
 	return fmt.Sprintf(insertSQLTemplate, descriptor.Table, strings.Join(insertColumns, ","), strings.Join(insertValues, ","))
 }
 
-func buildUpdateSQL(descriptor *TableDescriptor, nonPkColumns []string) string {
-	updateReserved(nonPkColumns)
+func buildUpdateSQL(descriptor *TableDescriptor, nonPkColumns []string, reserved *Reserved) string {
+	if reserved != nil {
+		reserved.quoteIfReserved(nonPkColumns)
+	} else {
+		updateReserved(nonPkColumns)
+	}
 	pk := append([]string{}, descriptor.PkColumns...)
-	updateReserved(pk)
+	if reserved != nil {
+		reserved.quoteIfReserved(pk)
+	} else {
+		updateReserved(pk)
+	}
 	return fmt.Sprintf(updateSQLTemplate, descriptor.Table, buildAssignValueSQL(nonPkColumns, ","), buildAssignValueSQL(pk, " AND "))
 }
 
-func buildDeleteSQL(descriptor *TableDescriptor) string {
+func buildDeleteSQL(descriptor *TableDescriptor, reserved *Reserved) string {
 	pk := append([]string{}, descriptor.PkColumns...)
-	updateReserved(pk)
+	if reserved != nil {
+		reserved.quoteIfReserved(pk)
+	} else {
+		updateReserved(pk)
+	}
 	return fmt.Sprintf(deleteSQLTemplate, descriptor.Table, buildAssignValueSQL(pk, " AND "))
 }
 
-//NewDmlBuilder returns a new DmlBuilder for passed in table descriptor.
+// NewDmlBuilder returns a new DmlBuilder for passed in table descriptor.
 func NewDmlBuilder(descriptor *TableDescriptor) *DmlBuilder {
 	pkMap := make(map[string]int)
 
@@ -130,8 +147,21 @@ func NewDmlBuilder(descriptor *TableDescriptor) *DmlBuilder {
 		TableDescriptor: descriptor,
 		NonPkColumns:    &nonPkColumns,
 		Columns:         &columns,
-		InsertSQL:       buildInsertSQL(descriptor, columns, nonPkColumns),
-		UpdateSQL:       buildUpdateSQL(descriptor, nonPkColumns),
-		DeleteSQL:       buildDeleteSQL(descriptor),
+		InsertSQL:       buildInsertSQL(descriptor, columns, nonPkColumns, nil),
+		UpdateSQL:       buildUpdateSQL(descriptor, nonPkColumns, nil),
+		DeleteSQL:       buildDeleteSQL(descriptor, nil),
 	}
+}
+
+// RebuildWithReserved rebuilds SQL statements using provided reserved settings.
+func (b *DmlBuilder) RebuildWithReserved(res *Reserved) {
+	if b == nil {
+		return
+	}
+	b.reserved = res
+	cols := append([]string{}, (*b.Columns)...)
+	nonPk := append([]string{}, (*b.NonPkColumns)...)
+	b.InsertSQL = buildInsertSQL(b.TableDescriptor, cols, nonPk, res)
+	b.UpdateSQL = buildUpdateSQL(b.TableDescriptor, nonPk, res)
+	b.DeleteSQL = buildDeleteSQL(b.TableDescriptor, res)
 }

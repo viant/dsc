@@ -7,7 +7,7 @@ import (
 	"github.com/viant/toolbox"
 )
 
-//metaDmlProvider represents tag mapping base dml provider.
+// metaDmlProvider represents tag mapping base dml provider.
 type metaDmlProvider struct {
 	dmlBuilder           *DmlBuilder
 	columnToFieldNameMap map[string](map[string]string)
@@ -17,13 +17,13 @@ func (p *metaDmlProvider) pkColumns() []string {
 	return p.dmlBuilder.TableDescriptor.PkColumns
 }
 
-//Key returns primary key values
+// Key returns primary key values
 func (p *metaDmlProvider) Key(instance interface{}) []interface{} {
 	result := p.readValues(instance, p.pkColumns())
 	return result
 }
 
-//SetKey sets a key on passed in instance pointer
+// SetKey sets a key on passed in instance pointer
 func (p *metaDmlProvider) SetKey(instancePointer interface{}, seq int64) {
 	toolbox.AssertPointerKind(instancePointer, reflect.Struct, "instance")
 	key := p.pkColumns()[0]
@@ -66,7 +66,7 @@ func (p *metaDmlProvider) readValue(source reflect.Value, column string) interfa
 	if fieldName, ok := columnSetting["fieldName"]; ok {
 		field := source.FieldByName(fieldName)
 		value := toolbox.UnwrapValue(&field)
-		if toolbox.IsZero(field) && value != nil && toolbox.IsStruct(value)  {
+		if toolbox.IsZero(field) && value != nil && toolbox.IsStruct(value) {
 			value = nil
 		}
 		return p.mapValueIfNeeded(value, column, columnSetting)
@@ -74,7 +74,7 @@ func (p *metaDmlProvider) readValue(source reflect.Value, column string) interfa
 	return nil
 }
 
-//Get returns a ParametrizedSQL for specified sqlType and target instance.
+// Get returns a ParametrizedSQL for specified sqlType and target instance.
 func (p *metaDmlProvider) Get(sqlType int, instance interface{}) *ParametrizedSQL {
 	var reflectable = reflect.ValueOf(instance)
 	if reflectable.Kind() == reflect.Ptr {
@@ -96,7 +96,19 @@ func newMetaDmlProvider(table string, targetType reflect.Type) (DmlProvider, err
 		columnToFieldNameMap: toolbox.NewFieldSettingByKey(targetType, "column")}, nil
 }
 
-//NewDmlProviderIfNeeded returns a new NewDmlProvider for a table and target type if passed provider was nil.
+// withReserved returns a copy of provider with DML rebuilt using reserved settings
+func (p *metaDmlProvider) withReserved(res *Reserved) *metaDmlProvider {
+	if p == nil {
+		return p
+	}
+	if res == nil {
+		return p
+	}
+	p.dmlBuilder.RebuildWithReserved(res)
+	return p
+}
+
+// NewDmlProviderIfNeeded returns a new NewDmlProvider for a table and target type if passed provider was nil.
 func NewDmlProviderIfNeeded(provider DmlProvider, table string, targetType reflect.Type) (DmlProvider, error) {
 	if provider != nil {
 		return provider, nil
@@ -104,7 +116,7 @@ func NewDmlProviderIfNeeded(provider DmlProvider, table string, targetType refle
 	return newMetaDmlProvider(table, targetType)
 }
 
-//NewKeyGetterIfNeeded returns a new key getter if supplied keyGetter was nil for the target type
+// NewKeyGetterIfNeeded returns a new key getter if supplied keyGetter was nil for the target type
 func NewKeyGetterIfNeeded(keyGetter KeyGetter, table string, targetType reflect.Type) (KeyGetter, error) {
 	if keyGetter != nil {
 		return keyGetter, nil

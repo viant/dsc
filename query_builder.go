@@ -9,14 +9,20 @@ import (
 
 var queryAllSQLTemplate = "SELECT %v FROM %v"
 
-//QueryBuilder represetns a query builder. It builds simple select sql.
+// QueryBuilder represetns a query builder. It builds simple select sql.
 type QueryBuilder struct {
 	QueryHint       string
 	TableDescriptor *TableDescriptor
+	reserved        *Reserved
 }
 
-//BuildQueryAll builds query all data without where clause
+// BuildQueryAll builds query all data without where clause
 func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
+	if qb.reserved != nil {
+		cols := append([]string{}, columns...)
+		qb.reserved.quoteIfReserved(cols)
+		columns = cols
+	}
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
 	table := qb.TableDescriptor.From()
 	return &ParametrizedSQL{
@@ -26,17 +32,25 @@ func (qb *QueryBuilder) BuildQueryAll(columns []string) *ParametrizedSQL {
 
 }
 
-//BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
+// BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
 func (qb *QueryBuilder) BuildQueryOnPk(columns []string, pkRowValues [][]interface{}) *ParametrizedSQL {
 	return qb.BuildQueryWithInColumns(columns, append([]string{}, qb.TableDescriptor.PkColumns...), pkRowValues)
 }
 
-//BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
+// BuildQueryOnPk builds ParametrizedSQL for passed in query columns and pk values.
 func (qb *QueryBuilder) BuildQueryWithInColumns(columns []string, inCriteriaColumns []string, pkRowValues [][]interface{}) *ParametrizedSQL {
 	columns = append([]string{}, columns...)
-	updateReserved(columns)
+	if qb.reserved != nil {
+		qb.reserved.quoteIfReserved(columns)
+	} else {
+		updateReserved(columns)
+	}
 	var columnsLiteral = qb.QueryHint + " " + strings.Join(columns, ",")
-	updateReserved(inCriteriaColumns)
+	if qb.reserved != nil {
+		qb.reserved.quoteIfReserved(inCriteriaColumns)
+	} else {
+		updateReserved(inCriteriaColumns)
+	}
 	var inColumns = strings.Join(inCriteriaColumns, ",")
 	var sqlArguments = make([]interface{}, 0)
 	var criteria = ""
@@ -71,7 +85,7 @@ func (qb *QueryBuilder) BuildQueryWithInColumns(columns []string, inCriteriaColu
 
 }
 
-//BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
+// BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
 func (qb *QueryBuilder) BuildBatchedInQuery(columns []string, pkRowValues [][]interface{}, inColumns []string, batchSize int) []*ParametrizedSQL {
 	var result = make([]*ParametrizedSQL, 0)
 	toolbox.Process2DSliceInBatches(pkRowValues, batchSize, func(batch [][]interface{}) {
@@ -81,7 +95,7 @@ func (qb *QueryBuilder) BuildBatchedInQuery(columns []string, pkRowValues [][]in
 	return result
 }
 
-//BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
+// BuildBatchedQueryOnPk builds batches of ParametrizedSQL for passed in query columns and pk values. Batch size specifies number of rows in one parametrized sql.
 func (qb *QueryBuilder) BuildBatchedQueryOnPk(columns []string, pkRowValues [][]interface{}, batchSize int) []*ParametrizedSQL {
 	var result = make([]*ParametrizedSQL, 0)
 	toolbox.Process2DSliceInBatches(pkRowValues, batchSize, func(batch [][]interface{}) {
@@ -91,8 +105,14 @@ func (qb *QueryBuilder) BuildBatchedQueryOnPk(columns []string, pkRowValues [][]
 	return result
 }
 
-//NewQueryBuilder create anew QueryBuilder, it takes table descriptor and optional query hit to include it in the queries
+// NewQueryBuilder create anew QueryBuilder, it takes table descriptor and optional query hit to include it in the queries
 func NewQueryBuilder(descriptor *TableDescriptor, queryHint string) QueryBuilder {
 	queryBuilder := QueryBuilder{TableDescriptor: descriptor, QueryHint: queryHint}
 	return queryBuilder
+}
+
+// WithReserved attaches Reserved settings to a copy of QueryBuilder
+func (qb QueryBuilder) WithReserved(res *Reserved) QueryBuilder {
+	qb.reserved = res
+	return qb
 }

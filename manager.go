@@ -25,6 +25,7 @@ type AbstractManager struct {
 	connectionProvider      ConnectionProvider
 	tableDescriptorRegistry TableDescriptorRegistry
 	limiter                 *Limiter
+	reserved                *Reserved
 }
 
 // Config returns a config.
@@ -259,6 +260,11 @@ func (m *AbstractManager) PersistAllOnConnection(connection Connection, dataPoin
 	if err != nil {
 		return 0, 0, err
 	}
+	// If we created the default provider and have per-manager reserved settings, rebuild DML with quoting settings.
+	if p, ok := provider.(*metaDmlProvider); ok && m.reserved != nil {
+		p.withReserved(m.reserved)
+		provider = p
+	}
 	descriptor, err := m.RegisterDescriptorIfNeeded(table, dataPointer)
 	if err != nil {
 		return 0, 0, err
@@ -423,8 +429,11 @@ func (m *AbstractManager) fetchExistingData(connection Connection, table string,
 
 	if len(pkValues) > 0 {
 		descriptor := TableDescriptor{Table: table, PkColumns: descriptor.PkColumns}
-		sqlBuilder := NewQueryBuilder(&descriptor, "")
-		sqlWithArguments := sqlBuilder.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, defaultBatchSize)
+		qb := NewQueryBuilder(&descriptor, "")
+		if m.reserved != nil {
+			qb = qb.WithReserved(m.reserved)
+		}
+		sqlWithArguments := qb.BuildBatchedQueryOnPk(descriptor.PkColumns, pkValues, defaultBatchSize)
 
 		var mapper = NewColumnarRecordMapper(false, reflect.TypeOf(rows))
 		batched, err := m.fetchDataInBatches(connection, sqlWithArguments, mapper)
@@ -561,8 +570,12 @@ func (m *AbstractManager) DeleteAllOnConnection(connection Connection, dataPoint
 }
 
 func (m *AbstractManager) buildPKWhere(descriptor *TableDescriptor) string {
-	var pk = descriptor.PkColumns
-	updateReserved(pk)
+	var pk = append([]string{}, descriptor.PkColumns...)
+	if m.reserved != nil {
+		m.reserved.quoteIfReserved(pk)
+	} else {
+		updateReserved(pk)
+	}
 	where := strings.Join(pk, ",")
 	return where
 }
@@ -640,8 +653,8 @@ func NewAbstractManager(config *Config, connectionProvider ConnectionProvider, s
 	var descriptorRegistry = newTableDescriptorRegistry()
 	var result = &AbstractManager{config: config, connectionProvider: connectionProvider, Manager: self, tableDescriptorRegistry: descriptorRegistry}
 	descriptorRegistry.manager = result
-	// Initialize reserved keyword handling from config.
-	InitReserved(config)
+	// Initialize reserved keyword handling from config (per manager instance).
+	result.reserved = newReservedFromConfig(config)
 	if config.MaxRequestPerSecond > 0 {
 		result.limiter = NewLimiter(time.Second, config.MaxRequestPerSecond)
 	}
